@@ -1,0 +1,8 @@
+[package]
+name = "jwt-cli"
+version = "0.1.0"
+authors = ["Mike Engel <mike@mike-engel.com>"]
+
+[dependencies]
+clap = "2"
+frank_jwt = "2"
