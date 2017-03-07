@@ -1,3 +1,17 @@
+# 0.2.0
+> 2017-03-06
+
+Second prerelease!
+
+This adds some new features:
+- JWTs can now be decoded
+- RSA support for encoding and decoding
+
+What's still missing:
+- Cannot decode the header (upstream issues)
+- Cannot encode or decode ES tokens
+- Custom `typ` and `kid` header fields
+
 # 0.1.0
 > 2017-03-05
 
@@ -15,7 +29,7 @@ What's missing:
 
 - can't change the `typ` or add a `kid` to the header
 - only supports HMAC algorithms
-- it hasn't been refactors
+- it hasn't been refactored
 
 What I'm planning:
 

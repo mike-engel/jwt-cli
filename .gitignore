@@ -1,1 +1,5 @@
 target
+.DS_Store
+Thumbs.db
+*.log
+*.orig
