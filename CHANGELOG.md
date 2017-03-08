@@ -1,3 +1,27 @@
+# 0.3.0
+> 2017-03-07
+
+Third prerelease.
+
+Overall, this replaces frank_jwt with jsonwebtoken. What does that mean?
+
+- You can now specify the `kid` header
+- You can now decode and display the header
+- RSA signatures are no longer supported
+
+There were also some other enhancements:
+
+- If a decoded token is invalid, you can now get better context for the error
+
+And here's a list of stuff that's still wacky:
+
+- The decoded token output can be so much better
+- RSA and ECDSA signing would be super neat
+- JWS and JWE type tokens would be good to have as well
+
+Finally, there should be builds available for linux, macOS, and windows
+thanks to some CI magic.
+
 # 0.2.0
 > 2017-03-06
 

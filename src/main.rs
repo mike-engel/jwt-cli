@@ -1,22 +1,24 @@
 #[macro_use]
 extern crate clap;
-extern crate frank_jwt;
+extern crate jsonwebtoken as jwt;
+extern crate rustc_serialize;
 
-use std::path::Path;
+use std::collections::BTreeMap;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use frank_jwt::{Header, Payload, Algorithm, encode, decode};
+use jwt::{encode, decode, Algorithm, Header};
+use jwt::errors::Error;
 
 #[derive(Debug)]
 struct PayloadItem(String, String);
+
+#[derive(Debug, RustcEncodable, RustcDecodable)]
+struct Payload(BTreeMap<String, String>);
 
 arg_enum!{
     enum SupportedAlgorithms {
         HS256,
         HS384,
-        HS512,
-        RS256,
-        RS384,
-        RS512
+        HS512
     }
 }
 
@@ -29,16 +31,28 @@ arg_enum!{
 impl PayloadItem {
     fn from_string(val: Option<&str>) -> Option<PayloadItem> {
         if val.is_some() {
-            Some(PayloadItem::split_payload(val.unwrap()))
+            Some(PayloadItem::split_payload_item(val.unwrap()))
         } else {
             None
         }
     }
 
-    fn split_payload(p: &str) -> PayloadItem {
+    fn split_payload_item(p: &str) -> PayloadItem {
         let split: Vec<&str> = p.split('=').collect();
 
         PayloadItem(split[0].to_string(), split[1].to_string())
+    }
+}
+
+impl Payload {
+    fn from_payloads(payloads: Vec<PayloadItem>) -> Payload {
+        let mut payload = BTreeMap::new();
+
+        for PayloadItem(k, v) in payloads {
+            payload.insert(k, v);
+        }
+
+        Payload(payload)
     }
 }
 
@@ -48,9 +62,6 @@ impl SupportedAlgorithms {
             "HS256" => SupportedAlgorithms::HS256,
             "HS384" => SupportedAlgorithms::HS384,
             "HS512" => SupportedAlgorithms::HS512,
-            "RS256" => SupportedAlgorithms::RS256,
-            "RS384" => SupportedAlgorithms::RS384,
-            "RS512" => SupportedAlgorithms::RS512,
             _ => SupportedAlgorithms::HS256,
         }
     }
@@ -89,7 +100,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                 .takes_value(true)
                 .long("payload")
                 .short("p")
-                .validator(is_payload))
+                .validator(is_payload_item))
             .arg(Arg::with_name("expires")
                 .help("the time the token should expire, in seconds")
                 .takes_value(true)
@@ -128,18 +139,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                 .takes_value(true)
                 .long("secret")
                 .short("S")
-                .required(true)
-                .conflicts_with("key"))
-            .arg(Arg::with_name("key")
-                .help("the path to the key to sign the RSA JWT with")
-                .takes_value(true)
-                .long("key")
-                .short("K")
-                .required_ifs(&[("algorithm", "RS256"),
-                                ("algorithm", "RS384"),
-                                ("algorithm", "RS512")])
-                .validator(is_path)
-                .conflicts_with("secret")))
+                .required(true)))
         .subcommand(SubCommand::with_name("decode")
             .about("Decode a JWT")
             .version(crate_version!())
@@ -160,18 +160,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                 .takes_value(true)
                 .long("secret")
                 .short("S")
-                .required(true)
-                .conflicts_with("key"))
-            .arg(Arg::with_name("key")
-                .help("the path to the key to sign the RSA JWT with")
-                .takes_value(true)
-                .long("key")
-                .short("K")
-                .required_ifs(&[("algorithm", "RS256"),
-                                ("algorithm", "RS384"),
-                                ("algorithm", "RS512")])
-                .validator(is_path)
-                .conflicts_with("secret")))
+                .required(true)))
 }
 
 fn is_num(val: String) -> Result<(), String> {
@@ -183,7 +172,7 @@ fn is_num(val: String) -> Result<(), String> {
     }
 }
 
-fn is_payload(val: String) -> Result<(), String> {
+fn is_payload_item(val: String) -> Result<(), String> {
     let split: Vec<&str> = val.split('=').collect();
 
     match split.len() {
@@ -192,18 +181,7 @@ fn is_payload(val: String) -> Result<(), String> {
     }
 }
 
-fn is_path(val: String) -> Result<(), String> {
-    match Path::new(val.as_str()).to_str() {
-        Some(_) => Ok(()),
-        None => Err(String::from("")),
-    }
-}
-
 fn warn_unsupported(matches: &ArgMatches) {
-    if let Some(_) = matches.value_of("kid") {
-        println!("Sorry, `kid` isn't supported quite yet!");
-    }
-
     if let Some(_) = matches.value_of("type") {
         println!("Sorry, `typ` isn't supported quite yet!");
     }
@@ -214,40 +192,23 @@ fn translate_algorithm(alg: SupportedAlgorithms) -> Algorithm {
         SupportedAlgorithms::HS256 => Algorithm::HS256,
         SupportedAlgorithms::HS384 => Algorithm::HS384,
         SupportedAlgorithms::HS512 => Algorithm::HS512,
-        SupportedAlgorithms::RS256 => Algorithm::RS256,
-        SupportedAlgorithms::RS384 => Algorithm::RS384,
-        SupportedAlgorithms::RS512 => Algorithm::RS512,
     }
 }
 
-fn create_payload(payloads: Vec<PayloadItem>) -> Payload {
-    let mut payload = Payload::new();
+fn create_header(alg: &Algorithm, kid: Option<&str>) -> Header {
+    let mut header = Header::new(alg.clone());
 
-    for PayloadItem(k, v) in payloads {
-        payload.insert(k, v);
-    }
+    header.kid = kid.map(|k| k.to_string());
 
-    payload
-}
-
-fn divine_signing_key(algorithm: &Algorithm, matches: &ArgMatches) -> String {
-    match algorithm {
-        &Algorithm::HS256 |
-        &Algorithm::HS384 |
-        &Algorithm::HS512 => matches.value_of("secret").unwrap().to_string(),
-        &Algorithm::RS256 |
-        &Algorithm::RS384 |
-        &Algorithm::RS512 => {
-            Path::new(matches.value_of("key").unwrap()).to_str().unwrap().to_string()
-        }
-    }
+    header
 }
 
 fn generate_token(matches: &ArgMatches) {
     let algorithm =
         translate_algorithm(SupportedAlgorithms::from_string(matches.value_of("algorithm")
             .unwrap()));
-    let header = Header::new(algorithm);
+    let kid = matches.value_of("kid");
+    let header = create_header(&algorithm, kid);
     let custom_payloads: Option<Vec<Option<PayloadItem>>> = matches.values_of("payload")
         .map(|maybe_payloads| {
             maybe_payloads.map(|p| PayloadItem::from_string(Some(p)))
@@ -265,29 +226,47 @@ fn generate_token(matches: &ArgMatches) {
     maybe_payloads.append(&mut custom_payloads.unwrap_or(vec![]));
 
     let payloads = maybe_payloads.into_iter().filter(|p| p.is_some()).map(|p| p.unwrap()).collect();
-    let payload = create_payload(payloads);
-    let signing_key = divine_signing_key(&algorithm, &matches);
-    let token = encode(header, signing_key, payload);
+    let payload = Payload::from_payloads(payloads);
+    let secret = matches.value_of("secret").unwrap().as_bytes();
+    let token = encode(header, &payload, secret.as_ref());
 
-    println!("Here's your token:");
-    println!("{}", token);
+    match token {
+        Ok(jwt) => {
+            println!("Here's your token:");
+            println!("{}", jwt);
+        }
+        Err(err) => {
+            println!("Something went awry creating the jwt. Here's the error:");
+            println!("{}", err);
+        }
+    }
+
 }
 
 fn decode_token(matches: &ArgMatches) {
     let algorithm =
         translate_algorithm(SupportedAlgorithms::from_string(matches.value_of("algorithm")
             .unwrap()));
-    let signing_key = divine_signing_key(&algorithm, &matches);
-    let token = decode(matches.value_of("jwt").unwrap().to_string(),
-                       signing_key,
-                       algorithm);
+    let secret = matches.value_of("secret").unwrap().as_bytes();
+    let jwt = matches.value_of("jwt").unwrap().to_string();
+    let token = decode::<Payload>(&jwt, secret.as_ref(), algorithm);
 
     match token {
-        Ok((_, payload)) => {
-            println!("Header: There's currently no way to view the header :(");
-            println!("Payload: {:?}", payload);
+        Ok(c) => {
+            println!("{:?}", c.header);
+            println!("Payload: {:?}", c.claims);
         }
-        Err(error) => println!("The JWT provided is invalid because {:?}", error),
+        Err(err) => {
+            match err {
+                Error::InvalidToken => println!("The JWT provided is invalid"),
+                Error::InvalidSignature => println!("The JWT provided has an invalid signature"),
+                Error::WrongAlgorithmHeader => {
+                    println!("The JWT provided has a different signing algorithm than the one you \
+                              provided")
+                }
+                _ => println!("The JWT provided is invalid because {:?}", err),
+            }
+        }
     }
 }
 
