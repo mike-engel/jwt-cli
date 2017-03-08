@@ -1,3 +1,9 @@
+# 0.3.1
+> 2017-03-07
+
+This fixes the CI scripts, so now it should build and publish them correctly,
+I hope.
+
 # 0.3.0
 > 2017-03-07
 
