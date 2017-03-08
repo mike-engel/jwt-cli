@@ -1,0 +1,83 @@
+# Based on the "trust" template v0.1.1
+# https://github.com/japaric/trust/tree/v0.1.1
+
+dist: trusty
+language: rust
+services: docker
+sudo: required
+
+# TODO Rust builds on stable by default, this can be
+# overridden on a case by case basis down below.
+# rust: stable not specified in order to avoid making
+# a default job.
+
+env:
+  global:
+    # TODO Update this to match the name of your project.
+    - CRATE_NAME=jwt-cli
+
+matrix:
+  # TODO These are all the build jobs. Adjust as necessary. Comment out what you
+  # don't need
+  include:
+    # Linux
+    - env: TARGET=x86_64-unknown-linux-gnu
+
+    # OSX
+    - env: TARGET=x86_64-apple-darwin
+      os: osx
+
+    # *BSD
+    - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
+
+    # Other architectures
+    - env: TARGET=aarch64-unknown-linux-gnu
+    - env: TARGET=armv7-unknown-linux-gnueabihf
+
+before_install: set -e
+
+install:
+  - sh ci/install.sh
+  - source ~/.cargo/env || true
+
+script:
+  - bash ci/script.sh
+
+after_script: set +e
+
+before_deploy:
+  - sh ci/before_deploy.sh
+
+deploy:
+  # TODO update `api_key.secure`
+  # - Create a `public_repo` GitHub token. Go to: https://github.com/settings/tokens/new
+  # - Encrypt it: `travis encrypt YOUR_TOKEN`
+  # - Paste the output down here
+  api_key:
+    secure: sDlanXDHhQU4Usg8FQF7rC4Zip6HYYoJVoaADb7N8X53P2IavSNF6ieEqJETyK5y6JVJIW34HLlaCTPMh1lRNz9DQgtXjfoS/7JUQLKMzi9svqJnQIEJIBs85qU1jpYmzz9I5hU69pb/IULyn7Mr7kNiKY0/I4Aj5UuK93w3L6NsPiaGRcou2UOQ/18lPPqhtamA2g/SMhyCj2jWINuRfnTdJIW58Dit6XelBbGtvHHCtB97SGYF6BPMpXe2Qu3tvuZOia3vY5Pyp0VhKJ06S4J2euon7HgWLJ7Qmi4qc7lw1N+Kc+5wmkgeMM3fkW1AhuWwypbGfgabw7B7XznZmhQ0afTZ/VXSxNU3mUkT4RH42wJ6rwL9ztHDRLR1eTa/QTVk/m9t5D7qBar869qt/scJluTJjoVleDmZHevnWVycGkplHJ1qg2RflcdxXs6KTiumC6O7L0yWGZsB0DLpWGtpio7rb8dreQeS13hBuHa8PO8QAoAi7g4Yk/AO3fBr4anMEfcdVIGzsC0/uMjykjUDfZVFf6uWAqEsnypgROJhH39NqvA8S0VqogtsW4jUCxcLDuvH2Jx6B3lb55FUIYIIvCuWesWub6Cxna7gULfITpbI7gosefh/1KXLN4Y7sTwYk/0qMLPzQSpmizUzohm/3aV1HjkwaeGnKCnAHWc=
+  file_glob: true
+  file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
+  on:
+    # TODO Here you can pick which targets will generate binary releases
+    # In this example, there are some targets that are tested using the stable
+    # and nightly channels. This condition makes sure there is only one release
+    # for such targets and that's generated using the stable channel
+    condition: $TRAVIS_RUST_VERSION = stable
+    tags: true
+  provider: releases
+  skip_cleanup: true
+
+cache: cargo
+before_cache:
+  # Travis can't cache files that are not readable by "others"
+  - chmod -R a+r $HOME/.cargo
+
+branches:
+  only:
+    # release tags
+    - /^\d+\.\d+\.\d+.*$/
+    - master
+
+notifications:
+  email:
+    on_success: never
