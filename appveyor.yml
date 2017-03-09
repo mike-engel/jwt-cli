@@ -10,12 +10,11 @@ environment:
     # TODO Update this to match the name of your project.
     CRATE_NAME: jwt-cli
 
+    TARGET_NAME: windows
+
   # TODO These are all the build jobs. Adjust as necessary. Comment out what you
   # don't need
   matrix:
-    # MinGW
-    - TARGET: x86_64-pc-windows-gnu
-
     # MSVC
     - TARGET: x86_64-pc-windows-msvc
 

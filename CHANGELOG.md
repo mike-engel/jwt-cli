@@ -1,3 +1,12 @@
+# 0.3.2
+> 2017-03-08
+
+This removes the builds for Windows GBU, \*BSD, armv7, and aarch64. Sorry if you
+use those systems or architectures.
+
+This also fixes some of the builds where it would find unreachable code. It's
+ok, I promise.
+
 # 0.3.1
 > 2017-03-07
 

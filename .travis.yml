@@ -21,20 +21,16 @@ matrix:
   # don't need
   include:
     # Linux
-    - env: TARGET=x86_64-unknown-linux-gnu
+    - env: TARGET=x86_64-unknown-linux-gnu TARGET_NAME=linux
 
     # OSX
-    - env: TARGET=x86_64-apple-darwin
+    - env: TARGET=x86_64-apple-darwin TARGET_NAME=macOS
       os: osx
 
-    # *BSD
-    - env: TARGET=x86_64-unknown-freebsd DISABLE_TESTS=1
-
-    # Other architectures
-    - env: TARGET=aarch64-unknown-linux-gnu
-    - env: TARGET=armv7-unknown-linux-gnueabihf
-
-before_install: set -e
+before_install:
+  - set -e
+  - sudo ln -s /usr/bin/make /usr/bin/gmake
+  - sudo chmod +x /usr/bin/gmake
 
 install:
   - sh ci/install.sh

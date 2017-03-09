@@ -24,7 +24,7 @@ main() {
     cp target/$TARGET/release/jwt-cli $stage/
 
     cd $stage
-    tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET.tar.gz *
+    tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET_NAME.tar.gz *
     cd $src
 
     rm -rf $stage
