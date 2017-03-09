@@ -279,6 +279,6 @@ fn main() {
             generate_token(&generate_matches);
         }
         ("decode", Some(decode_matches)) => decode_token(&decode_matches),
-        ("", None) | _ => unreachable!(),
+        ("", None) | _ => (),
     }
 }
