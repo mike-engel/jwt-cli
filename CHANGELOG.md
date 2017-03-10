@@ -1,3 +1,18 @@
+# 0.4.0
+> 2017-03-09
+
+This one's all about the formatting from decode! When you decode a JWT now, it
+looks spectacular, if I do say so myself. It's even colored and bold and other
+great stuff.
+
+This also fixes the build script, so now macOS, Windows, and Linux binaries
+should all be present in the release.
+
+Roadmap to 1.0.0:
+
+- Unit tests
+- Possible upstream patches to get more functionality
+
 # 0.3.2
 > 2017-03-08
 

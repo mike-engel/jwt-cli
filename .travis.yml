@@ -29,8 +29,6 @@ matrix:
 
 before_install:
   - set -e
-  - sudo ln -s /usr/bin/make /usr/bin/gmake
-  - sudo chmod +x /usr/bin/gmake
 
 install:
   - sh ci/install.sh

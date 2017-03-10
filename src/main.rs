@@ -2,11 +2,16 @@
 extern crate clap;
 extern crate jsonwebtoken as jwt;
 extern crate rustc_serialize;
+extern crate term_painter;
 
 use std::collections::BTreeMap;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use jwt::{encode, decode, Algorithm, Header};
+use jwt::{encode, decode, Algorithm, Header, TokenData};
 use jwt::errors::Error;
+use rustc_serialize::json;
+use term_painter::ToStyle;
+use term_painter::Color::*;
+use term_painter::Attr::*;
 
 #[derive(Debug)]
 struct PayloadItem(String, String);
@@ -74,8 +79,6 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
         .author(crate_authors!())
         .subcommand(SubCommand::with_name("generate")
             .about("Encode new JWTs")
-            .version(crate_version!())
-            .author(crate_authors!())
             .arg(Arg::with_name("algorithm")
                 .help("the algorithm to use for signing the JWT")
                 .takes_value(true)
@@ -142,8 +145,6 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                 .required(true)))
         .subcommand(SubCommand::with_name("decode")
             .about("Decode a JWT")
-            .version(crate_version!())
-            .author(crate_authors!())
             .arg(Arg::with_name("jwt")
                 .help("the jwt to decode")
                 .index(1)
@@ -182,7 +183,7 @@ fn is_payload_item(val: String) -> Result<(), String> {
 }
 
 fn warn_unsupported(matches: &ArgMatches) {
-    if let Some(_) = matches.value_of("type") {
+    if matches.value_of("type").is_some() {
         println!("Sorry, `typ` isn't supported quite yet!");
     }
 }
@@ -252,9 +253,17 @@ fn decode_token(matches: &ArgMatches) {
     let token = decode::<Payload>(&jwt, secret.as_ref(), algorithm);
 
     match token {
-        Ok(c) => {
-            println!("{:?}", c.header);
-            println!("Payload: {:?}", c.claims);
+        Ok(TokenData { header, claims: Payload(claims) }) => {
+            let json_header = json::encode(&header).unwrap();
+            let json_claims = json::encode(&claims).unwrap();
+            let decoded_header = json::Json::from_str(&json_header).unwrap();
+            let decoded_claims = json::Json::from_str(&json_claims).unwrap();
+
+            println!("{}\n", Cyan.bold().paint("Looks like a valid JWT!"));
+            println!("{}", Plain.bold().paint("Token header\n------------"));
+            println!("{}\n", decoded_header.pretty());
+            println!("{}", Plain.bold().paint("Token claims\n------------"));
+            println!("{}", decoded_claims.pretty());
         }
         Err(err) => {
             match err {
@@ -279,6 +288,6 @@ fn main() {
             generate_token(&generate_matches);
         }
         ("decode", Some(decode_matches)) => decode_token(&decode_matches),
-        ("", None) | _ => (),
+        _ => (),
     }
 }

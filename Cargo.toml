@@ -1,9 +1,10 @@
 [package]
 name = "jwt-cli"
-version = "0.3.2"
+version = "0.4.0"
 authors = ["Mike Engel <mike@mike-engel.com>"]
 
 [dependencies]
 clap = "2"
 jsonwebtoken = "1"
 rustc-serialize = "0.3"
+term-painter = "0.2"
