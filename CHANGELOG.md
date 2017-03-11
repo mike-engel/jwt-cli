@@ -1,3 +1,15 @@
+# 0.4.1
+> 2017-03-10
+
+This adds documentation in the readme, as well as some github templates.
+
+Additionally, the travis build config should be be fixed, and builds for macOS and linux should now be uploaded to the release.
+
+Roadmap to 1.0.0:
+
+- Unit tests
+- Possible upstream patches to get more functionality
+
 # 0.4.0
 > 2017-03-09
 
