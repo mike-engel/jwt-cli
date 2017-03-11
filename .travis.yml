@@ -48,9 +48,9 @@ deploy:
   # - Encrypt it: `travis encrypt YOUR_TOKEN`
   # - Paste the output down here
   api_key:
-    secure: sDlanXDHhQU4Usg8FQF7rC4Zip6HYYoJVoaADb7N8X53P2IavSNF6ieEqJETyK5y6JVJIW34HLlaCTPMh1lRNz9DQgtXjfoS/7JUQLKMzi9svqJnQIEJIBs85qU1jpYmzz9I5hU69pb/IULyn7Mr7kNiKY0/I4Aj5UuK93w3L6NsPiaGRcou2UOQ/18lPPqhtamA2g/SMhyCj2jWINuRfnTdJIW58Dit6XelBbGtvHHCtB97SGYF6BPMpXe2Qu3tvuZOia3vY5Pyp0VhKJ06S4J2euon7HgWLJ7Qmi4qc7lw1N+Kc+5wmkgeMM3fkW1AhuWwypbGfgabw7B7XznZmhQ0afTZ/VXSxNU3mUkT4RH42wJ6rwL9ztHDRLR1eTa/QTVk/m9t5D7qBar869qt/scJluTJjoVleDmZHevnWVycGkplHJ1qg2RflcdxXs6KTiumC6O7L0yWGZsB0DLpWGtpio7rb8dreQeS13hBuHa8PO8QAoAi7g4Yk/AO3fBr4anMEfcdVIGzsC0/uMjykjUDfZVFf6uWAqEsnypgROJhH39NqvA8S0VqogtsW4jUCxcLDuvH2Jx6B3lb55FUIYIIvCuWesWub6Cxna7gULfITpbI7gosefh/1KXLN4Y7sTwYk/0qMLPzQSpmizUzohm/3aV1HjkwaeGnKCnAHWc=
+    secure: rWTpCWM3+s5oGPJOQhIcSOHEJTgCfUYqc/vqcEs6TceFl0+EwymVwPjMpX6pFTRtQw3c2Luh9LjeO8Ufs+2oTd17Kov6h+yrXJsfHx4IIeOHmDr7KXDxAAm8SbcjCrv32au61p12YaWYZmGpi/8vldygqp4JgbVMN+Zy/WbvGXo/IRR+cR9FXhvmYeUU6fNgJkakD895Scj8VfK7ktclEvRBwl3ZogkeEI7lRvGiRA74TbhL74k1fV2YKTIuE4hyYYrkC7hQqLU2wxVGBSIFWfBs4ots8/aILEBoJwzRlACvnXnwc7OtZra6CT2LlUU/0wQ23Hbyr/3XYaZ3V83Maefg8TqL23pUfHe6YthFbgYtWqhhl2AhZOcbV/t0zpd840MErdkRyOom+dZ8M01iMJhRL4QQ4EWHaO22eeMFf9gzZmn46g/fXWcgegl74uE1Lyh29Hhaf/DFtJN6D2aSp8BW6x+RWvzZCrhXDg9T02FNFZ/PHCT83OiZyzqKd8UmKH+GFlOuvdQ3MmkgVSXJSlceFcy8mZzm6H0CG5T5y4zmCuRfk/nztGFs8oNfYvZiFdFk0W1K51aVERcCFiAtQvpzStuhvgIQ9h3xegej2SmW/j3RIumoTkyNhyJduc1mOa3LvYpK/mnWCaEzZn8FqRQL3dqFfco92p3OPEPYy7E=
   file_glob: true
-  file: $CRATE_NAME-$TRAVIS_TAG-$TARGET.*
+  file: $CRATE_NAME-$TRAVIS_TAG-$TARGET_NAME.*
   on:
     # TODO Here you can pick which targets will generate binary releases
     # In this example, there are some targets that are tested using the stable
