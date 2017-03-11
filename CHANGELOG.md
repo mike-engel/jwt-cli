@@ -1,9 +1,33 @@
+# 0.5.0
+> 2017-03-10
+
+The testing release!
+
+This adds a bunch of unit tests for almost all of the functions (`println!`
+functions excluded) and fixes some tests found after writing them.
+
+#### Breaking changes
+- The short forms for `payload` and `principal` have how been switched for
+consistency
+- The long form of `expires` is now `exp` for consistency
+
+#### Bug fixes
+- Shorthand payload options (`exp`, `aud`, etc) no longer cause a panic
+- Windows builds now have a more readable name rather that the target triple
+- The generate command output is now prettier
+
+#### Roadmap to 1.0.0
+- Final preflight checks
+- Investigation into release to OS package managers
+- Name change?
+
 # 0.4.1
 > 2017-03-10
 
 This adds documentation in the readme, as well as some github templates.
 
-Additionally, the travis build config should be be fixed, and builds for macOS and linux should now be uploaded to the release.
+Additionally, the travis build config should be be fixed, and builds for macOS
+and linux should now be uploaded to the release.
 
 Roadmap to 1.0.0:
 

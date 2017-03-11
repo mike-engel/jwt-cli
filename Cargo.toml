@@ -1,6 +1,6 @@
 [package]
 name = "jwt-cli"
-version = "0.4.1"
+version = "0.5.0"
 authors = ["Mike Engel <mike@mike-engel.com>"]
 
 [dependencies]

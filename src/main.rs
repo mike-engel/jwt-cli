@@ -6,20 +6,21 @@ extern crate term_painter;
 
 use std::collections::BTreeMap;
 use clap::{App, Arg, ArgMatches, SubCommand};
-use jwt::{encode, decode, Algorithm, Header, TokenData};
+use jwt::{encode, decode, Algorithm, Header, Part, TokenData};
 use jwt::errors::Error;
 use rustc_serialize::json;
 use term_painter::ToStyle;
 use term_painter::Color::*;
 use term_painter::Attr::*;
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct PayloadItem(String, String);
 
-#[derive(Debug, RustcEncodable, RustcDecodable)]
+#[derive(Debug, RustcEncodable, RustcDecodable, PartialEq)]
 struct Payload(BTreeMap<String, String>);
 
 arg_enum!{
+    #[derive(Debug, PartialEq)]
     enum SupportedAlgorithms {
         HS256,
         HS384,
@@ -37,6 +38,14 @@ impl PayloadItem {
     fn from_string(val: Option<&str>) -> Option<PayloadItem> {
         if val.is_some() {
             Some(PayloadItem::split_payload_item(val.unwrap()))
+        } else {
+            None
+        }
+    }
+
+    fn from_string_with_name(val: Option<&str>, name: &str) -> Option<PayloadItem> {
+        if val.is_some() {
+            Some(PayloadItem(name.to_string(), val.unwrap().to_string()))
         } else {
             None
         }
@@ -102,12 +111,12 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                 .multiple(true)
                 .takes_value(true)
                 .long("payload")
-                .short("p")
+                .short("P")
                 .validator(is_payload_item))
             .arg(Arg::with_name("expires")
                 .help("the time the token should expire, in seconds")
                 .takes_value(true)
-                .long("expires")
+                .long("exp")
                 .short("e")
                 .validator(is_num))
             .arg(Arg::with_name("issuer")
@@ -130,13 +139,14 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                 .help("the principal of the token")
                 .takes_value(true)
                 .long("prn")
-                .short("P")
+                .short("p")
                 .requires("audience"))
             .arg(Arg::with_name("not_before")
                 .help("the time the JWT should become valid, in seconds")
                 .takes_value(true)
                 .long("nbf")
-                .short("n"))
+                .short("n")
+                .validator(is_num))
             .arg(Arg::with_name("secret")
                 .help("the secret to sign the JWT with")
                 .takes_value(true)
@@ -204,7 +214,7 @@ fn create_header(alg: &Algorithm, kid: Option<&str>) -> Header {
     header
 }
 
-fn generate_token(matches: &ArgMatches) {
+fn generate_token(matches: &ArgMatches) -> Result<String, Error> {
     let algorithm =
         translate_algorithm(SupportedAlgorithms::from_string(matches.value_of("algorithm")
             .unwrap()));
@@ -215,12 +225,12 @@ fn generate_token(matches: &ArgMatches) {
             maybe_payloads.map(|p| PayloadItem::from_string(Some(p)))
                 .collect()
         });
-    let expires = PayloadItem::from_string(matches.value_of("expires"));
-    let issuer = PayloadItem::from_string(matches.value_of("issuer"));
-    let subject = PayloadItem::from_string(matches.value_of("subject"));
-    let audience = PayloadItem::from_string(matches.value_of("audience"));
-    let principal = PayloadItem::from_string(matches.value_of("principal"));
-    let not_before = PayloadItem::from_string(matches.value_of("not_before"));
+    let expires = PayloadItem::from_string_with_name(matches.value_of("expires"), "exp");
+    let issuer = PayloadItem::from_string_with_name(matches.value_of("issuer"), "iss");
+    let subject = PayloadItem::from_string_with_name(matches.value_of("subject"), "sub");
+    let audience = PayloadItem::from_string_with_name(matches.value_of("audience"), "aud");
+    let principal = PayloadItem::from_string_with_name(matches.value_of("principal"), "prn");
+    let not_before = PayloadItem::from_string_with_name(matches.value_of("not_before"), "nbf");
     let mut maybe_payloads: Vec<Option<PayloadItem>> = vec![expires, issuer, subject, audience,
                                                             principal, not_before];
 
@@ -229,30 +239,37 @@ fn generate_token(matches: &ArgMatches) {
     let payloads = maybe_payloads.into_iter().filter(|p| p.is_some()).map(|p| p.unwrap()).collect();
     let payload = Payload::from_payloads(payloads);
     let secret = matches.value_of("secret").unwrap().as_bytes();
-    let token = encode(header, &payload, secret.as_ref());
 
-    match token {
-        Ok(jwt) => {
-            println!("Here's your token:");
-            println!("{}", jwt);
-        }
-        Err(err) => {
-            println!("Something went awry creating the jwt. Here's the error:");
-            println!("{}", err);
-        }
-    }
-
+    encode(header, &payload, secret.as_ref())
 }
 
-fn decode_token(matches: &ArgMatches) {
+fn decode_token<T: Part>(matches: &ArgMatches) -> Result<TokenData<T>, Error> {
     let algorithm =
         translate_algorithm(SupportedAlgorithms::from_string(matches.value_of("algorithm")
             .unwrap()));
     let secret = matches.value_of("secret").unwrap().as_bytes();
     let jwt = matches.value_of("jwt").unwrap().to_string();
-    let token = decode::<Payload>(&jwt, secret.as_ref(), algorithm);
 
+    decode::<T>(&jwt, secret.as_ref(), algorithm)
+}
+
+fn print_generated_token(token: Result<String, Error>) {
     match token {
+        Ok(jwt) => {
+            println!("{}", Cyan.bold().paint("Success! Here's your token\n"));
+            println!("{}", jwt);
+        }
+        Err(err) => {
+            println!("{}",
+                     Red.bold()
+                         .paint("Something went awry creating the jwt\n"));
+            println!("{}", err);
+        }
+    }
+}
+
+fn print_decoded_token(token_data: Result<TokenData<Payload>, Error>) {
+    match token_data {
         Ok(TokenData { header, claims: Payload(claims) }) => {
             let json_header = json::encode(&header).unwrap();
             let json_claims = json::encode(&claims).unwrap();
@@ -285,9 +302,16 @@ fn main() {
     match matches.subcommand() {
         ("generate", Some(generate_matches)) => {
             warn_unsupported(&generate_matches);
-            generate_token(&generate_matches);
+
+            let token = generate_token(&generate_matches);
+
+            print_generated_token(token);
         }
-        ("decode", Some(decode_matches)) => decode_token(&decode_matches),
+        ("decode", Some(decode_matches)) => {
+            let token_data = decode_token(&decode_matches);
+
+            print_decoded_token(token_data);
+        }
         _ => (),
     }
 }
