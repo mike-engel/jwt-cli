@@ -3,6 +3,11 @@ name = "jwt-cli"
 version = "0.5.0"
 authors = ["Mike Engel <mike@mike-engel.com>"]
 
+[[bin]]
+name = "jwt"
+path = "src/main.rs"
+test = true
+
 [dependencies]
 clap = "2"
 jsonwebtoken = "1"

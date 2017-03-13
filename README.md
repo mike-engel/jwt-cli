@@ -18,10 +18,10 @@ For usage info, use the `help` command.
 
 ```sh
 # top level help
-jwt-cli help
+jwt help
 
 # command specific help
-jwt-cli help generate
+jwt help generate
 ```
 
 # Contributing
@@ -52,7 +52,9 @@ cargo build
 cargo build --release
 ```
 
-If it built successfully, you should be able to run the command from the `target` folder.
+It's important to note that while the release binary is called `jwt`, the default name is called `jwt-cli`. If you want to build the `jwt` binary, add `--bin jwt` to your build commands.
+
+If it built successfully, you should be able to run the command from the `target` folder. If you built the `jwt` binary, use that below instead of `jwt-cli`.
 
 ```sh
 # on macOS/linux

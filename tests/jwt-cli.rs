@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn generates_a_token() {
         let matches = config_options()
-            .get_matches_from_safe(vec!["jwt-cli",
+            .get_matches_from_safe(vec!["jwt",
                                         "generate",
                                         "-S",
                                         "1234567890",
@@ -169,7 +169,7 @@ mod tests {
     #[test]
     fn decodes_a_token() {
         let matches = config_options()
-            .get_matches_from_safe(vec!["jwt-cli",
+            .get_matches_from_safe(vec!["jwt",
                                         "decode",
                                         "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\
                                          eyJfZmllbGQwIjp7fX0.\

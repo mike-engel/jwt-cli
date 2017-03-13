@@ -18,10 +18,10 @@ main() {
     test -f Cargo.lock || cargo generate-lockfile
 
     # TODO Update this to build the artifacts that matter to you
-    cross rustc --bin jwt-cli --target $TARGET --release -- -C lto
+    cross rustc --bin $BIN_NAME --target $TARGET --release -- -C lto
 
     # TODO Update this to package the right artifacts
-    cp target/$TARGET/release/jwt-cli $stage/
+    cp target/$TARGET/release/$BIN_NAME $stage/
 
     cd $stage
     tar czf $src/$CRATE_NAME-$TRAVIS_TAG-$TARGET_NAME.tar.gz *

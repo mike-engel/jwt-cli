@@ -82,7 +82,7 @@ impl SupportedAlgorithms {
 }
 
 fn config_options<'a, 'b>() -> App<'a, 'b> {
-    App::new("jwt-cli")
+    App::new("jwt")
         .about("Encode and decode JWTs from the command line")
         .version(crate_version!())
         .author(crate_authors!())

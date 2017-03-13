@@ -1,3 +1,15 @@
+# 0.6.0
+> 2017-03-12
+
+The rename release!
+
+#### Breaking changes
+- Renamed the release binary to `jwt`. During development, either `jwt` or `jwt-cli` is available.
+
+#### Roadmap to 1.0.0
+- Testing on linux & windows (this was developed on macOS)
+- Work on releasing 1.0.0 to homebrew and chocolatey.
+
 # 0.5.0
 > 2017-03-10
 
@@ -107,7 +119,7 @@ What's still missing:
 
 First prerelease! 0.1.0
 
-This is the first prerelease of `jwt-cli`. The name will change
+This is the first prerelease of `jwt`. The name will change
 eventually.
 
 The following features are supported:

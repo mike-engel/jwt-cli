@@ -15,6 +15,7 @@ env:
   global:
     # TODO Update this to match the name of your project.
     - CRATE_NAME=jwt-cli
+    - BIN_NAME=jwt
 
 matrix:
   # TODO These are all the build jobs. Adjust as necessary. Comment out what you

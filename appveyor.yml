@@ -10,6 +10,8 @@ environment:
     # TODO Update this to match the name of your project.
     CRATE_NAME: jwt-cli
 
+    BIN_NAME: jwt
+
     TARGET_NAME: windows
 
   # TODO These are all the build jobs. Adjust as necessary. Comment out what you
@@ -45,7 +47,7 @@ test_script:
 
 before_deploy:
   # TODO Update this to build the artifacts that matter to you
-  - cargo rustc --target %TARGET% --release --bin jwt-cli -- -C lto
+  - cargo rustc --target %TARGET% --release --bin %BIN_NAME% -- -C lto
   - ps: ci\before_deploy.ps1
 
 deploy:
