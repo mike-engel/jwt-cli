@@ -237,10 +237,10 @@ fn generate_token(matches: &ArgMatches) -> Result<String, Error> {
     maybe_payloads.append(&mut custom_payloads.unwrap_or(vec![]));
 
     let payloads = maybe_payloads.into_iter().filter(|p| p.is_some()).map(|p| p.unwrap()).collect();
-    let payload = Payload::from_payloads(payloads);
+    let Payload(claims) = Payload::from_payloads(payloads);
     let secret = matches.value_of("secret").unwrap().as_bytes();
 
-    encode(header, &payload, secret.as_ref())
+    encode(header, &claims, secret.as_ref())
 }
 
 fn decode_token<T: Part>(matches: &ArgMatches) -> Result<TokenData<T>, Error> {
