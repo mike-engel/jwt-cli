@@ -1,3 +1,27 @@
+# 0.7.0
+> 2017-03-13
+
+The whoopsies release!
+
+While actually using the project, I found that payload claims were being nested into a root key. Whoops!
+
+#### Breaking changes
+- The `generate` command is now `encode`
+
+#### New features
+- When decoding, the `algorithm` option is no longer required (defaults to HS256)
+- Updated to rust 1.16
+
+#### Bug fixes
+- Payload claims are no longer nested in a `_field0` key
+
+#### Roadman to 1.0.0
+- Automatically set `iat` and `exp`
+- Default `exp` to 30 minutes from now
+- Swap out rustc_serialize for serde
+- These are all blocked by keats/rust-jwt#19 :(
+- Testing on Windows and Linux
+
 # 0.6.0
 > 2017-03-12
 

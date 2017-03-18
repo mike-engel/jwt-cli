@@ -86,7 +86,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
         .about("Encode and decode JWTs from the command line")
         .version(crate_version!())
         .author(crate_authors!())
-        .subcommand(SubCommand::with_name("generate")
+        .subcommand(SubCommand::with_name("encode")
             .about("Encode new JWTs")
             .arg(Arg::with_name("algorithm")
                 .help("the algorithm to use for signing the JWT")
@@ -101,7 +101,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                 .long("kid")
                 .short("k"))
             .arg(Arg::with_name("type")
-                .help("the type of token being generated")
+                .help("the type of token being encoded")
                 .takes_value(true)
                 .long("typ")
                 .short("t")
@@ -165,7 +165,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                 .long("alg")
                 .short("A")
                 .possible_values(&SupportedAlgorithms::variants())
-                .required(true))
+                .default_value("HS256"))
             .arg(Arg::with_name("secret")
                 .help("the secret to sign the JWT with")
                 .takes_value(true)
@@ -175,7 +175,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
 }
 
 fn is_num(val: String) -> Result<(), String> {
-    let parse_result = i32::from_str_radix(&val, 10);
+    let parse_result = i64::from_str_radix(&val, 10);
 
     match parse_result {
         Ok(_) => Ok(()),
@@ -214,7 +214,7 @@ fn create_header(alg: &Algorithm, kid: Option<&str>) -> Header {
     header
 }
 
-fn generate_token(matches: &ArgMatches) -> Result<String, Error> {
+fn encode_token(matches: &ArgMatches) -> Result<String, Error> {
     let algorithm =
         translate_algorithm(SupportedAlgorithms::from_string(matches.value_of("algorithm")
             .unwrap()));
@@ -234,7 +234,7 @@ fn generate_token(matches: &ArgMatches) -> Result<String, Error> {
     let mut maybe_payloads: Vec<Option<PayloadItem>> = vec![expires, issuer, subject, audience,
                                                             principal, not_before];
 
-    maybe_payloads.append(&mut custom_payloads.unwrap_or(vec![]));
+    maybe_payloads.append(&mut custom_payloads.unwrap_or(Vec::new()));
 
     let payloads = maybe_payloads.into_iter().filter(|p| p.is_some()).map(|p| p.unwrap()).collect();
     let Payload(claims) = Payload::from_payloads(payloads);
@@ -253,7 +253,7 @@ fn decode_token<T: Part>(matches: &ArgMatches) -> Result<TokenData<T>, Error> {
     decode::<T>(&jwt, secret.as_ref(), algorithm)
 }
 
-fn print_generated_token(token: Result<String, Error>) {
+fn print_encoded_token(token: Result<String, Error>) {
     match token {
         Ok(jwt) => {
             println!("{}", Cyan.bold().paint("Success! Here's your token\n"));
@@ -268,9 +268,9 @@ fn print_generated_token(token: Result<String, Error>) {
     }
 }
 
-fn print_decoded_token(token_data: Result<TokenData<Payload>, Error>) {
+fn print_decoded_token(token_data: Result<TokenData<BTreeMap<String, String>>, Error>) {
     match token_data {
-        Ok(TokenData { header, claims: Payload(claims) }) => {
+        Ok(TokenData { header, claims }) => {
             let json_header = json::encode(&header).unwrap();
             let json_claims = json::encode(&claims).unwrap();
             let decoded_header = json::Json::from_str(&json_header).unwrap();
@@ -300,12 +300,12 @@ fn main() {
     let matches = config_options().get_matches();
 
     match matches.subcommand() {
-        ("generate", Some(generate_matches)) => {
-            warn_unsupported(&generate_matches);
+        ("encode", Some(encode_matches)) => {
+            warn_unsupported(&encode_matches);
 
-            let token = generate_token(&generate_matches);
+            let token = encode_token(&encode_matches);
 
-            print_generated_token(token);
+            print_encoded_token(token);
         }
         ("decode", Some(decode_matches)) => {
             let token_data = decode_token(&decode_matches);

@@ -2,8 +2,8 @@ include!("../src/main.rs");
 
 #[cfg(test)]
 mod tests {
-    use super::{config_options, create_header, decode_token, generate_token, is_num,
-                is_payload_item, Payload, PayloadItem, SupportedAlgorithms, translate_algorithm};
+    use super::{config_options, create_header, decode_token, encode_token, is_num, is_payload_item,
+                Payload, PayloadItem, SupportedAlgorithms, translate_algorithm};
     use std::collections::BTreeMap;
     use jwt::{Algorithm, Header};
 
@@ -135,10 +135,10 @@ mod tests {
     }
 
     #[test]
-    fn generates_a_token() {
+    fn encodes_a_token() {
         let matches = config_options()
             .get_matches_from_safe(vec!["jwt",
-                                        "generate",
+                                        "encode",
                                         "-S",
                                         "1234567890",
                                         "-A",
@@ -160,8 +160,8 @@ mod tests {
                                         "-s",
                                         "yolo-subject"])
             .unwrap();
-        let generate_matches = matches.subcommand_matches("generate").unwrap();
-        let result = generate_token(&generate_matches);
+        let encode_matches = matches.subcommand_matches("encode").unwrap();
+        let result = encode_token(&encode_matches);
 
         assert!(result.is_ok());
     }
@@ -171,16 +171,14 @@ mod tests {
         let matches = config_options()
             .get_matches_from_safe(vec!["jwt",
                                         "decode",
-                                        "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.\
-                                         eyJfZmllbGQwIjp7fX0.\
-                                         kz2I79xHbYSrp7-OKISemPzXNiUmN9kOon-8NHrM5u0",
+                                        "eyJhbGciOiJIUzI1NiIsImtpZCI6IjEyMzQiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJ5b2xvIiwiZXhwIjoiMDk4NzY1NDMyMSIsImlzcyI6InlvbG8tc2VydmljZSIsIm5iZiI6IjAwMTI5MyIsInBybiI6InlvbG8tcHJpbmNpcGFsIiwic3ViIjoieW9sby1zdWJqZWN0IiwidGhpcyI6InRoYXQifQ.EVU6gesD6Vsy57Ot-rQhW60OtaOKNe2zAYSKAg-Q3Gc",
                                         "-S",
                                         "1234567890",
                                         "-A",
                                         "HS256"])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let result = decode_token::<Payload>(&decode_matches);
+        let result = decode_token::<BTreeMap<String, String>>(&decode_matches);
 
         assert!(result.is_ok());
     }

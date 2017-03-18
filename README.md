@@ -21,7 +21,7 @@ For usage info, use the `help` command.
 jwt help
 
 # command specific help
-jwt help generate
+jwt help encode
 ```
 
 # Contributing
@@ -52,16 +52,14 @@ cargo build
 cargo build --release
 ```
 
-It's important to note that while the release binary is called `jwt`, the default name is called `jwt-cli`. If you want to build the `jwt` binary, add `--bin jwt` to your build commands.
-
-If it built successfully, you should be able to run the command from the `target` folder. If you built the `jwt` binary, use that below instead of `jwt-cli`.
+If it built successfully, you should be able to run the command from the `target` folder.
 
 ```sh
 # on macOS/linux
-./target/debug/jwt-cli help
+./target/debug/jwt help
 
 # on windows
-target\debug\jwt-cli help
+target\debug\jwt.exe help
 ```
 
 # [Code of conduct](code_of_conduct.md)
