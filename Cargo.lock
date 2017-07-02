@@ -1,6 +1,6 @@
 [root]
 name = "jwt-cli"
-version = "0.7.0"
+version = "0.8.0"
 dependencies = [
  "clap 2.25.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "jsonwebtoken 2.0.2 (git+https://github.com/mike-engel/rust-jwt.git)",

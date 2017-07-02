@@ -2,8 +2,8 @@ include!("../src/main.rs");
 
 #[cfg(test)]
 mod tests {
-    use super::{config_options, create_header, decode_token, encode_token, is_num, is_payload_item,
-                Payload, PayloadItem, SupportedAlgorithms, translate_algorithm};
+    use super::{config_options, create_header, decode_token, encode_token, is_num,
+                is_payload_item, Payload, PayloadItem, SupportedAlgorithms, translate_algorithm};
     use std::collections::BTreeMap;
     use jwt::{Algorithm, Header};
 
@@ -66,14 +66,34 @@ mod tests {
 
     #[test]
     fn supported_algorithm_from_string() {
-        assert_eq!(SupportedAlgorithms::from_string("HS256"),
-                   SupportedAlgorithms::HS256);
-        assert_eq!(SupportedAlgorithms::from_string("HS384"),
-                   SupportedAlgorithms::HS384);
-        assert_eq!(SupportedAlgorithms::from_string("HS512"),
-                   SupportedAlgorithms::HS512);
-        assert_eq!(SupportedAlgorithms::from_string("yolo"),
-                   SupportedAlgorithms::HS256);
+        assert_eq!(
+            SupportedAlgorithms::from_string("HS256"),
+            SupportedAlgorithms::HS256
+        );
+        assert_eq!(
+            SupportedAlgorithms::from_string("HS384"),
+            SupportedAlgorithms::HS384
+        );
+        assert_eq!(
+            SupportedAlgorithms::from_string("HS512"),
+            SupportedAlgorithms::HS512
+        );
+        assert_eq!(
+            SupportedAlgorithms::from_string("RS256"),
+            SupportedAlgorithms::RS256
+        );
+        assert_eq!(
+            SupportedAlgorithms::from_string("RS384"),
+            SupportedAlgorithms::RS384
+        );
+        assert_eq!(
+            SupportedAlgorithms::from_string("RS512"),
+            SupportedAlgorithms::RS512
+        );
+        assert_eq!(
+            SupportedAlgorithms::from_string("yolo"),
+            SupportedAlgorithms::HS256
+        );
     }
 
     #[test]
@@ -102,12 +122,30 @@ mod tests {
 
     #[test]
     fn translates_algorithm() {
-        assert_eq!(translate_algorithm(SupportedAlgorithms::HS256),
-                   Algorithm::HS256);
-        assert_eq!(translate_algorithm(SupportedAlgorithms::HS384),
-                   Algorithm::HS384);
-        assert_eq!(translate_algorithm(SupportedAlgorithms::HS512),
-                   Algorithm::HS512);
+        assert_eq!(
+            translate_algorithm(SupportedAlgorithms::HS256),
+            Algorithm::HS256
+        );
+        assert_eq!(
+            translate_algorithm(SupportedAlgorithms::HS384),
+            Algorithm::HS384
+        );
+        assert_eq!(
+            translate_algorithm(SupportedAlgorithms::HS512),
+            Algorithm::HS512
+        );
+        assert_eq!(
+            translate_algorithm(SupportedAlgorithms::RS256),
+            Algorithm::RS256
+        );
+        assert_eq!(
+            translate_algorithm(SupportedAlgorithms::RS384),
+            Algorithm::RS384
+        );
+        assert_eq!(
+            translate_algorithm(SupportedAlgorithms::RS512),
+            Algorithm::RS512
+        );
     }
 
     #[test]
@@ -137,28 +175,30 @@ mod tests {
     #[test]
     fn encodes_a_token() {
         let matches = config_options()
-            .get_matches_from_safe(vec!["jwt",
-                                        "encode",
-                                        "-S",
-                                        "1234567890",
-                                        "-A",
-                                        "HS256",
-                                        "-a",
-                                        "yolo",
-                                        "-e",
-                                        "0987654321",
-                                        "-i",
-                                        "yolo-service",
-                                        "-k",
-                                        "1234",
-                                        "-n",
-                                        "001293",
-                                        "-P",
-                                        "this=that",
-                                        "-p",
-                                        "yolo-principal",
-                                        "-s",
-                                        "yolo-subject"])
+            .get_matches_from_safe(vec![
+                "jwt",
+                "encode",
+                "-S",
+                "1234567890",
+                "-A",
+                "HS256",
+                "-a",
+                "yolo",
+                "-e",
+                "0987654321",
+                "-i",
+                "yolo-service",
+                "-k",
+                "1234",
+                "-n",
+                "001293",
+                "-P",
+                "this=that",
+                "-p",
+                "yolo-principal",
+                "-s",
+                "yolo-subject",
+            ])
             .unwrap();
         let encode_matches = matches.subcommand_matches("encode").unwrap();
         let result = encode_token(&encode_matches);
@@ -171,7 +211,7 @@ mod tests {
         let matches = config_options()
             .get_matches_from_safe(vec!["jwt",
                                         "decode",
-                                        "eyJhbGciOiJIUzI1NiIsImtpZCI6IjEyMzQiLCJ0eXAiOiJKV1QifQ.eyJhdWQiOiJ5b2xvIiwiZXhwIjoiMDk4NzY1NDMyMSIsImlzcyI6InlvbG8tc2VydmljZSIsIm5iZiI6IjAwMTI5MyIsInBybiI6InlvbG8tcHJpbmNpcGFsIiwic3ViIjoieW9sby1zdWJqZWN0IiwidGhpcyI6InRoYXQifQ.EVU6gesD6Vsy57Ot-rQhW60OtaOKNe2zAYSKAg-Q3Gc",
+                                        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
                                         "-S",
                                         "1234567890",
                                         "-A",

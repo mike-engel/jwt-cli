@@ -1,3 +1,9 @@
+# 0.8.1
+> 2017-07-02
+
+#### Bug fixes
+- Fix tests so that they pass
+
 # 0.8.0
 > 2017-07-02
 
