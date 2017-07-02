@@ -1,3 +1,17 @@
+# 0.8.0
+> 2017-07-02
+
+Dependency updates
+
+#### Breaking changes
+- Swaps out `rustc_serialize` for `serde`
+- Updates `jsonwebtoken` from version 1 to version 2. This allows for much more precise errors, and expands potential for validation.
+
+#### Roadmap to 1.0
+- Automatically set `iat` and `exp`
+- Default `exp` to 30 minutes from now
+- Allow for json payload items via `-P this=json(['arbitrary', 'data'])
+
 # 0.7.0
 > 2017-03-13
 
@@ -15,7 +29,7 @@ While actually using the project, I found that payload claims were being nested 
 #### Bug fixes
 - Payload claims are no longer nested in a `_field0` key
 
-#### Roadman to 1.0.0
+#### Roadmap to 1.0.0
 - Automatically set `iat` and `exp`
 - Default `exp` to 30 minutes from now
 - Swap out rustc_serialize for serde
