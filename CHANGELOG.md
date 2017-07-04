@@ -1,3 +1,14 @@
+# 0.9.1
+> 2017-07-03
+
+The forkless release!
+
+#### Bug fixes
+- Swaps out my fork of `jsonwebtoken` for the master branch of keats' `jsonwebtoken`
+
+#### Roadmap to 1.0
+- Allow for json payload items via `-P this=json(['arbitrary', 'data'])
+
 # 0.9.0
 > 2017-07-03
 
