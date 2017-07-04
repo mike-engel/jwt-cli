@@ -2,16 +2,16 @@ include!("../src/main.rs");
 
 #[cfg(test)]
 mod tests {
-    use super::{config_options, create_header, decode_token, encode_token, is_num,
-                is_payload_item, Payload, PayloadItem, SupportedAlgorithms, translate_algorithm};
-    use std::collections::BTreeMap;
-    use jwt::{Algorithm, Header};
+    use super::{config_options, create_header, decode_token, encode_token, is_num, is_payload_item, Payload, PayloadItem, SupportedAlgorithms, translate_algorithm};
+    use chrono::{Duration, Utc};
+    use jwt::{Algorithm, Header, TokenData};
+    use serde_json::from_value;
 
     #[test]
     fn payload_item_from_string() {
         let string = Some("this=that");
         let result = PayloadItem::from_string(string);
-        let expected = Some(PayloadItem("this".to_string(), "that".to_string()));
+        let expected = Some(PayloadItem("this".to_string(), json!("that")));
 
         assert_eq!(result, expected);
     }
@@ -20,7 +20,7 @@ mod tests {
     fn payload_item_from_string_with_name() {
         let string = Some("that");
         let result = PayloadItem::from_string_with_name(string, "this");
-        let expected = Some(PayloadItem("this".to_string(), "that".to_string()));
+        let expected = Some(PayloadItem("this".to_string(), json!("that")));
 
         assert_eq!(result, expected);
     }
@@ -43,7 +43,7 @@ mod tests {
     fn split_payload_item() {
         let string = "this=that";
         let result = PayloadItem::split_payload_item(string);
-        let expected = PayloadItem("this".to_string(), "that".to_string());
+        let expected = PayloadItem("this".to_string(), json!("that"));
 
         assert_eq!(result, expected);
     }
@@ -54,14 +54,12 @@ mod tests {
         let payload_item_two = PayloadItem::from_string(Some("full=yolo")).unwrap();
         let payloads = vec![payload_item_one, payload_item_two];
         let result = Payload::from_payloads(payloads);
-        let mut expected_payload = BTreeMap::new();
+        let payload = result.0;
 
-        expected_payload.insert("this".to_string(), "that".to_string());
-        expected_payload.insert("full".to_string(), "yolo".to_string());
-
-        let expected = Payload(expected_payload);
-
-        assert_eq!(result, expected);
+        assert!(payload.contains_key("this"));
+        assert!(payload.contains_key("full"));
+        assert_eq!(payload["this"], json!("that"));
+        assert_eq!(payload["full"], json!("yolo"));
     }
 
     #[test]
@@ -207,18 +205,75 @@ mod tests {
     }
 
     #[test]
+    fn adds_iat_exp_automatically() {
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec!["jwt", "encode", "-S", "1234567890"])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decoded_token = decode_token(&decode_matches);
+
+        assert!(decoded_token.is_ok());
+
+        let TokenData { claims, header: _ } = decoded_token.unwrap();
+        let iat = from_value::<i64>(claims.0["iat"].clone());
+        let exp = from_value::<i64>(claims.0["exp"].clone());
+
+        assert!(iat.is_ok());
+        assert!(exp.is_ok());
+        assert!(iat.unwrap().is_positive());
+        assert!(exp.unwrap().is_positive());
+    }
+
+    #[test]
+    fn allows_for_a_custom_exp() {
+        let exp = (Utc::now() + Duration::minutes(60)).timestamp();
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "encode",
+                "-S",
+                "1234567890",
+                "-e",
+                &exp.to_string(),
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decoded_token = decode_token(&decode_matches);
+
+        assert!(decoded_token.is_ok());
+
+        let TokenData { claims, header: _ } = decoded_token.unwrap();
+        let exp_claim = from_value::<i64>(claims.0["exp"].clone());
+
+        assert!(exp_claim.is_ok());
+        assert_eq!(exp_claim.unwrap(), exp);
+    }
+
+    #[test]
     fn decodes_a_token() {
         let matches = config_options()
-            .get_matches_from_safe(vec!["jwt",
-                                        "decode",
-                                        "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
-                                        "-S",
-                                        "1234567890",
-                                        "-A",
-                                        "HS256"])
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
+                "-S",
+                "1234567890",
+                "-A",
+                "HS256",
+            ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let result = decode_token::<BTreeMap<String, String>>(&decode_matches);
+        let result = decode_token(&decode_matches);
 
         assert!(result.is_ok());
     }

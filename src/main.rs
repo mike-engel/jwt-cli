@@ -1,27 +1,29 @@
+extern crate chrono;
 #[macro_use]
 extern crate clap;
 extern crate jsonwebtoken as jwt;
-extern crate term_painter;
 extern crate serde;
 #[macro_use]
 extern crate serde_derive;
+#[macro_use]
 extern crate serde_json;
+extern crate term_painter;
 
-use std::collections::BTreeMap;
+use chrono::{Duration, Utc};
 use clap::{App, Arg, ArgMatches, SubCommand};
 use jwt::{Algorithm, decode, encode, Header, TokenData, Validation};
-use jwt::errors::{self, Error, ErrorKind};
-use serde::de::DeserializeOwned;
-use serde_json::to_string_pretty;
+use jwt::errors::{Error, ErrorKind, Result as JWTResult};
+use serde_json::{to_string_pretty, to_value, Value};
+use std::collections::BTreeMap;
 use term_painter::ToStyle;
 use term_painter::Color::*;
 use term_painter::Attr::*;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-struct PayloadItem(String, String);
+struct PayloadItem(String, Value);
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-struct Payload(BTreeMap<String, String>);
+struct Payload(BTreeMap<String, Value>);
 
 arg_enum!{
     #[derive(Debug, PartialEq)]
@@ -51,26 +53,56 @@ impl PayloadItem {
     }
 
     fn from_string_with_name(val: Option<&str>, name: &str) -> Option<PayloadItem> {
-        if val.is_some() {
-            Some(PayloadItem(name.to_string(), val.unwrap().to_string()))
-        } else {
-            None
+        match val {
+            Some(value) => {
+                match to_value(value) {
+                    Ok(json_value) => Some(PayloadItem(name.to_string(), json_value)),
+                    _ => None,
+                }
+            }
+            _ => None,
+        }
+    }
+
+    fn from_int_with_name(val: Option<&str>, name: &str) -> Option<PayloadItem> {
+        match val {
+            Some(value) => {
+                match i64::from_str_radix(&value, 10) {
+                    Ok(int_value) => {
+                        match to_value(int_value) {
+                            Ok(json_value) => Some(PayloadItem(name.to_string(), json_value)),
+                            _ => None,
+                        }
+                    }
+                    _ => None,
+                }
+            }
+            _ => None,
         }
     }
 
     fn split_payload_item(p: &str) -> PayloadItem {
         let split: Vec<&str> = p.split('=').collect();
+        let (name, value) = (split[0], split[1]);
 
-        PayloadItem(split[0].to_string(), split[1].to_string())
+        PayloadItem(name.to_string(), to_value(value).unwrap_or(Value::Null))
     }
 }
 
 impl Payload {
     fn from_payloads(payloads: Vec<PayloadItem>) -> Payload {
         let mut payload = BTreeMap::new();
+        let iat = json!(Utc::now().timestamp());
+        let exp = json!((Utc::now() + Duration::minutes(30)).timestamp());
 
         for PayloadItem(k, v) in payloads {
             payload.insert(k, v);
+        }
+
+        payload.insert("iat".to_string(), iat);
+
+        if !payload.contains_key("exp") {
+            payload.insert("exp".to_string(), exp);
         }
 
         Payload(payload)
@@ -269,26 +301,24 @@ fn create_validations(alg: Algorithm) -> Validation {
     }
 }
 
-fn encode_token(matches: &ArgMatches) -> errors::Result<String> {
+fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
     let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
         matches.value_of("algorithm").unwrap(),
     ));
     let kid = matches.value_of("kid");
     let header = create_header(&algorithm, kid);
-    let custom_payloads: Option<Vec<Option<PayloadItem>>> =
-        matches.values_of("payload").map(|maybe_payloads| {
-            maybe_payloads
-                .map(|p| PayloadItem::from_string(Some(p)))
-                .collect()
-        });
-    let expires = PayloadItem::from_string_with_name(matches.value_of("expires"), "exp");
+    let custom_payloads: Option<Vec<Option<PayloadItem>>> = matches.values_of("payload").map(|maybe_payloads| {
+        maybe_payloads
+            .map(|p| PayloadItem::from_string(Some(p)))
+            .collect()
+    });
+    let expires = PayloadItem::from_int_with_name(matches.value_of("expires"), "exp");
     let issuer = PayloadItem::from_string_with_name(matches.value_of("issuer"), "iss");
     let subject = PayloadItem::from_string_with_name(matches.value_of("subject"), "sub");
     let audience = PayloadItem::from_string_with_name(matches.value_of("audience"), "aud");
     let principal = PayloadItem::from_string_with_name(matches.value_of("principal"), "prn");
-    let not_before = PayloadItem::from_string_with_name(matches.value_of("not_before"), "nbf");
-    let mut maybe_payloads: Vec<Option<PayloadItem>> =
-        vec![expires, issuer, subject, audience, principal, not_before];
+    let not_before = PayloadItem::from_int_with_name(matches.value_of("not_before"), "nbf");
+    let mut maybe_payloads: Vec<Option<PayloadItem>> = vec![expires, issuer, subject, audience, principal, not_before];
 
     maybe_payloads.append(&mut custom_payloads.unwrap_or(Vec::new()));
 
@@ -303,7 +333,7 @@ fn encode_token(matches: &ArgMatches) -> errors::Result<String> {
     encode(&header, &claims, secret.as_ref())
 }
 
-fn decode_token<T: DeserializeOwned>(matches: &ArgMatches) -> errors::Result<TokenData<T>> {
+fn decode_token(matches: &ArgMatches) -> JWTResult<TokenData<Payload>> {
     let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
         matches.value_of("algorithm").unwrap(),
     ));
@@ -311,10 +341,10 @@ fn decode_token<T: DeserializeOwned>(matches: &ArgMatches) -> errors::Result<Tok
     let jwt = matches.value_of("jwt").unwrap().to_string();
     let validations = create_validations(algorithm);
 
-    decode::<T>(&jwt, secret.as_ref(), &validations)
+    decode::<Payload>(&jwt, secret.as_ref(), &validations)
 }
 
-fn print_encoded_token(token: errors::Result<String>) {
+fn print_encoded_token(token: JWTResult<String>) {
     match token {
         Ok(jwt) => {
             println!("{}", Cyan.bold().paint("Success! Here's your token\n"));
@@ -330,7 +360,7 @@ fn print_encoded_token(token: errors::Result<String>) {
     }
 }
 
-fn print_decoded_token(token_data: errors::Result<TokenData<BTreeMap<String, String>>>) {
+fn print_decoded_token(token_data: JWTResult<TokenData<Payload>>) {
     match token_data {
         Ok(TokenData { header, claims }) => {
             println!("{}\n", Cyan.bold().paint("Looks like a valid JWT!"));
@@ -342,24 +372,14 @@ fn print_decoded_token(token_data: errors::Result<TokenData<BTreeMap<String, Str
         Err(Error(err, _)) => {
             match err {
                 ErrorKind::InvalidToken => println!("The JWT provided is invalid"),
-                ErrorKind::InvalidSignature => {
-                    println!("The JWT provided has an invalid signature")
-                }
+                ErrorKind::InvalidSignature => println!("The JWT provided has an invalid signature"),
                 ErrorKind::InvalidKey => println!("The secret provided isn't a valid RSA key"),
                 ErrorKind::ExpiredSignature => println!("The token has expired"),
                 ErrorKind::InvalidIssuer => println!("The token issuer is invalid"),
-                ErrorKind::InvalidAudience => {
-                    println!("The token audience doesn't match the subject")
-                }
-                ErrorKind::InvalidSubject => {
-                    println!("The token subject doesn't match the audience")
-                }
-                ErrorKind::InvalidIssuedAt => {
-                    println!("The issued at claim is in the future which isn't allowed")
-                }
-                ErrorKind::ImmatureSignature => {
-                    println!("The `nbf` claim is in the future which isn't allowed")
-                }
+                ErrorKind::InvalidAudience => println!("The token audience doesn't match the subject"),
+                ErrorKind::InvalidSubject => println!("The token subject doesn't match the audience"),
+                ErrorKind::InvalidIssuedAt => println!("The issued at claim is in the future which isn't allowed"),
+                ErrorKind::ImmatureSignature => println!("The `nbf` claim is in the future which isn't allowed"),
                 ErrorKind::InvalidAlgorithm => {
                     println!(
                         "The JWT provided has a different signing algorithm than the one you \

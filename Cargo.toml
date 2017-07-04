@@ -1,6 +1,6 @@
 [package]
 name = "jwt-cli"
-version = "0.8.1"
+version = "0.9.0"
 authors = ["Mike Engel <mike@mike-engel.com>"]
 
 [[bin]]
@@ -15,3 +15,4 @@ term-painter = "0.2"
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
+chrono = "0.4"

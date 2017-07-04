@@ -1,3 +1,22 @@
+# 0.9.0
+> 2017-07-03
+
+The `iat` and `exp` release!
+
+#### Breaking changes
+- `iat` is now automatically added to the claims object
+- `exp` is now automatically added to the claims object if not passed in directly
+- `exp` defaults to 30 minutes from the time of creation
+
+#### Bug fixes
+- `exp` and `nbf` are now parsed as numbers, not string
+
+#### Temporary changes
+- Moves to my instance of `jsonwebtoken` until some PRs are merged
+
+#### Roadmap to 1.0
+- Allow for json payload items via `-P this=json(['arbitrary', 'data'])
+
 # 0.8.1
 > 2017-07-02
 
