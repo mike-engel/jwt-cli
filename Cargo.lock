@@ -1,6 +1,6 @@
 [root]
 name = "jwt-cli"
-version = "0.9.0"
+version = "0.9.1"
 dependencies = [
  "chrono 0.4.0 (registry+https://github.com/rust-lang/crates.io-index)",
  "clap 2.25.0 (registry+https://github.com/rust-lang/crates.io-index)",

@@ -52,14 +52,10 @@ cargo build
 cargo build --release
 ```
 
-If it built successfully, you should be able to run the command from the `target` folder.
+If it built successfully, you should be able to run the command via `cargo`.
 
 ```sh
-# on macOS/linux
-./target/debug/jwt help
-
-# on windows
-target\debug\jwt.exe help
+cargo run -- help
 ```
 
 # [Code of conduct](code_of_conduct.md)

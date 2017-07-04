@@ -172,7 +172,9 @@ mod tests {
 
     #[test]
     fn encodes_a_token() {
-        let matches = config_options()
+        let exp = (Utc::now() + Duration::minutes(60)).timestamp();
+        let nbf = Utc::now().timestamp();
+        let encode_matcher = config_options()
             .get_matches_from_safe(vec![
                 "jwt",
                 "encode",
@@ -183,25 +185,51 @@ mod tests {
                 "-a",
                 "yolo",
                 "-e",
-                "0987654321",
+                &exp.to_string(),
                 "-i",
                 "yolo-service",
                 "-k",
                 "1234",
                 "-n",
-                "001293",
+                &nbf.to_string(),
                 "-P",
                 "this=that",
+                "-P",
+                "number=10",
+                "-P",
+                "array=[1, 2, 3]",
+                "-P",
+                "object={\"foo\": \"bar\"}",
                 "-p",
                 "yolo-principal",
                 "-s",
                 "yolo-subject",
             ])
             .unwrap();
-        let encode_matches = matches.subcommand_matches("encode").unwrap();
-        let result = encode_token(&encode_matches);
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decoded_token = decode_token(&decode_matches);
 
-        assert!(result.is_ok());
+        assert!(decoded_token.is_ok());
+
+        let TokenData { claims, header } = decoded_token.unwrap();
+
+        assert_eq!(header.alg, Algorithm::HS256);
+        assert_eq!(header.kid, Some("1234".to_string()));
+        assert_eq!(claims.0["aud"], "yolo");
+        assert_eq!(claims.0["iss"], "yolo-service");
+        assert_eq!(claims.0["prn"], "yolo-principal");
+        assert_eq!(claims.0["sub"], "yolo-subject");
+        assert_eq!(claims.0["nbf"], nbf);
+        assert_eq!(claims.0["exp"], exp);
+        assert_eq!(claims.0["this"], "that");
+        assert_eq!(claims.0["number"], 10);
+        assert_eq!(claims.0["array"].to_string(), "[1,2,3]");
+        assert_eq!(claims.0["object"]["foo"], "bar");
     }
 
     #[test]

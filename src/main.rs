@@ -13,7 +13,7 @@ use chrono::{Duration, Utc};
 use clap::{App, Arg, ArgMatches, SubCommand};
 use jwt::{Algorithm, decode, encode, Header, TokenData, Validation};
 use jwt::errors::{Error, ErrorKind, Result as JWTResult};
-use serde_json::{to_string_pretty, to_value, Value};
+use serde_json::{from_str, to_string_pretty, Value};
 use std::collections::BTreeMap;
 use term_painter::ToStyle;
 use term_painter::Color::*;
@@ -55,26 +55,14 @@ impl PayloadItem {
     fn from_string_with_name(val: Option<&str>, name: &str) -> Option<PayloadItem> {
         match val {
             Some(value) => {
-                match to_value(value) {
+                match from_str(value) {
                     Ok(json_value) => Some(PayloadItem(name.to_string(), json_value)),
-                    _ => None,
-                }
-            }
-            _ => None,
-        }
-    }
-
-    fn from_int_with_name(val: Option<&str>, name: &str) -> Option<PayloadItem> {
-        match val {
-            Some(value) => {
-                match i64::from_str_radix(&value, 10) {
-                    Ok(int_value) => {
-                        match to_value(int_value) {
+                    Err(_) => {
+                        match from_str(format!("\"{}\"", value).as_str()) {
                             Ok(json_value) => Some(PayloadItem(name.to_string(), json_value)),
-                            _ => None,
+                            Err(_) => None,
                         }
                     }
-                    _ => None,
                 }
             }
             _ => None,
@@ -84,8 +72,9 @@ impl PayloadItem {
     fn split_payload_item(p: &str) -> PayloadItem {
         let split: Vec<&str> = p.split('=').collect();
         let (name, value) = (split[0], split[1]);
+        let payload_item = PayloadItem::from_string_with_name(Some(value), name);
 
-        PayloadItem(name.to_string(), to_value(value).unwrap_or(Value::Null))
+        payload_item.unwrap()
     }
 }
 
@@ -253,7 +242,7 @@ fn is_num(val: String) -> Result<(), String> {
 
     match parse_result {
         Ok(_) => Ok(()),
-        Err(_) => Err(String::from("expires must be an integer")),
+        Err(_) => Err(String::from("exp and nbf must be integers")),
     }
 }
 
@@ -312,12 +301,12 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
             .map(|p| PayloadItem::from_string(Some(p)))
             .collect()
     });
-    let expires = PayloadItem::from_int_with_name(matches.value_of("expires"), "exp");
+    let expires = PayloadItem::from_string_with_name(matches.value_of("expires"), "exp");
     let issuer = PayloadItem::from_string_with_name(matches.value_of("issuer"), "iss");
     let subject = PayloadItem::from_string_with_name(matches.value_of("subject"), "sub");
     let audience = PayloadItem::from_string_with_name(matches.value_of("audience"), "aud");
     let principal = PayloadItem::from_string_with_name(matches.value_of("principal"), "prn");
-    let not_before = PayloadItem::from_int_with_name(matches.value_of("not_before"), "nbf");
+    let not_before = PayloadItem::from_string_with_name(matches.value_of("not_before"), "nbf");
     let mut maybe_payloads: Vec<Option<PayloadItem>> = vec![expires, issuer, subject, audience, principal, not_before];
 
     maybe_payloads.append(&mut custom_payloads.unwrap_or(Vec::new()));

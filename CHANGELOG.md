@@ -1,3 +1,16 @@
+# 1.0.0
+> 2017-07-03
+
+The 1.0 release!
+
+This is the initial non-beta, non-alpha release of jwt-cli!
+
+#### New features
+- Everything is parsed by serde now. You can pass strings, numbers, arrays, objects, whatever. If serde can parse it, it's valid!
+
+#### Things left to do
+- Add jwt-cli to package managers!
+
 # 0.9.1
 > 2017-07-03
 
@@ -7,7 +20,7 @@ The forkless release!
 - Swaps out my fork of `jsonwebtoken` for the master branch of keats' `jsonwebtoken`
 
 #### Roadmap to 1.0
-- Allow for json payload items via `-P this=json(['arbitrary', 'data'])
+- Allow for json payload items via `-P this=json(['arbitrary', 'data'])`
 
 # 0.9.0
 > 2017-07-03
@@ -26,7 +39,7 @@ The `iat` and `exp` release!
 - Moves to my instance of `jsonwebtoken` until some PRs are merged
 
 #### Roadmap to 1.0
-- Allow for json payload items via `-P this=json(['arbitrary', 'data'])
+- Allow for json payload items via `-P this=json(['arbitrary', 'data'])`
 
 # 0.8.1
 > 2017-07-02
@@ -46,7 +59,7 @@ Dependency updates
 #### Roadmap to 1.0
 - Automatically set `iat` and `exp`
 - Default `exp` to 30 minutes from now
-- Allow for json payload items via `-P this=json(['arbitrary', 'data'])
+- Allow for json payload items via `-P this=json(['arbitrary', 'data'])`
 
 # 0.7.0
 > 2017-03-13
