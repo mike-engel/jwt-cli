@@ -6,6 +6,10 @@ A super fast CLI tool to decode and encode JWTs built in [Rust](https://rust-lan
 [![Build status](https://ci.appveyor.com/api/projects/status/9p1lqbo8cmhixdns/branch/master?svg=true)](https://ci.appveyor.com/project/mike-engel/jwt-cli/branch/master)
 [![GitHub release](https://img.shields.io/github/tag/mike-engel/jwt-cli.svg)]()
 
+`jwt-cli` is a command line tool to help you work with JSON Web Tokens (JWTs). Like most JWT command line tools out there, you can decode almost any JWT header and claims body. Unlike any that I've found, however, `jwt-cli` allows you to encode a new JWT with nearly any piece of data you can think of. Custom header values (some), custom claim bodies (as long as it's JSON, it's game), and using any secret you need.
+
+On top of all that, it's written in Rust so it's fast and extremely portable (windows, macOS, and linux supported right now).
+
 # Installation
 
 As of right now, the only way to get jwt-cli on your system is by downloading the binary. You can do that from the [release](https://github.com/mike-engel/jwt-cli/releases) page. Eventually I might publish to homebrew and other OS package managers.
