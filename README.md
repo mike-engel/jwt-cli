@@ -12,9 +12,22 @@ On top of all that, it's written in Rust so it's fast and extremely portable (wi
 
 # Installation
 
-As of right now, the only way to get jwt-cli on your system is by downloading the binary. You can do that from the [release](https://github.com/mike-engel/jwt-cli/releases) page. Eventually I might publish to homebrew and other OS package managers.
+As of right now, the only package manager supported is homebrew. For all other systems (or if you don't like homebrew), you'll need to install the binary. You can do that from the [release](https://github.com/mike-engel/jwt-cli/releases) page. Eventually I might publish to other OS package managers if I can figure them out.
+
+For those with homebrew, you'll need to tap the homebrew-jwt-cli repo in order to install it.
+
+```sh
+# Tap and install jwt-cli
+brew tap mike-engel/jwt-cli
+brew install jwt-cli
+
+# Ensure it worked ok by running the help command
+jwt help
+```
 
 Only 64bit linux, macOS, and Windows targets are pre-built. Sorry if you're not on one of those! You'll need to build it from the source. See the [contributing](#contributing) section on how to install and build the project.
+
+As to where you should install it, it should optimally go somewhere in your `PATH`. For Linux and macOS, a good place is generally `/usr/local/bin`. For Windows, there really isn't a good place by default :(.
 
 # Usage
 

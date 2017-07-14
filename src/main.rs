@@ -232,7 +232,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .takes_value(true)
                         .long("secret")
                         .short("S")
-                        .required(true),
+                        .default_value(""),
                 ),
         )
 }
@@ -282,12 +282,22 @@ fn create_header(alg: &Algorithm, kid: Option<&str>) -> Header {
     header
 }
 
-fn create_validations(alg: Algorithm) -> Validation {
-    Validation {
-        leeway: 1000,
-        algorithms: Some(vec![alg]),
-        ..Default::default()
-    }
+fn create_validations(alg: Algorithm, secret: &[u8]) -> (Validation, Validation) {
+    (
+        Validation {
+            leeway: 1000,
+            algorithms: Some(vec![alg]),
+            validate_signature: secret.len() > 0,
+            ..Default::default()
+        },
+        Validation {
+            validate_exp: false,
+            validate_iat: false,
+            validate_nbf: false,
+            validate_signature: false,
+            ..Default::default()
+        },
+    )
 }
 
 fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
@@ -322,15 +332,18 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
     encode(&header, &claims, secret.as_ref())
 }
 
-fn decode_token(matches: &ArgMatches) -> JWTResult<TokenData<Payload>> {
+fn decode_token(matches: &ArgMatches) -> (JWTResult<TokenData<Payload>>, TokenData<Payload>) {
     let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
         matches.value_of("algorithm").unwrap(),
     ));
     let secret = matches.value_of("secret").unwrap().as_bytes();
     let jwt = matches.value_of("jwt").unwrap().to_string();
-    let validations = create_validations(algorithm);
+    let (secret_validator, decode_validator) = create_validations(algorithm, &secret);
 
-    decode::<Payload>(&jwt, secret.as_ref(), &validations)
+    (
+        decode::<Payload>(&jwt, secret.as_ref(), &secret_validator),
+        decode::<Payload>(&jwt, secret.as_ref(), &decode_validator).unwrap(),
+    )
 }
 
 fn print_encoded_token(token: JWTResult<String>) {
@@ -349,36 +362,88 @@ fn print_encoded_token(token: JWTResult<String>) {
     }
 }
 
-fn print_decoded_token(token_data: JWTResult<TokenData<Payload>>) {
-    match token_data {
-        Ok(TokenData { header, claims }) => {
-            println!("{}\n", Cyan.bold().paint("Looks like a valid JWT!"));
-            println!("{}", Plain.bold().paint("Token header\n------------"));
-            println!("{}\n", to_string_pretty(&header).unwrap());
-            println!("{}", Plain.bold().paint("Token claims\n------------"));
-            println!("{}", to_string_pretty(&claims).unwrap());
-        }
+fn print_decoded_token(validated_token: JWTResult<TokenData<Payload>>, token_data: TokenData<Payload>) {
+    println!("\n");
+
+    match validated_token {
         Err(Error(err, _)) => {
             match err {
-                ErrorKind::InvalidToken => println!("The JWT provided is invalid"),
-                ErrorKind::InvalidSignature => println!("The JWT provided has an invalid signature"),
-                ErrorKind::InvalidKey => println!("The secret provided isn't a valid RSA key"),
-                ErrorKind::ExpiredSignature => println!("The token has expired"),
-                ErrorKind::InvalidIssuer => println!("The token issuer is invalid"),
-                ErrorKind::InvalidAudience => println!("The token audience doesn't match the subject"),
-                ErrorKind::InvalidSubject => println!("The token subject doesn't match the audience"),
-                ErrorKind::InvalidIssuedAt => println!("The issued at claim is in the future which isn't allowed"),
-                ErrorKind::ImmatureSignature => println!("The `nbf` claim is in the future which isn't allowed"),
-                ErrorKind::InvalidAlgorithm => {
+                ErrorKind::InvalidToken => println!("{}", Red.bold().paint("The JWT provided is invalid")),
+                ErrorKind::InvalidSignature => {
                     println!(
-                        "The JWT provided has a different signing algorithm than the one you \
-                              provided"
+                        "{}",
+                        Red.bold().paint(
+                            "The JWT provided has an invalid signature",
+                        )
                     )
                 }
-                _ => println!("The JWT provided is invalid because {:?}", err),
+                ErrorKind::InvalidKey => {
+                    println!(
+                        "{}",
+                        Red.bold().paint(
+                            "The secret provided isn't a valid RSA key",
+                        )
+                    )
+                }
+                ErrorKind::ExpiredSignature => println!("{}", Red.bold().paint("The token has expired")),
+                ErrorKind::InvalidIssuer => println!("{}", Red.bold().paint("The token issuer is invalid")),
+                ErrorKind::InvalidAudience => {
+                    println!(
+                        "{}",
+                        Red.bold().paint(
+                            "The token audience doesn't match the subject",
+                        )
+                    )
+                }
+                ErrorKind::InvalidSubject => {
+                    println!(
+                        "{}",
+                        Red.bold().paint(
+                            "The token subject doesn't match the audience",
+                        )
+                    )
+                }
+                ErrorKind::InvalidIssuedAt => {
+                    println!(
+                        "{}",
+                        Red.bold().paint(
+                            "The issued at claim is in the future which isn't allowed",
+                        )
+                    )
+                }
+                ErrorKind::ImmatureSignature => {
+                    println!(
+                        "{}",
+                        Red.bold().paint(
+                            "The `nbf` claim is in the future which isn't allowed",
+                        )
+                    )
+                }
+                ErrorKind::InvalidAlgorithm => {
+                    println!(
+                        "{}",
+                        Red.bold().paint(
+                            "The JWT provided has a different signing algorithm than the one you \
+                              provided",
+                        )
+                    )
+                }
+                _ => {
+                    println!(
+                        "{} {:?}",
+                        Red.bold().paint("The JWT provided is invalid because"),
+                        err
+                    )
+                }
             }
         }
+        _ => println!("{}", Cyan.bold().paint("Looks like a valid JWT!")),
     }
+
+    println!("\n{}", Plain.bold().paint("Token header\n------------"));
+    println!("{}\n", to_string_pretty(&token_data.header).unwrap());
+    println!("{}", Plain.bold().paint("Token claims\n------------"));
+    println!("{}", to_string_pretty(&token_data.claims).unwrap());
 }
 
 fn main() {
@@ -393,9 +458,9 @@ fn main() {
             print_encoded_token(token);
         }
         ("decode", Some(decode_matches)) => {
-            let token_data = decode_token(&decode_matches);
+            let (validated_token, token_data) = decode_token(&decode_matches);
 
-            print_decoded_token(token_data);
+            print_decoded_token(validated_token, token_data);
         }
         _ => (),
     }

@@ -1,3 +1,17 @@
+# 1.1.0
+> 2017-07-13
+
+The decoding and validation release!
+
+#### New features
+- If the JWT you're decoding is invalid, it will still print out the head and claims objects
+- Error messages are now red and bold for better visibility
+- Secret is no longer required for decoding a JWT, but will be validated if one is provided
+- Added info on how to install the binary through homebrew
+
+#### Bug fixes
+- The proper version number is now displayed in the help commands (and `Cargo.toml` file)
+
 # 1.0.0
 > 2017-07-03
 
