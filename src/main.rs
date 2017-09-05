@@ -15,6 +15,7 @@ use jwt::{Algorithm, decode, encode, Header, TokenData, Validation};
 use jwt::errors::{Error, ErrorKind, Result as JWTResult};
 use serde_json::{from_str, to_string_pretty, Value};
 use std::collections::BTreeMap;
+use std::process::exit;
 use term_painter::ToStyle;
 use term_painter::Color::*;
 use term_painter::Attr::*;
@@ -349,15 +350,16 @@ fn decode_token(matches: &ArgMatches) -> (JWTResult<TokenData<Payload>>, TokenDa
 fn print_encoded_token(token: JWTResult<String>) {
     match token {
         Ok(jwt) => {
-            println!("{}", Cyan.bold().paint("Success! Here's your token\n"));
             println!("{}", jwt);
+            exit(0);
         }
         Err(err) => {
-            println!(
+            eprintln!(
                 "{}",
                 Red.bold().paint("Something went awry creating the jwt\n")
             );
-            println!("{}", err);
+            eprintln!("{}", err);
+            exit(1);
         }
     }
 }
@@ -365,62 +367,62 @@ fn print_encoded_token(token: JWTResult<String>) {
 fn print_decoded_token(validated_token: JWTResult<TokenData<Payload>>, token_data: TokenData<Payload>) {
     println!("\n");
 
-    match validated_token {
-        Err(Error(err, _)) => {
+    match &validated_token {
+        &Err(Error(ref err, _)) => {
             match err {
-                ErrorKind::InvalidToken => println!("{}", Red.bold().paint("The JWT provided is invalid")),
-                ErrorKind::InvalidSignature => {
-                    println!(
+                &ErrorKind::InvalidToken => println!("{}", Red.bold().paint("The JWT provided is invalid")),
+                &ErrorKind::InvalidSignature => {
+                    eprintln!(
                         "{}",
                         Red.bold().paint(
                             "The JWT provided has an invalid signature",
                         )
                     )
                 }
-                ErrorKind::InvalidKey => {
-                    println!(
+                &ErrorKind::InvalidKey => {
+                    eprintln!(
                         "{}",
                         Red.bold().paint(
                             "The secret provided isn't a valid RSA key",
                         )
                     )
                 }
-                ErrorKind::ExpiredSignature => println!("{}", Red.bold().paint("The token has expired")),
-                ErrorKind::InvalidIssuer => println!("{}", Red.bold().paint("The token issuer is invalid")),
-                ErrorKind::InvalidAudience => {
-                    println!(
+                &ErrorKind::ExpiredSignature => println!("{}", Red.bold().paint("The token has expired")),
+                &ErrorKind::InvalidIssuer => println!("{}", Red.bold().paint("The token issuer is invalid")),
+                &ErrorKind::InvalidAudience => {
+                    eprintln!(
                         "{}",
                         Red.bold().paint(
                             "The token audience doesn't match the subject",
                         )
                     )
                 }
-                ErrorKind::InvalidSubject => {
-                    println!(
+                &ErrorKind::InvalidSubject => {
+                    eprintln!(
                         "{}",
                         Red.bold().paint(
                             "The token subject doesn't match the audience",
                         )
                     )
                 }
-                ErrorKind::InvalidIssuedAt => {
-                    println!(
+                &ErrorKind::InvalidIssuedAt => {
+                    eprintln!(
                         "{}",
                         Red.bold().paint(
                             "The issued at claim is in the future which isn't allowed",
                         )
                     )
                 }
-                ErrorKind::ImmatureSignature => {
-                    println!(
+                &ErrorKind::ImmatureSignature => {
+                    eprintln!(
                         "{}",
                         Red.bold().paint(
                             "The `nbf` claim is in the future which isn't allowed",
                         )
                     )
                 }
-                ErrorKind::InvalidAlgorithm => {
-                    println!(
+                &ErrorKind::InvalidAlgorithm => {
+                    eprintln!(
                         "{}",
                         Red.bold().paint(
                             "The JWT provided has a different signing algorithm than the one you \
@@ -429,13 +431,13 @@ fn print_decoded_token(validated_token: JWTResult<TokenData<Payload>>, token_dat
                     )
                 }
                 _ => {
-                    println!(
+                    eprintln!(
                         "{} {:?}",
                         Red.bold().paint("The JWT provided is invalid because"),
                         err
                     )
                 }
-            }
+            };
         }
         _ => println!("{}", Cyan.bold().paint("Looks like a valid JWT!")),
     }
@@ -444,6 +446,11 @@ fn print_decoded_token(validated_token: JWTResult<TokenData<Payload>>, token_dat
     println!("{}\n", to_string_pretty(&token_data.header).unwrap());
     println!("{}", Plain.bold().paint("Token claims\n------------"));
     println!("{}", to_string_pretty(&token_data.claims).unwrap());
+
+    exit(match validated_token {
+        Err(_) => 1,
+        Ok(_) => 0,
+    })
 }
 
 fn main() {

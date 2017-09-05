@@ -1,3 +1,13 @@
+# 1.2.0
+> 2017-09-05
+
+Better stdout and stderr interop
+
+#### Minor changes
+- Errors are now printed to STDERR instead of STDOUT
+- Proper exit codes should now be emitted. `0` for successes, `1` for failures.
+- The output from the encode command is now just the token, which can be piped or stored in a shell
+
 # 1.1.0
 > 2017-07-13
 
