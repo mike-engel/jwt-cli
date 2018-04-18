@@ -11,7 +11,7 @@ extern crate term_painter;
 
 use chrono::{Duration, Utc};
 use clap::{App, Arg, ArgMatches, SubCommand};
-use jwt::{Algorithm, decode, encode, Header, TokenData, Validation};
+use jwt::{Algorithm, decode, dangerous_unsafe_decode, encode, Header, TokenData, Validation};
 use jwt::errors::{Error, ErrorKind, Result as JWTResult};
 use serde_json::{from_str, to_string_pretty, Value};
 use std::collections::BTreeMap;
@@ -287,15 +287,15 @@ fn create_validations(alg: Algorithm, secret: &[u8]) -> (Validation, Validation)
     (
         Validation {
             leeway: 1000,
-            algorithms: Some(vec![alg]),
-            validate_signature: secret.len() > 0,
+            algorithms: vec![alg],
+            // validate_signature: secret.len() > 0,
             ..Default::default()
         },
         Validation {
             validate_exp: false,
             validate_iat: false,
             validate_nbf: false,
-            validate_signature: false,
+            // validate_signature: false,
             ..Default::default()
         },
     )
@@ -342,8 +342,8 @@ fn decode_token(matches: &ArgMatches) -> (JWTResult<TokenData<Payload>>, TokenDa
     let (secret_validator, decode_validator) = create_validations(algorithm, &secret);
 
     (
-        decode::<Payload>(&jwt, secret.as_ref(), &secret_validator),
-        decode::<Payload>(&jwt, secret.as_ref(), &decode_validator).unwrap(),
+        dangerous_unsafe_decode::<Payload>(&jwt),
+        dangerous_unsafe_decode::<Payload>(&jwt).unwrap(),
     )
 }
 

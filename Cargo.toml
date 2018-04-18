@@ -10,7 +10,7 @@ test = true
 
 [dependencies]
 clap = "2"
-jsonwebtoken = "2"
+jsonwebtoken = "4"
 term-painter = "0.2"
 serde = "1"
 serde_derive = "1"
