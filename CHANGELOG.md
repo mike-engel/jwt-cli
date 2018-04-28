@@ -1,3 +1,10 @@
+# 2.0.0
+> 2018-04-28
+
+#### Breaking (maybe) changes
+- Updated to jsonwebtoken version 4
+- JWTs without the `typ` header can now be decoded
+
 # 1.2.0
 > 2017-09-05
 
