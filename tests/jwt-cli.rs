@@ -2,7 +2,8 @@ include!("../src/main.rs");
 
 #[cfg(test)]
 mod tests {
-    use super::{config_options, create_header, decode_token, encode_token, is_num, is_payload_item, Payload, PayloadItem, SupportedAlgorithms, translate_algorithm};
+    use super::{config_options, create_header, decode_token, encode_token, is_num,
+                is_payload_item, translate_algorithm, Payload, PayloadItem, SupportedAlgorithms};
     use chrono::{Duration, Utc};
     use jwt::{Algorithm, Header, TokenData};
     use serde_json::from_value;
@@ -298,6 +299,72 @@ mod tests {
                 "1234567890",
                 "-A",
                 "HS256",
+            ])
+            .unwrap();
+        let decode_matches = matches.subcommand_matches("decode").unwrap();
+        let (result, _) = decode_token(&decode_matches);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn decodes_a_token_with_invalid_secret() {
+        let matches = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
+                "-S",
+                "yolo",
+                "-A",
+                "HS256",
+            ])
+            .unwrap();
+        let decode_matches = matches.subcommand_matches("decode").unwrap();
+        let (result, _) = decode_token(&decode_matches);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn decodes_a_token_without_a_secret() {
+        let matches = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
+                "-A",
+                "HS256",
+            ])
+            .unwrap();
+        let decode_matches = matches.subcommand_matches("decode").unwrap();
+        let (result, _) = decode_token(&decode_matches);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn decodes_a_token_without_an_alg() {
+        let matches = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
+            ])
+            .unwrap();
+        let decode_matches = matches.subcommand_matches("decode").unwrap();
+        let (result, _) = decode_token(&decode_matches);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn decodes_a_token_without_a_typ() {
+        let matches = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.SEQijh6tEuOOAAKpHPuKxgFqEvlTNP1jj4FUNoBwXaM",
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
