@@ -11,20 +11,26 @@ extern crate term_painter;
 
 use chrono::{Duration, Utc};
 use clap::{App, Arg, ArgMatches, SubCommand};
-use jwt::{dangerous_unsafe_decode, decode, encode, Algorithm, Header, TokenData, Validation};
 use jwt::errors::{Error, ErrorKind, Result as JWTResult};
+use jwt::{dangerous_unsafe_decode, decode, encode, Algorithm, Header, TokenData, Validation};
 use serde_json::{from_str, to_string_pretty, Value};
 use std::collections::BTreeMap;
 use std::process::exit;
-use term_painter::ToStyle;
-use term_painter::Color::*;
 use term_painter::Attr::*;
+use term_painter::Color::*;
+use term_painter::ToStyle;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct PayloadItem(String, Value);
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct Payload(BTreeMap<String, Value>);
+
+#[derive(Debug, Serialize, Deserialize, PartialEq)]
+struct TokenOutput {
+    header: Header,
+    payload: Payload,
+}
 
 arg_enum!{
     #[derive(Debug, PartialEq)]
@@ -42,6 +48,12 @@ arg_enum!{
     enum SupportedTypes {
         JWT
     }
+}
+
+#[derive(Debug, PartialEq)]
+enum OutputFormat {
+    Text,
+    JSON,
 }
 
 impl PayloadItem {
@@ -105,6 +117,15 @@ impl SupportedAlgorithms {
             "RS384" => SupportedAlgorithms::RS384,
             "RS512" => SupportedAlgorithms::RS512,
             _ => SupportedAlgorithms::HS256,
+        }
+    }
+}
+
+impl TokenOutput {
+    fn new(data: TokenData<Payload>) -> Self {
+        TokenOutput {
+            header: data.header,
+            payload: data.claims,
         }
     }
 }
@@ -230,6 +251,12 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .long("secret")
                         .short("S")
                         .default_value(""),
+                )
+                .arg(
+                    Arg::with_name("json")
+                        .help("render decoded JWT as JSON")
+                        .long("json")
+                        .short("j"),
                 ),
         )
 }
@@ -321,7 +348,13 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
     encode(&header, &claims, secret.as_ref())
 }
 
-fn decode_token(matches: &ArgMatches) -> (JWTResult<TokenData<Payload>>, TokenData<Payload>) {
+fn decode_token(
+    matches: &ArgMatches,
+) -> (
+    JWTResult<TokenData<Payload>>,
+    TokenData<Payload>,
+    OutputFormat,
+) {
     let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
         matches.value_of("algorithm").unwrap(),
     ));
@@ -336,6 +369,11 @@ fn decode_token(matches: &ArgMatches) -> (JWTResult<TokenData<Payload>>, TokenDa
             dangerous_unsafe_decode::<Payload>(&jwt)
         },
         dangerous_unsafe_decode::<Payload>(&jwt).unwrap(),
+        if matches.is_present("json") {
+            OutputFormat::JSON
+        } else {
+            OutputFormat::Text
+        },
     )
 }
 
@@ -359,9 +397,8 @@ fn print_encoded_token(token: JWTResult<String>) {
 fn print_decoded_token(
     validated_token: JWTResult<TokenData<Payload>>,
     token_data: TokenData<Payload>,
+    format: OutputFormat,
 ) {
-    println!("\n");
-
     match &validated_token {
         &Err(Error(ref err, _)) => {
             match err {
@@ -418,13 +455,21 @@ fn print_decoded_token(
                 ),
             };
         }
-        _ => println!("{}", Cyan.bold().paint("Looks like a valid JWT!")),
+        _ => {}
     }
 
-    println!("\n{}", Plain.bold().paint("Token header\n------------"));
-    println!("{}\n", to_string_pretty(&token_data.header).unwrap());
-    println!("{}", Plain.bold().paint("Token claims\n------------"));
-    println!("{}", to_string_pretty(&token_data.claims).unwrap());
+    match format {
+        OutputFormat::JSON => println!(
+            "{}",
+            to_string_pretty(&TokenOutput::new(token_data)).unwrap()
+        ),
+        _ => {
+            println!("\n{}", Plain.bold().paint("Token header\n------------"));
+            println!("{}\n", to_string_pretty(&token_data.header).unwrap());
+            println!("{}", Plain.bold().paint("Token claims\n------------"));
+            println!("{}", to_string_pretty(&token_data.claims).unwrap());
+        }
+    }
 
     exit(match validated_token {
         Err(_) => 1,
@@ -444,9 +489,9 @@ fn main() {
             print_encoded_token(token);
         }
         ("decode", Some(decode_matches)) => {
-            let (validated_token, token_data) = decode_token(&decode_matches);
+            let (validated_token, token_data, format) = decode_token(&decode_matches);
 
-            print_decoded_token(validated_token, token_data);
+            print_decoded_token(validated_token, token_data, format);
         }
         _ => (),
     }
