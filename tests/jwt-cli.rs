@@ -2,8 +2,10 @@ include!("../src/main.rs");
 
 #[cfg(test)]
 mod tests {
-    use super::{config_options, create_header, decode_token, encode_token, is_num,
-                is_payload_item, translate_algorithm, Payload, PayloadItem, SupportedAlgorithms};
+    use super::{
+        config_options, create_header, decode_token, encode_token, is_num, is_payload_item,
+        translate_algorithm, OutputFormat, Payload, PayloadItem, SupportedAlgorithms,
+    };
     use chrono::{Duration, Utc};
     use jwt::{Algorithm, Header, TokenData};
     use serde_json::from_value;
@@ -213,7 +215,7 @@ mod tests {
             .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _) = decode_token(&decode_matches);
+        let (decoded_token, _, _) = decode_token(&decode_matches);
 
         assert!(decoded_token.is_ok());
 
@@ -244,7 +246,7 @@ mod tests {
             .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _) = decode_token(&decode_matches);
+        let (decoded_token, _, _) = decode_token(&decode_matches);
 
         assert!(decoded_token.is_ok());
 
@@ -277,7 +279,7 @@ mod tests {
             .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _) = decode_token(&decode_matches);
+        let (decoded_token, _, _) = decode_token(&decode_matches);
 
         assert!(decoded_token.is_ok());
 
@@ -302,9 +304,26 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _) = decode_token(&decode_matches);
+        let (result, _, _) = decode_token(&decode_matches);
 
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn decodes_a_token_as_json() {
+        let matches = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
+                "-j",
+            ])
+            .unwrap();
+        let decode_matches = matches.subcommand_matches("decode").unwrap();
+        let (result, _, format) = decode_token(&decode_matches);
+
+        assert!(result.is_ok());
+        assert!(format == OutputFormat::JSON);
     }
 
     #[test]
@@ -321,7 +340,7 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _) = decode_token(&decode_matches);
+        let (result, _, _) = decode_token(&decode_matches);
 
         assert!(result.is_err());
     }
@@ -338,7 +357,7 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _) = decode_token(&decode_matches);
+        let (result, _, _) = decode_token(&decode_matches);
 
         assert!(result.is_ok());
     }
@@ -353,7 +372,7 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _) = decode_token(&decode_matches);
+        let (result, _, _) = decode_token(&decode_matches);
 
         assert!(result.is_ok());
     }
@@ -368,7 +387,7 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _) = decode_token(&decode_matches);
+        let (result, _, _) = decode_token(&decode_matches);
 
         assert!(result.is_ok());
     }
