@@ -1,35 +1,51 @@
+# 2.1.0
+
+> 2018-09-24
+
+#### Minor changes
+
+- A new output format has been added: JSON! Use the `--json` or `-j` flags to output a pure JSON representation of the header and payload, which can be piped into other programs like `jq` [[#6](https://github.com/mike-engel/jwt-cli/pull/6)]
+
 # 2.0.0
+
 > 2018-04-28
 
 #### Breaking (maybe) changes
+
 - Updated to jsonwebtoken version 4
 - JWTs without the `typ` header can now be decoded
 
 # 1.2.0
+
 > 2017-09-05
 
 Better stdout and stderr interop
 
 #### Minor changes
+
 - Errors are now printed to STDERR instead of STDOUT
 - Proper exit codes should now be emitted. `0` for successes, `1` for failures.
 - The output from the encode command is now just the token, which can be piped or stored in a shell
 
 # 1.1.0
+
 > 2017-07-13
 
 The decoding and validation release!
 
 #### New features
+
 - If the JWT you're decoding is invalid, it will still print out the head and claims objects
 - Error messages are now red and bold for better visibility
 - Secret is no longer required for decoding a JWT, but will be validated if one is provided
 - Added info on how to install the binary through homebrew
 
 #### Bug fixes
+
 - The proper version number is now displayed in the help commands (and `Cargo.toml` file)
 
 # 1.0.0
+
 > 2017-07-03
 
 The 1.0 release!
@@ -37,62 +53,78 @@ The 1.0 release!
 This is the initial non-beta, non-alpha release of jwt-cli!
 
 #### New features
+
 - Everything is parsed by serde now. You can pass strings, numbers, arrays, objects, whatever. If serde can parse it, it's valid!
 
 #### Things left to do
+
 - Add jwt-cli to package managers!
 
 # 0.9.1
+
 > 2017-07-03
 
 The forkless release!
 
 #### Bug fixes
+
 - Swaps out my fork of `jsonwebtoken` for the master branch of keats' `jsonwebtoken`
 
 #### Roadmap to 1.0
+
 - Allow for json payload items via `-P this=json(['arbitrary', 'data'])`
 
 # 0.9.0
+
 > 2017-07-03
 
 The `iat` and `exp` release!
 
 #### Breaking changes
+
 - `iat` is now automatically added to the claims object
 - `exp` is now automatically added to the claims object if not passed in directly
 - `exp` defaults to 30 minutes from the time of creation
 
 #### Bug fixes
+
 - `exp` and `nbf` are now parsed as numbers, not string
 
 #### Temporary changes
+
 - Moves to my instance of `jsonwebtoken` until some PRs are merged
 
 #### Roadmap to 1.0
+
 - Allow for json payload items via `-P this=json(['arbitrary', 'data'])`
 
 # 0.8.1
+
 > 2017-07-02
 
 #### Bug fixes
+
 - Fix tests so that they pass
 
 # 0.8.0
+
 > 2017-07-02
 
 Dependency updates
 
 #### Breaking changes
+
 - Swaps out `rustc_serialize` for `serde`
 - Updates `jsonwebtoken` from version 1 to version 2. This allows for much more precise errors, and expands potential for validation.
 
 #### Roadmap to 1.0
+
 - Automatically set `iat` and `exp`
 - Default `exp` to 30 minutes from now
 - Allow for json payload items via `-P this=json(['arbitrary', 'data'])`
 
 # 0.7.0
+
 > 2017-03-13
 
 The whoopsies release!
@@ -100,16 +132,20 @@ The whoopsies release!
 While actually using the project, I found that payload claims were being nested into a root key. Whoops!
 
 #### Breaking changes
+
 - The `generate` command is now `encode`
 
 #### New features
+
 - When decoding, the `algorithm` option is no longer required (defaults to HS256)
 - Updated to rust 1.16
 
 #### Bug fixes
+
 - Payload claims are no longer nested in a `_field0` key
 
 #### Roadmap to 1.0.0
+
 - Automatically set `iat` and `exp`
 - Default `exp` to 30 minutes from now
 - Swap out rustc_serialize for serde
@@ -117,18 +153,22 @@ While actually using the project, I found that payload claims were being nested 
 - Testing on Windows and Linux
 
 # 0.6.0
+
 > 2017-03-12
 
 The rename release!
 
 #### Breaking changes
+
 - Renamed the release binary to `jwt`. During development, either `jwt` or `jwt-cli` is available.
 
 #### Roadmap to 1.0.0
+
 - Testing on linux & windows (this was developed on macOS)
 - Work on releasing 1.0.0 to homebrew and chocolatey.
 
 # 0.5.0
+
 > 2017-03-10
 
 The testing release!
@@ -137,21 +177,25 @@ This adds a bunch of unit tests for almost all of the functions (`println!`
 functions excluded) and fixes some tests found after writing them.
 
 #### Breaking changes
+
 - The short forms for `payload` and `principal` have how been switched for
-consistency
+  consistency
 - The long form of `expires` is now `exp` for consistency
 
 #### Bug fixes
+
 - Shorthand payload options (`exp`, `aud`, etc) no longer cause a panic
 - Windows builds now have a more readable name rather that the target triple
 - The generate command output is now prettier
 
 #### Roadmap to 1.0.0
+
 - Final preflight checks
 - Investigation into release to OS package managers
 - Name change?
 
 # 0.4.1
+
 > 2017-03-10
 
 This adds documentation in the readme, as well as some github templates.
@@ -165,6 +209,7 @@ Roadmap to 1.0.0:
 - Possible upstream patches to get more functionality
 
 # 0.4.0
+
 > 2017-03-09
 
 This one's all about the formatting from decode! When you decode a JWT now, it
@@ -180,6 +225,7 @@ Roadmap to 1.0.0:
 - Possible upstream patches to get more functionality
 
 # 0.3.2
+
 > 2017-03-08
 
 This removes the builds for Windows GBU, \*BSD, armv7, and aarch64. Sorry if you
@@ -189,12 +235,14 @@ This also fixes some of the builds where it would find unreachable code. It's
 ok, I promise.
 
 # 0.3.1
+
 > 2017-03-07
 
 This fixes the CI scripts, so now it should build and publish them correctly,
 I hope.
 
 # 0.3.0
+
 > 2017-03-07
 
 Third prerelease.
@@ -219,20 +267,24 @@ Finally, there should be builds available for linux, macOS, and windows
 thanks to some CI magic.
 
 # 0.2.0
+
 > 2017-03-06
 
 Second prerelease!
 
 This adds some new features:
+
 - JWTs can now be decoded
 - RSA support for encoding and decoding
 
 What's still missing:
+
 - Cannot decode the header (upstream issues)
 - Cannot encode or decode ES tokens
 - Custom `typ` and `kid` header fields
 
 # 0.1.0
+
 > 2017-03-05
 
 First prerelease! 0.1.0
