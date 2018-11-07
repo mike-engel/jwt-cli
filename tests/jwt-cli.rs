@@ -207,8 +207,8 @@ mod tests {
                 "yolo-principal",
                 "-s",
                 "yolo-subject",
-            ])
-            .unwrap();
+                "{\"test\":\"json value\"}",
+            ]).unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
@@ -230,6 +230,7 @@ mod tests {
         assert_eq!(claims.0["nbf"], nbf);
         assert_eq!(claims.0["exp"], exp);
         assert_eq!(claims.0["this"], "that");
+        assert_eq!(claims.0["test"], "json value");
         assert_eq!(claims.0["number"], 10);
         assert_eq!(claims.0["array"].to_string(), "[1,2,3]");
         assert_eq!(claims.0["object"]["foo"], "bar");
@@ -271,8 +272,7 @@ mod tests {
                 "1234567890",
                 "-e",
                 &exp.to_string(),
-            ])
-            .unwrap();
+            ]).unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()

@@ -1,7 +1,7 @@
 [package]
 name = "jwt-cli"
 version = "2.1.0"
-authors = ["Mike Engel <mike@mike-engel.com>", "Corey McGregor <https://github.com/shousper>"]
+authors = ["Mike Engel <mike@mike-engel.com>", "Corey McGregor <https://github.com/shousper>", "Aaron Schaef <https://github.com/atschaef"]
 
 [[bin]]
 name = "jwt"

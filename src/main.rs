@@ -146,78 +146,74 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .short("A")
                         .possible_values(&SupportedAlgorithms::variants())
                         .default_value("HS256"),
-                )
-                .arg(
+                ).arg(
                     Arg::with_name("kid")
                         .help("the kid to place in the header")
                         .takes_value(true)
                         .long("kid")
                         .short("k"),
-                )
-                .arg(
+                ).arg(
                     Arg::with_name("type")
                         .help("the type of token being encoded")
                         .takes_value(true)
                         .long("typ")
                         .short("t")
                         .possible_values(&SupportedTypes::variants()),
-                )
-                .arg(
+                ).arg(
+                    Arg::with_name("json")
+                        .help("the json payload to encode")
+                        .index(1)
+                        .required(false),
+                ).arg(
                     Arg::with_name("payload")
                         .help("a key=value pair to add to the payload")
+                        .number_of_values(1)
                         .multiple(true)
                         .takes_value(true)
                         .long("payload")
                         .short("P")
                         .validator(is_payload_item),
-                )
-                .arg(
+                ).arg(
                     Arg::with_name("expires")
                         .help("the time the token should expire, in seconds")
                         .takes_value(true)
                         .long("exp")
                         .short("e")
                         .validator(is_num),
-                )
-                .arg(
+                ).arg(
                     Arg::with_name("issuer")
                         .help("the issuer of the token")
                         .takes_value(true)
                         .long("iss")
                         .short("i"),
-                )
-                .arg(
+                ).arg(
                     Arg::with_name("subject")
                         .help("the subject of the token")
                         .takes_value(true)
                         .long("sub")
                         .short("s"),
-                )
-                .arg(
+                ).arg(
                     Arg::with_name("audience")
                         .help("the audience of the token")
                         .takes_value(true)
                         .long("aud")
                         .short("a")
                         .requires("principal"),
-                )
-                .arg(
+                ).arg(
                     Arg::with_name("principal")
                         .help("the principal of the token")
                         .takes_value(true)
                         .long("prn")
                         .short("p")
                         .requires("audience"),
-                )
-                .arg(
+                ).arg(
                     Arg::with_name("not_before")
                         .help("the time the JWT should become valid, in seconds")
                         .takes_value(true)
                         .long("nbf")
                         .short("n")
                         .validator(is_num),
-                )
-                .arg(
+                ).arg(
                     Arg::with_name("secret")
                         .help("the secret to sign the JWT with")
                         .takes_value(true)
@@ -225,8 +221,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .short("S")
                         .required(true),
                 ),
-        )
-        .subcommand(
+        ).subcommand(
             SubCommand::with_name("decode")
                 .about("Decode a JWT")
                 .arg(
@@ -234,8 +229,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .help("the jwt to decode")
                         .index(1)
                         .required(true),
-                )
-                .arg(
+                ).arg(
                     Arg::with_name("algorithm")
                         .help("the algorithm to use for signing the JWT")
                         .takes_value(true)
@@ -243,16 +237,14 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .short("A")
                         .possible_values(&SupportedAlgorithms::variants())
                         .default_value("HS256"),
-                )
-                .arg(
+                ).arg(
                     Arg::with_name("secret")
                         .help("the secret to sign the JWT with")
                         .takes_value(true)
                         .long("secret")
                         .short("S")
                         .default_value(""),
-                )
-                .arg(
+                ).arg(
                     Arg::with_name("json")
                         .help("render decoded JWT as JSON")
                         .long("json")
@@ -326,6 +318,23 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
                 .map(|p| PayloadItem::from_string(Some(p)))
                 .collect()
         });
+    let custom_payload: Option<Vec<Option<PayloadItem>>> =
+        matches.values_of("json").map(|maybe_json| {
+            let json_obj: Vec<BTreeMap<String, Value>> = maybe_json
+                .map(|json_str| {
+                    from_str(json_str).expect(
+                        "JSON payloads must be valid JSON. Plain JavaScript objects can't be used.",
+                    )
+                }).collect();
+
+            json_obj
+                .first()
+                .unwrap()
+                .iter()
+                .map(|(json_key, json_val)| {
+                    PayloadItem::from_string_with_name(json_val.as_str(), json_key)
+                }).collect()
+        });
     let expires = PayloadItem::from_string_with_name(matches.value_of("expires"), "exp");
     let issuer = PayloadItem::from_string_with_name(matches.value_of("issuer"), "iss");
     let subject = PayloadItem::from_string_with_name(matches.value_of("subject"), "sub");
@@ -336,6 +345,7 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
         vec![expires, issuer, subject, audience, principal, not_before];
 
     maybe_payloads.append(&mut custom_payloads.unwrap_or(Vec::new()));
+    maybe_payloads.append(&mut custom_payload.unwrap_or(Vec::new()));
 
     let payloads = maybe_payloads
         .into_iter()
