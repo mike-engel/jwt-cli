@@ -296,7 +296,7 @@ mod tests {
             .get_matches_from_safe(vec![
                 "jwt",
                 "decode",
-                "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1NDE2NTc4ODQsImlhdCI6MTU0MTY1NjA4NCwidGhpcyI6InRoYXQifQ.eU7gX8J5-AMYdTzCxic-jfm3jLan2Wq0tQWzIkkluPc",
+                "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4OTM0NTYwMDAsImlhdCI6MTU0MjQ5MjMxMywidGhpcyI6InRoYXQifQ.YTWit46_AEMMVv0P48NeJJIqXmMHarGjfRxtR7jLlxE",
                 "-S",
                 "1234567890",
                 "-A",
@@ -305,6 +305,8 @@ mod tests {
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
         let (result, _, _) = decode_token(&decode_matches);
+
+        println!("{:?}", result);
 
         assert!(result.is_ok());
     }
