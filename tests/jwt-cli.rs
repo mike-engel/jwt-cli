@@ -296,7 +296,7 @@ mod tests {
             .get_matches_from_safe(vec![
                 "jwt",
                 "decode",
-                "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
+                "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE1NDE2NTc4ODQsImlhdCI6MTU0MTY1NjA4NCwidGhpcyI6InRoYXQifQ.eU7gX8J5-AMYdTzCxic-jfm3jLan2Wq0tQWzIkkluPc",
                 "-S",
                 "1234567890",
                 "-A",

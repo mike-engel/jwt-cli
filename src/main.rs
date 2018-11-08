@@ -11,7 +11,7 @@ extern crate term_painter;
 
 use chrono::{Duration, Utc};
 use clap::{App, Arg, ArgMatches, SubCommand};
-use jwt::errors::{Error, ErrorKind, Result as JWTResult};
+use jwt::errors::{ErrorKind, Result as JWTResult};
 use jwt::{dangerous_unsafe_decode, decode, encode, Algorithm, Header, TokenData, Validation};
 use serde_json::{from_str, to_string_pretty, Value};
 use std::collections::BTreeMap;
@@ -410,8 +410,8 @@ fn print_decoded_token(
     format: OutputFormat,
 ) {
     match &validated_token {
-        &Err(Error(ref err, _)) => {
-            match err {
+        &Err(ref err) => {
+            match err.kind() {
                 &ErrorKind::InvalidToken => {
                     println!("{}", Red.bold().paint("The JWT provided is invalid"))
                 }
@@ -420,7 +420,7 @@ fn print_decoded_token(
                     Red.bold()
                         .paint("The JWT provided has an invalid signature",)
                 ),
-                &ErrorKind::InvalidKey => eprintln!(
+                &ErrorKind::InvalidRsaKey => eprintln!(
                     "{}",
                     Red.bold()
                         .paint("The secret provided isn't a valid RSA key",)
