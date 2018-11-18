@@ -1,3 +1,11 @@
+# 2.2.0
+
+> 2018-11-18
+
+#### Minor changes
+
+- You can now use a fully qualified and valid JSON string as the entire payload body. Add it to the end of the command without a flag to use it. It can be combined with the `-P` and `--payload` flags to enhance a JSON string.
+
 # 2.1.0
 
 > 2018-09-24
