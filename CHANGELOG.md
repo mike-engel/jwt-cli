@@ -1,3 +1,11 @@
+# 2.2.1
+
+> 2018-11-28
+
+#### Bug fixes
+
+- Add a missing `>` to Aaron's entry in the contributors section of `Cargo.toml`
+
 # 2.2.0
 
 > 2018-11-18
