@@ -133,7 +133,7 @@ impl TokenOutput {
 
 fn config_options<'a, 'b>() -> App<'a, 'b> {
     App::new("jwt")
-        .about("Encode and decode JWTs from the command line")
+        .about("Encode and decode JWTs from the command line. RSA encryption currently only supports keys in DER format")
         .version(crate_version!())
         .author(crate_authors!())
         .subcommand(
@@ -216,7 +216,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .validator(is_num),
                 ).arg(
                     Arg::with_name("secret")
-                        .help("the secret to sign the JWT with")
+                        .help("the secret to sign the JWT with. Can be prefixed with @ to read from a binary file")
                         .takes_value(true)
                         .long("secret")
                         .short("S")
@@ -240,7 +240,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .default_value("HS256"),
                 ).arg(
                     Arg::with_name("secret")
-                        .help("the secret to sign the JWT with")
+                        .help("the secret to validate the JWT with. Can be prefixed with @ to read from a binary file")
                         .takes_value(true)
                         .long("secret")
                         .short("S")
