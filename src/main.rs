@@ -15,6 +15,7 @@ use jwt::errors::{ErrorKind, Result as JWTResult};
 use jwt::{dangerous_unsafe_decode, decode, encode, Algorithm, Header, TokenData, Validation};
 use serde_json::{from_str, to_string_pretty, Value};
 use std::collections::BTreeMap;
+use std::fs;
 use std::process::exit;
 use term_painter::Attr::*;
 use term_painter::Color::*;
@@ -306,6 +307,22 @@ fn create_validations(alg: Algorithm) -> Validation {
     }
 }
 
+fn slurp_file(file_name: &str) -> Vec<u8> {
+    return fs::read(file_name).expect(&format!("Unable to read file {}", file_name));
+}
+
+fn bytes_from_secret_string(secret_string: &str) -> Vec<u8> {
+    let secret: Vec<u8>;
+    if secret_string.is_empty() { secret = Vec::new() }
+    else {
+        match secret_string.chars().next().unwrap() {
+            '@' => secret = slurp_file(&secret_string.chars().skip(1).collect::<String>()),
+            _ => secret = secret_string.bytes().into_iter().collect::<Vec<_>>(),
+        }
+    }
+    return secret;
+}
+
 fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
     let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
         matches.value_of("algorithm").unwrap(),
@@ -353,9 +370,9 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
         .map(|p| p.unwrap())
         .collect();
     let Payload(claims) = Payload::from_payloads(payloads);
-    let secret = matches.value_of("secret").unwrap().as_bytes();
+    let secret = bytes_from_secret_string(matches.value_of("secret").unwrap());
 
-    encode(&header, &claims, secret.as_ref())
+    encode(&header, &claims, &secret)
 }
 
 fn decode_token(
@@ -368,7 +385,7 @@ fn decode_token(
     let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
         matches.value_of("algorithm").unwrap(),
     ));
-    let secret = matches.value_of("secret").unwrap().as_bytes();
+    let secret = bytes_from_secret_string(matches.value_of("secret").unwrap());
     let jwt = matches.value_of("jwt").unwrap().to_string();
     let secret_validator = create_validations(algorithm);
 
