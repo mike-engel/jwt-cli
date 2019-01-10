@@ -1,3 +1,11 @@
+# 2.3.0
+
+> 2019-01-10
+
+#### New features
+
+- Adds the ability to include a private/public key from a file on the local filesystem using the `@` shorthand [#9](https://github.com/mike-engel/jwt-cli/pull/9)
+
 # 2.2.1
 
 > 2018-11-28
