@@ -405,7 +405,7 @@ mod tests {
                 "RS256",
                 "-S",
                 "@./private_key.der",
-                &body
+                &body,
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
@@ -418,7 +418,7 @@ mod tests {
                 "@./public_key.der",
                 "-A",
                 "RS256",
-                &encoded_token
+                &encoded_token,
             ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
