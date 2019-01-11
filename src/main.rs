@@ -1,18 +1,13 @@
-extern crate chrono;
-#[macro_use]
-extern crate clap;
-extern crate jsonwebtoken as jwt;
-extern crate serde;
-#[macro_use]
-extern crate serde_derive;
-#[macro_use]
-extern crate serde_json;
-extern crate term_painter;
-
 use chrono::{Duration, Utc};
-use clap::{App, Arg, ArgMatches, SubCommand};
-use jwt::errors::{ErrorKind, Result as JWTResult};
-use jwt::{dangerous_unsafe_decode, decode, encode, Algorithm, Header, TokenData, Validation};
+use clap::{
+    App, Arg, ArgMatches, SubCommand, _clap_count_exprs, arg_enum, crate_authors, crate_version,
+};
+use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
+use jsonwebtoken::{
+    dangerous_unsafe_decode, decode, encode, Algorithm, Header, TokenData, Validation,
+};
+use serde_derive::{Deserialize, Serialize};
+use serde_json::json;
 use serde_json::{from_str, to_string_pretty, Value};
 use std::collections::BTreeMap;
 use std::fs;
@@ -33,7 +28,7 @@ struct TokenOutput {
     payload: Payload,
 }
 
-arg_enum!{
+arg_enum! {
     #[derive(Debug, PartialEq)]
     enum SupportedAlgorithms {
         HS256,
@@ -45,7 +40,7 @@ arg_enum!{
     }
 }
 
-arg_enum!{
+arg_enum! {
     enum SupportedTypes {
         JWT
     }
@@ -313,8 +308,9 @@ fn slurp_file(file_name: &str) -> Vec<u8> {
 
 fn bytes_from_secret_string(secret_string: &str) -> Vec<u8> {
     let secret: Vec<u8>;
-    if secret_string.is_empty() { secret = Vec::new() }
-    else {
+    if secret_string.is_empty() {
+        secret = Vec::new()
+    } else {
         match secret_string.chars().next().unwrap() {
             '@' => secret = slurp_file(&secret_string.chars().skip(1).collect::<String>()),
             _ => secret = secret_string.bytes().into_iter().collect::<Vec<_>>(),
@@ -342,7 +338,8 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
                     from_str(json_str).expect(
                         "JSON payloads must be valid JSON. Plain JavaScript objects can't be used.",
                     )
-                }).collect();
+                })
+                .collect();
 
             json_obj
                 .first()
@@ -350,7 +347,8 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
                 .iter()
                 .map(|(json_key, json_val)| {
                     PayloadItem::from_string_with_name(json_val.as_str(), json_key)
-                }).collect()
+                })
+                .collect()
         });
     let expires = PayloadItem::from_string_with_name(matches.value_of("expires"), "exp");
     let issuer = PayloadItem::from_string_with_name(matches.value_of("issuer"), "iss");

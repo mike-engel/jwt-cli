@@ -7,8 +7,8 @@ mod tests {
         translate_algorithm, OutputFormat, Payload, PayloadItem, SupportedAlgorithms,
     };
     use chrono::{Duration, Utc};
-    use jwt::{Algorithm, Header, TokenData};
-    use serde_json::from_value;
+    use jsonwebtoken::{Algorithm, Header, TokenData};
+    use serde_json::{from_value, json};
 
     #[test]
     fn payload_item_from_string() {
@@ -208,7 +208,8 @@ mod tests {
                 "-s",
                 "yolo-subject",
                 "{\"test\":\"json value\"}",
-            ]).unwrap();
+            ])
+            .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
@@ -272,7 +273,8 @@ mod tests {
                 "1234567890",
                 "-e",
                 &exp.to_string(),
-            ]).unwrap();
+            ])
+            .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()

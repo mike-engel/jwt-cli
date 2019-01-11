@@ -1,3 +1,10 @@
+# Unreleased
+
+#### Minor changes
+
+- Updated the project to use rust 2018 edition
+- Update dependencies
+
 # 2.3.0
 
 > 2019-01-10
