@@ -1,5 +1,13 @@
 # Unreleased
 
+# 2.4.0
+
+> 2019-04-19
+
+#### New features
+
+- Add support for stdin on `encode` and `decode`. Instead of passing a JSON body or a JWT token, you can simply pass `-`. [#10](https://github.com/mike-engel/jwt-cli/issues/10)
+
 #### Minor changes
 
 - Updated the project to use rust 2018 edition
