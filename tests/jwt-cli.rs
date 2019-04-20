@@ -153,7 +153,7 @@ mod tests {
     fn creates_jwt_header_with_kid() {
         let algorithm = Algorithm::HS256;
         let kid = Some("yolo");
-        let result = create_header(&algorithm, kid);
+        let result = create_header(algorithm, kid);
         let mut expected = Header::new(algorithm);
 
         expected.kid = kid.map(|k| k.to_string());
@@ -165,7 +165,7 @@ mod tests {
     fn creates_jwt_header_without_kid() {
         let algorithm = Algorithm::HS256;
         let kid = None;
-        let result = create_header(&algorithm, kid);
+        let result = create_header(algorithm, kid);
         let mut expected = Header::new(algorithm);
 
         expected.kid = kid.map(|k| k.to_string());
