@@ -1,5 +1,13 @@
 # Unreleased
 
+# 2.5.0
+
+> 2019-05-29
+
+#### New features
+
+- Add support for ECDSA algorithms. For now, only ES256 and ES384 are supported. [#12](https://github.com/mike-engel/jwt-cli/issues/10)
+
 # 2.4.0
 
 > 2019-04-19
