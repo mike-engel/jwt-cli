@@ -1,5 +1,7 @@
 # jwt-cli
 
+[![Dependabot Status](https://api.dependabot.com/badges/status?host=github&repo=mike-engel/jwt-cli)](https://dependabot.com)
+
 A super fast CLI tool to decode and encode JWTs built in [Rust](https://rust-lang.org).
 
 [![Build Status](https://travis-ci.org/mike-engel/jwt-cli.svg?branch=master)](https://travis-ci.org/mike-engel/jwt-cli)
