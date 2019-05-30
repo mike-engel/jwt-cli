@@ -33,7 +33,9 @@ arg_enum! {
         HS512,
         RS256,
         RS384,
-        RS512
+        RS512,
+        ES256,
+        ES384,
     }
 }
 
@@ -109,6 +111,8 @@ impl SupportedAlgorithms {
             "RS256" => SupportedAlgorithms::RS256,
             "RS384" => SupportedAlgorithms::RS384,
             "RS512" => SupportedAlgorithms::RS512,
+            "ES256" => SupportedAlgorithms::ES256,
+            "ES384" => SupportedAlgorithms::ES384,
             _ => SupportedAlgorithms::HS256,
         }
     }
@@ -125,7 +129,7 @@ impl TokenOutput {
 
 fn config_options<'a, 'b>() -> App<'a, 'b> {
     App::new("jwt")
-        .about("Encode and decode JWTs from the command line. RSA encryption currently only supports keys in DER format")
+        .about("Encode and decode JWTs from the command line. RSA and ECDSA encryption currently only supports keys in DER format")
         .version(crate_version!())
         .author(crate_authors!())
         .subcommand(
@@ -280,6 +284,8 @@ fn translate_algorithm(alg: SupportedAlgorithms) -> Algorithm {
         SupportedAlgorithms::RS256 => Algorithm::RS256,
         SupportedAlgorithms::RS384 => Algorithm::RS384,
         SupportedAlgorithms::RS512 => Algorithm::RS512,
+        SupportedAlgorithms::ES256 => Algorithm::ES256,
+        SupportedAlgorithms::ES384 => Algorithm::ES384,
     }
 }
 
@@ -457,6 +463,11 @@ fn print_decoded_token(
                 "{}",
                 Red.bold()
                     .paint("The secret provided isn't a valid RSA key",)
+            ),
+            ErrorKind::InvalidEcdsaKey => eprintln!(
+                "{}",
+                Red.bold()
+                    .paint("The secret provided isn't a valid ECDSA key",)
             ),
             ErrorKind::ExpiredSignature => {
                 println!("{}", Red.bold().paint("The token has expired"))

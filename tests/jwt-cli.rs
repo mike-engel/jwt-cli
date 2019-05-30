@@ -397,7 +397,7 @@ mod tests {
     }
 
     #[test]
-    fn encodes_and_decodes_a_token_using_key_from_file() {
+    fn encodes_and_decodes_an_rsa_token_using_key_from_file() {
         let body: String = "{\"field\":\"value\"}".to_string();
         let encode_matcher = config_options()
             .get_matches_from_safe(vec![
@@ -406,7 +406,7 @@ mod tests {
                 "-A",
                 "RS256",
                 "-S",
-                "@./private_key.der",
+                "@./tests/private_rsa_key.der",
                 &body,
             ])
             .unwrap();
@@ -417,7 +417,7 @@ mod tests {
                 "jwt",
                 "decode",
                 "-S",
-                "@./public_key.der",
+                "@./tests/public_rsa_key.der",
                 "-A",
                 "RS256",
                 &encoded_token,
@@ -425,6 +425,41 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (result, _, _) = decode_token(&decode_matches);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn encodes_and_decodes_an_ecdsa_token_using_key_from_file() {
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "ES256",
+                "-S",
+                "@./tests/private_ecdsa_key.pk8",
+                &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "@./tests/public_ecdsa_key.pk8",
+                "-A",
+                "ES256",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let (result, _, _) = decode_token(&decode_matches);
+
+        dbg!(&result);
 
         assert!(result.is_ok());
     }
