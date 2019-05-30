@@ -474,11 +474,6 @@ fn print_decoded_token(
                 Red.bold()
                     .paint("The token subject doesn't match the audience",)
             ),
-            ErrorKind::InvalidIssuedAt => eprintln!(
-                "{}",
-                Red.bold()
-                    .paint("The issued at claim is in the future which isn't allowed",)
-            ),
             ErrorKind::ImmatureSignature => eprintln!(
                 "{}",
                 Red.bold()
