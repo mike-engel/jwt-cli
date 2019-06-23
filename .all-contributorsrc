@@ -47,6 +47,15 @@
         "code",
         "bug"
       ]
+    },
+    {
+      "login": "JasonMFry",
+      "name": "Jason",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/166681?v=4",
+      "profile": "http://www.jasonmfry.com",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7
