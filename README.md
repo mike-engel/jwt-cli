@@ -82,3 +82,19 @@ cargo run -- help
 # [Changelog](CHANGELOG.md)
 
 # [License](LICENSE.md)
+
+## Contributors ✨
+
+Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/docs/en/emoji-key)):
+
+<!-- ALL-CONTRIBUTORS-LIST:START - Do not remove or modify this section -->
+<!-- prettier-ignore -->
+<table>
+  <tr>
+    <td align="center"><a href="http://asymmetrical-view.com/"><img src="https://avatars0.githubusercontent.com/u/69799?v=4" width="100px;" alt="Kyle Burton"/><br /><sub><b>Kyle Burton</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=kyleburton" title="Code">💻</a></td>
+  </tr>
+</table>
+
+<!-- ALL-CONTRIBUTORS-LIST:END -->
+
+This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind welcome!
