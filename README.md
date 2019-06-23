@@ -92,6 +92,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
 <table>
   <tr>
     <td align="center"><a href="http://asymmetrical-view.com/"><img src="https://avatars0.githubusercontent.com/u/69799?v=4" width="100px;" alt="Kyle Burton"/><br /><sub><b>Kyle Burton</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=kyleburton" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/atschaef"><img src="https://avatars2.githubusercontent.com/u/6707250?v=4" width="100px;" alt="Aaron Schaef"/><br /><sub><b>Aaron Schaef</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=atschaef" title="Code">💻</a></td>
   </tr>
 </table>
 
