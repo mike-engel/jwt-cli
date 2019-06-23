@@ -94,6 +94,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="http://asymmetrical-view.com/"><img src="https://avatars0.githubusercontent.com/u/69799?v=4" width="100px;" alt="Kyle Burton"/><br /><sub><b>Kyle Burton</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=kyleburton" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/atschaef"><img src="https://avatars2.githubusercontent.com/u/6707250?v=4" width="100px;" alt="Aaron Schaef"/><br /><sub><b>Aaron Schaef</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=atschaef" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/hughsimpson"><img src="https://avatars2.githubusercontent.com/u/2494489?v=4" width="100px;" alt="hughsimpson"/><br /><sub><b>hughsimpson</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=hughsimpson" title="Code">💻</a> <a href="https://github.com/mike-engel/jwt-cli/commits?author=hughsimpson" title="Tests">⚠️</a></td>
+    <td align="center"><a href="http://matkelly.com"><img src="https://avatars0.githubusercontent.com/u/2514780?v=4" width="100px;" alt="Mat Kelly"/><br /><sub><b>Mat Kelly</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=machawk1" title="Code">💻</a> <a href="https://github.com/mike-engel/jwt-cli/issues?q=author%3Amachawk1" title="Bug reports">🐛</a></td>
   </tr>
 </table>
 

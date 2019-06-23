@@ -37,6 +37,16 @@
         "code",
         "test"
       ]
+    },
+    {
+      "login": "machawk1",
+      "name": "Mat Kelly",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/2514780?v=4",
+      "profile": "http://matkelly.com",
+      "contributions": [
+        "code",
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7
