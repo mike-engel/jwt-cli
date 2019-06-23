@@ -27,6 +27,16 @@
       "contributions": [
         "code"
       ]
+    },
+    {
+      "login": "hughsimpson",
+      "name": "hughsimpson",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/2494489?v=4",
+      "profile": "https://github.com/hughsimpson",
+      "contributions": [
+        "code",
+        "test"
+      ]
     }
   ],
   "contributorsPerLine": 7
