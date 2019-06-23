@@ -16,6 +16,13 @@
       "avatar_url": "https://avatars0.githubusercontent.com/u/464447?v=4",
       "profile": "https://www.mike-engel.com",
       "contributions": [
+        "code",
+        "question",
+        "doc",
+        "ideas",
+        "maintenance",
+        "review",
+        "test",
         "bug"
       ]
     },
