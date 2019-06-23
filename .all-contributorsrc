@@ -56,6 +56,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "bsberry",
+      "name": "Ben Berry",
+      "avatar_url": "https://avatars1.githubusercontent.com/u/6886697?v=4",
+      "profile": "https://crosscomm.com/",
+      "contributions": [
+        "bug"
+      ]
     }
   ],
   "contributorsPerLine": 7
