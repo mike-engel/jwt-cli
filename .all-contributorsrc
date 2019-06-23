@@ -11,6 +11,15 @@
   "commitConvention": "angular",
   "contributors": [
     {
+      "login": "mike-engel",
+      "name": "Mike Engel",
+      "avatar_url": "https://avatars0.githubusercontent.com/u/464447?v=4",
+      "profile": "https://www.mike-engel.com",
+      "contributions": [
+        "bug"
+      ]
+    },
+    {
       "login": "kyleburton",
       "name": "Kyle Burton",
       "avatar_url": "https://avatars0.githubusercontent.com/u/69799?v=4",
