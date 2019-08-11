@@ -14,5 +14,8 @@ jobs:
       - name: Install Rust
         run: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
         if: matrix.os == 'macOS-latest'
+      - name: Configure path
+        run: source $HOME/.cargo/env
+        if: matrix.os == 'macOS-latest'
       - name: Run tests
         run: cargo test --verbose
