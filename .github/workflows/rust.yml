@@ -1,0 +1,15 @@
+name: Rust
+
+on: [push]
+
+jobs:
+  test:
+    name: Test the project on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        ox: [ubuntu-latest, windows-latest, macOS-latest]
+    steps:
+    - uses: actions/checkout@master
+    - name: Run tests
+      run: cargo test --verbose
