@@ -17,5 +17,8 @@ jobs:
       - name: Configure path
         run: source $HOME/.cargo/env
         if: matrix.os == 'macOS-latest'
+      - name: Debug
+        run: echo $PATH && cat $HOME/.cargo/env && echo $PATH
+        if: matrix.os == 'macOS-latest'
       - name: Run tests
-        run: cargo test --verbose
+        run: echo $PATH && cargo test --verbose
