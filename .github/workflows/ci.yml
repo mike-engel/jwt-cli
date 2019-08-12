@@ -1,0 +1,47 @@
+name: CI
+
+on: [push]
+
+jobs:
+  test:
+    name: Test the project on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+    steps:
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT"
+      - uses: actions/checkout@master
+      - name: Install Rust (macOS)
+        run: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
+        if: matrix.os == 'macOS-latest'
+      - name: Configure cargo (macOS)
+        run: ln -s $HOME/.cargo/bin/cargo /usr/local/bin/cargo
+        if: matrix.os == 'macOS-latest'
+      - name: Run tests
+        run: cargo test --verbose
+  deploy_linux:
+    name: Build and release the project on linux
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT" && echo "$GITHUB_REF"
+      - name: Build
+        run: cargo build --release
+      - name: Pack
+        env:
+          TAG: $([[ ${{github.ref}} =~ ^refs/tags/(.+) ]] && ${BASH_REMATCH[1]})
+        run: tar czf ./jwt-$TAG-linux.tar.gz target/release/jwt-cli
+      - name: Upload
+        env:
+          TAG: $([[ ${{github.ref}} =~ ^refs/tags/(.+) ]] && ${BASH_REMATCH[1]})
+          SIZE: $(stat -c %s ./jwt-$TAG-linux.tar.gz)
+        run: 'curl -sSL -XPOST -H "Authorization: token $GITHUB_TOKEN" -H "Content-Size: $SIZE" -H "Content-Type: application/zip" --upload-file ./jwt-$TAG-linux.tar.gz https://uploads.github.com/repos/mike-engel/releases/tag/${TAG}/assets?name=jwt-$TAG-linux.tar.gz'
