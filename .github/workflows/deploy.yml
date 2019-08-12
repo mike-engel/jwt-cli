@@ -1,21 +1,21 @@
-name: Rust
+name: Deploy
 
-on: [push]
+on: [release]
 
 jobs:
   test:
-    name: Test the project on ${{ matrix.os }}
+    name: Build and release the project on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
     steps:
       - uses: actions/checkout@master
-      - name: Install Rust
+      - name: Install Rust (macOS)
         run: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
         if: matrix.os == 'macOS-latest'
       - name: Configure cargo (macOS)
         run: ln -s $HOME/.cargo/bin/cargo /usr/local/bin/cargo
         if: matrix.os == 'macOS-latest'
-      - name: Run tests
-        run: cargo test --verbose
+      - name: Build
+        run: cargo build --release
