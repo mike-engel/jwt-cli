@@ -3,7 +3,7 @@ name: Deploy
 on: [release]
 
 jobs:
-  test:
+  deploy:
     name: Build and release the project on ${{ matrix.os }}
     runs-on: ${{ matrix.os }}
     strategy:
@@ -11,11 +11,7 @@ jobs:
         os: [ubuntu-latest, windows-latest, macOS-latest]
     steps:
       - uses: actions/checkout@master
-      - name: Install Rust (macOS)
-        run: "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y"
-        if: matrix.os == 'macOS-latest'
-      - name: Configure cargo (macOS)
-        run: ln -s $HOME/.cargo/bin/cargo /usr/local/bin/cargo
-        if: matrix.os == 'macOS-latest'
-      - name: Build
-        run: cargo build --release
+      - name: Dump GitHub context
+        env:
+          GITHUB_CONTEXT: ${{ toJson(github) }}
+        run: echo "$GITHUB_CONTEXT" && echo "$GITHUB_REF"
