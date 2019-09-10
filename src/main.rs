@@ -1,5 +1,5 @@
 use chrono::{Duration, Utc};
-use clap::{arg_enum, crate_authors, crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{arg_enum, crate_authors, crate_version, App, Arg, ArgGroup, ArgMatches, SubCommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{
     dangerous_unsafe_decode, decode, encode, Algorithm, Header, TokenData, Validation,
@@ -215,9 +215,15 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .help("the secret to sign the JWT with. Can be prefixed with @ to read from a binary file")
                         .takes_value(true)
                         .long("secret")
-                        .short("S")
-                        .required(true),
-                ),
+                        .short("S"),
+                ).arg(
+                    Arg::with_name("secret-b64")
+                        .help("the secret to sign the JWT with, b64-encoded")
+                        .takes_value(true)
+                        .long("secret-b64"),
+                ).group(ArgGroup::with_name("secret_group")
+                        .args(&["secret", "secret-b64"])
+                        .required(true)),
         ).subcommand(
             SubCommand::with_name("decode")
                 .about("Decode a JWT")
@@ -241,6 +247,14 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .long("secret")
                         .short("S")
                         .default_value(""),
+                ).arg(
+                    Arg::with_name("secret-b64")
+                        .help("the secret to sign the JWT with, b64-encoded")
+                        .takes_value(true)
+                        .long("secret-b64"),
+                ).group(ArgGroup::with_name("secret_group")
+                        .args(&["secret", "secret-b64"])
+                        .required(true)
                 ).arg(
                     Arg::with_name("json")
                         .help("render decoded JWT as JSON")
@@ -309,9 +323,12 @@ fn slurp_file(file_name: &str) -> Vec<u8> {
     fs::read(file_name).unwrap_or_else(|_| panic!("Unable to read file {}", file_name))
 }
 
-fn bytes_from_secret_string(secret_string: &str) -> Vec<u8> {
+fn bytes_from_secret_string(secret_string: &str, is_b64_encoded: bool) -> Vec<u8> {
     let secret: Vec<u8>;
-    if secret_string.is_empty() {
+    if is_b64_encoded {
+        secret =
+            base64::decode(&secret_string.replace("\n", "").bytes().collect::<Vec<_>>()).unwrap()
+    } else if secret_string.is_empty() {
         secret = Vec::new()
     } else {
         match secret_string.chars().next().unwrap() {
@@ -377,7 +394,10 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
         .map(Option::unwrap)
         .collect();
     let Payload(claims) = Payload::from_payloads(payloads);
-    let secret = bytes_from_secret_string(matches.value_of("secret").unwrap());
+    let secret = bytes_from_secret_string(
+        matches.value_of("secret_group").unwrap(),
+        matches.is_present("secret-b64"),
+    );
 
     encode(&header, &claims, &secret)
 }
@@ -392,7 +412,10 @@ fn decode_token(
     let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
         matches.value_of("algorithm").unwrap(),
     ));
-    let secret = bytes_from_secret_string(matches.value_of("secret").unwrap());
+    let secret = bytes_from_secret_string(
+        matches.value_of("secret_group").unwrap(),
+        matches.is_present("secret-b64"),
+    );
     let jwt = matches
         .value_of("jwt")
         .map(|value| {
