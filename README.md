@@ -14,9 +14,17 @@ On top of all that, it's written in Rust so it's fast and extremely portable (wi
 
 # Installation
 
-As of right now, the only package manager supported is homebrew. For all other systems (or if you don't like homebrew), you'll need to install the binary. You can do that from the [release](https://github.com/mike-engel/jwt-cli/releases) page. Eventually I might publish to other OS package managers if I can figure them out.
+Currently, installation is supported via [Homebrew](https://brew.sh) (macOS) and [Cargo](https://www.rust-lang.org/tools/install) (cross-platform). If you intend to use one of these methods, [skip ahead](#homebrew).
 
-For those with homebrew, you'll need to tap the homebrew-jwt-cli repo in order to install it.
+You may also install the binary from the [release](https://github.com/mike-engel/jwt-cli/releases) page, if you're unable to use Homebrew or Cargo install methods below.
+
+Only 64bit linux, macOS, and Windows targets are pre-built. Sorry if you're not on one of those! You'll need to build it from the source. See the [contributing](#contributing) section on how to install and build the project.
+
+As to where you should install it, it should optimally go somewhere in your `PATH`. For Linux and macOS, a good place is generally `/usr/local/bin`. For Windows, there really isn't a good place by default :(.
+
+## Homebrew
+
+For those with Homebrew, you'll need to `brew tap mike-engel/jwt-cli` repo in order to install it.
 
 ```sh
 # Tap and install jwt-cli
@@ -27,9 +35,15 @@ brew install jwt-cli
 jwt help
 ```
 
-Only 64bit linux, macOS, and Windows targets are pre-built. Sorry if you're not on one of those! You'll need to build it from the source. See the [contributing](#contributing) section on how to install and build the project.
+## Cargo
 
-As to where you should install it, it should optimally go somewhere in your `PATH`. For Linux and macOS, a good place is generally `/usr/local/bin`. For Windows, there really isn't a good place by default :(.
+If your system [supports](https://forge.rust-lang.org/platform-support.html) it, you can install via Cargo. Make sure you have Rust and Cargo installed, following [these instructions](https://www.rust-lang.org/tools/install) before proceeding.
+
+```sh
+cargo install jwt-cli
+```
+
+The binary will be installed in your Cargo bin path (`~/.cargo/bin`). Make sure this path is included in your PATH environment variable.
 
 # Usage
 
