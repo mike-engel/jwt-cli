@@ -81,6 +81,15 @@
       "contributions": [
         "bug"
       ]
+    },
+    {
+      "login": "therealklanni",
+      "name": "Kevin Lanni",
+      "avatar_url": "https://avatars2.githubusercontent.com/u/626347?v=4",
+      "profile": "https://medium.com/@therealklanni",
+      "contributions": [
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7

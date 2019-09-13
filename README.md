@@ -113,6 +113,9 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="http://www.jasonmfry.com"><img src="https://avatars3.githubusercontent.com/u/166681?v=4" width="100px;" alt="Jason"/><br /><sub><b>Jason</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/issues?q=author%3AJasonMFry" title="Bug reports">🐛</a></td>
     <td align="center"><a href="https://crosscomm.com/"><img src="https://avatars1.githubusercontent.com/u/6886697?v=4" width="100px;" alt="Ben Berry"/><br /><sub><b>Ben Berry</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/issues?q=author%3Absberry" title="Bug reports">🐛</a></td>
   </tr>
+  <tr>
+    <td align="center"><a href="https://medium.com/@therealklanni"><img src="https://avatars2.githubusercontent.com/u/626347?v=4" width="100px;" alt="Kevin Lanni"/><br /><sub><b>Kevin Lanni</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=therealklanni" title="Documentation">📖</a></td>
+  </tr>
 </table>
 
 <!-- ALL-CONTRIBUTORS-LIST:END -->
