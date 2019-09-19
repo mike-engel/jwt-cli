@@ -14,7 +14,7 @@ On top of all that, it's written in Rust so it's fast and extremely portable (wi
 
 # Installation
 
-Currently, installation is supported via [Homebrew](https://brew.sh) (macOS) and [Cargo](https://www.rust-lang.org/tools/install) (cross-platform). If you intend to use one of these methods, [skip ahead](#homebrew).
+Currently, installation is supported via [Homebrew](https://brew.sh) (macOS), [Cargo](https://www.rust-lang.org/tools/install) (cross-platform), and [FreshPorts](https://www.freshports.org/www/jwt-cli) (FreeBSD). If you intend to use one of these methods, [skip ahead](#homebrew).
 
 You may also install the binary from the [release](https://github.com/mike-engel/jwt-cli/releases) page, if you're unable to use Homebrew or Cargo install methods below.
 
@@ -44,6 +44,16 @@ cargo install jwt-cli
 ```
 
 The binary will be installed in your Cargo bin path (`~/.cargo/bin`). Make sure this path is included in your PATH environment variable.
+
+## FreshPorts
+
+If you're on FreeBSD, you can use the `pkg` tool to install `jwt-cli` on your system.
+
+```sh
+pkg install jwt-cli
+```
+
+Big thanks to Sergey Osokin, the FreeBSD contributor who added `jwt-cli` to the FreeBSD ports tree!
 
 # Usage
 
