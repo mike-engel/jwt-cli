@@ -1,5 +1,5 @@
 use chrono::{Duration, Utc};
-use clap::{arg_enum, crate_authors, crate_version, App, Arg, ArgGroup, ArgMatches, SubCommand};
+use clap::{arg_enum, crate_authors, crate_version, App, Arg, ArgMatches, SubCommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{
     dangerous_unsafe_decode, decode, encode, Algorithm, Header, TokenData, Validation,
@@ -36,6 +36,14 @@ arg_enum! {
         RS512,
         ES256,
         ES384,
+    }
+}
+
+arg_enum! {
+    #[derive(Debug,PartialEq)]
+    enum SecretEncoding {
+        Binary,
+        Base64,
     }
 }
 
@@ -114,6 +122,16 @@ impl SupportedAlgorithms {
             "ES256" => SupportedAlgorithms::ES256,
             "ES384" => SupportedAlgorithms::ES384,
             _ => SupportedAlgorithms::HS256,
+        }
+    }
+}
+
+impl SecretEncoding {
+    fn from_string(enc: &str) -> SecretEncoding {
+        match enc {
+            "base64" => SecretEncoding::Base64,
+            "binary" => SecretEncoding::Binary,
+            _ => SecretEncoding::Binary,
         }
     }
 }
@@ -215,15 +233,16 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .help("the secret to sign the JWT with. Can be prefixed with @ to read from a binary file")
                         .takes_value(true)
                         .long("secret")
-                        .short("S"),
+                        .short("S")
                 ).arg(
-                    Arg::with_name("secret-b64")
-                        .help("the secret to sign the JWT with, b64-encoded")
+                    Arg::with_name("secret-encoding")
+                        .help("Is this secret b64-encoded?")
                         .takes_value(true)
-                        .long("secret-b64"),
-                ).group(ArgGroup::with_name("secret_group")
-                        .args(&["secret", "secret-b64"])
-                        .required(true)),
+                        .long("secret-encoding")
+                        .short("e")
+                        .possible_values(&SecretEncoding::variants())
+                        .default_value("binary")
+                        )
         ).subcommand(
             SubCommand::with_name("decode")
                 .about("Decode a JWT")
@@ -246,15 +265,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .takes_value(true)
                         .long("secret")
                         .short("S")
-                        .default_value(""),
-                ).arg(
-                    Arg::with_name("secret-b64")
-                        .help("the secret to sign the JWT with, b64-encoded")
-                        .takes_value(true)
-                        .long("secret-b64"),
-                ).group(ArgGroup::with_name("secret_group")
-                        .args(&["secret", "secret-b64"])
-                        .required(true)
+                        .default_value("")
                 ).arg(
                     Arg::with_name("json")
                         .help("render decoded JWT as JSON")
@@ -395,8 +406,11 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
         .collect();
     let Payload(claims) = Payload::from_payloads(payloads);
     let secret = bytes_from_secret_string(
-        matches.value_of("secret_group").unwrap(),
-        matches.is_present("secret-b64"),
+        matches.value_of("secret").unwrap(),
+        match SecretEncoding::from_string(matches.value_of("secret-encoding").unwrap()) {
+            SecretEncoding::Base64 => true,
+            _ => false,
+        },
     );
 
     encode(&header, &claims, &secret)
