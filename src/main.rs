@@ -239,7 +239,6 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .help("Is this secret b64-encoded?")
                         .takes_value(true)
                         .long("secret-encoding")
-                        .short("e")
                         .possible_values(&SecretEncoding::variants())
                         .default_value("binary")
                         )
