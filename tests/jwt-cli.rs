@@ -207,7 +207,7 @@ mod tests {
                 "yolo-principal",
                 "-s",
                 "yolo-subject",
-                "{\"test\":\"json value\"}",
+                "{\"test\":\"json value\",\"bool\":true,\"json_number\":1}",
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
@@ -232,6 +232,8 @@ mod tests {
         assert_eq!(claims.0["exp"], exp);
         assert_eq!(claims.0["this"], "that");
         assert_eq!(claims.0["test"], "json value");
+        assert_eq!(claims.0["bool"], true);
+        assert_eq!(claims.0["json_number"], 1);
         assert_eq!(claims.0["number"], 10);
         assert_eq!(claims.0["array"].to_string(), "[1,2,3]");
         assert_eq!(claims.0["object"]["foo"], "bar");

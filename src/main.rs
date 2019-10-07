@@ -352,10 +352,8 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
         })
         .map(|raw_json| match from_str(&raw_json) {
             Ok(Value::Object(json_value)) => json_value
-                .iter()
-                .map(|(json_key, json_val)| {
-                    PayloadItem::from_string_with_name(json_val.as_str(), json_key)
-                })
+                .into_iter()
+                .map(|(json_key, json_val)| Some(PayloadItem(json_key, json_val)))
                 .collect(),
             _ => panic!("Invalid JSON provided!"),
         });
