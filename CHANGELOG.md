@@ -1,5 +1,12 @@
 # Unreleased
 
+# 2.5.1
+
+> 2019-10-07
+
+#### Bug fixes
+- 2.5.1 fixes a nasty bug where non-string JSON values would be dropped during encoding
+
 # 2.5.0
 
 > 2019-05-29
