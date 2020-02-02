@@ -384,7 +384,7 @@ fn decode_token(
     matches: &ArgMatches,
 ) -> (
     JWTResult<TokenData<Payload>>,
-    TokenData<Payload>,
+    JWTResult<TokenData<Payload>>,
     OutputFormat,
 ) {
     let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
@@ -416,7 +416,7 @@ fn decode_token(
         } else {
             dangerous_unsafe_decode::<Payload>(&jwt)
         },
-        dangerous_unsafe_decode::<Payload>(&jwt).unwrap(),
+        dangerous_unsafe_decode::<Payload>(&jwt),
         if matches.is_present("json") {
             OutputFormat::JSON
         } else {
@@ -444,7 +444,7 @@ fn print_encoded_token(token: JWTResult<String>) {
 
 fn print_decoded_token(
     validated_token: JWTResult<TokenData<Payload>>,
-    token_data: TokenData<Payload>,
+    token_data: JWTResult<TokenData<Payload>>,
     format: OutputFormat,
 ) {
     if let Err(err) = &validated_token {
@@ -503,17 +503,17 @@ fn print_decoded_token(
         };
     }
 
-    match format {
-        OutputFormat::JSON => println!(
-            "{}",
-            to_string_pretty(&TokenOutput::new(token_data)).unwrap()
-        ),
-        _ => {
-            println!("\n{}", Plain.bold().paint("Token header\n------------"));
-            println!("{}\n", to_string_pretty(&token_data.header).unwrap());
-            println!("{}", Plain.bold().paint("Token claims\n------------"));
-            println!("{}", to_string_pretty(&token_data.claims).unwrap());
+    match (format, token_data) {
+        (OutputFormat::JSON, Ok(token)) => {
+            println!("{}", to_string_pretty(&TokenOutput::new(token)).unwrap())
         }
+        (_, Ok(token)) => {
+            println!("\n{}", Plain.bold().paint("Token header\n------------"));
+            println!("{}\n", to_string_pretty(&token.header).unwrap());
+            println!("{}", Plain.bold().paint("Token claims\n------------"));
+            println!("{}", to_string_pretty(&token.claims).unwrap());
+        }
+        (_, Err(_)) => exit(1),
     }
 
     exit(match validated_token {
