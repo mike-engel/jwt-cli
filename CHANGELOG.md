@@ -1,10 +1,19 @@
 # Unreleased
 
+# 2.5.2
+
+> 2020-02-02
+
+#### Bug fixes
+
+- Prevent an invalid JWT token from causing a panic during `decode` #51
+
 # 2.5.1
 
 > 2019-10-07
 
 #### Bug fixes
+
 - 2.5.1 fixes a nasty bug where non-string JSON values would be dropped during encoding
 
 # 2.5.0
