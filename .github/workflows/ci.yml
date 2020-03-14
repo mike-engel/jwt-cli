@@ -27,10 +27,13 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           args: --all-features
   deploy:
-    name: Build and release the project
+    name: Build and release the project on ${{ matrix.os }}
     if: startsWith(github.ref, 'refs/tags/')
     needs: test
     runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
     steps:
       - uses: actions/checkout@v2
       - name: Build
