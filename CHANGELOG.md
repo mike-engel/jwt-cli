@@ -1,5 +1,14 @@
 # Unreleased
 
+# 3.0.0
+
+> 2020-03-14
+
+#### New features
+
+- Updated [`jsonweboken`](https://github.com/keats/jsonwebtoken) to version 7, which now allows PEM secrets to be used
+  - This requires the filename to end with `.pem` to be detected correctly
+
 # 2.5.2
 
 > 2020-02-02
