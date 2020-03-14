@@ -2,7 +2,8 @@ use chrono::{Duration, Utc};
 use clap::{arg_enum, crate_authors, crate_version, App, Arg, ArgMatches, SubCommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{
-    dangerous_unsafe_decode, decode, encode, Algorithm, Header, TokenData, Validation,
+    dangerous_unsafe_decode, decode, encode, Algorithm, DecodingKey, EncodingKey, Header,
+    TokenData, Validation,
 };
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{from_str, json, to_string_pretty, Value};
@@ -309,18 +310,57 @@ fn slurp_file(file_name: &str) -> Vec<u8> {
     fs::read(file_name).unwrap_or_else(|_| panic!("Unable to read file {}", file_name))
 }
 
-fn bytes_from_secret_string(secret_string: &str) -> Vec<u8> {
-    let secret: Vec<u8>;
-    if secret_string.is_empty() {
-        secret = Vec::new()
-    } else {
-        match secret_string.chars().next().unwrap() {
-            '@' => secret = slurp_file(&secret_string.chars().skip(1).collect::<String>()),
-            _ => secret = secret_string.bytes().collect::<Vec<_>>(),
+fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResult<EncodingKey> {
+    match alg {
+        Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
+            Ok(EncodingKey::from_secret(secret_string.as_bytes()))
         }
-    }
+        Algorithm::RS256 | Algorithm::RS384 | Algorithm::RS512 => {
+            let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
-    secret
+            match secret_string.ends_with(".pem") {
+                true => EncodingKey::from_rsa_pem(&secret),
+                false => Ok(EncodingKey::from_rsa_der(&secret)),
+            }
+        }
+        Algorithm::ES256 | Algorithm::ES384 => {
+            let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
+
+            match secret_string.ends_with(".pem") {
+                true => EncodingKey::from_ec_pem(&secret),
+                false => Ok(EncodingKey::from_ec_der(&secret)),
+            }
+        }
+        _ => panic!("Unsupported algorithm!"),
+    }
+}
+
+fn decoding_key_from_secret(
+    alg: &Algorithm,
+    secret_string: &str,
+) -> JWTResult<DecodingKey<'static>> {
+    match alg {
+        Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
+            Ok(DecodingKey::from_secret(secret_string.as_bytes()).into_static())
+        }
+        Algorithm::RS256 | Algorithm::RS384 | Algorithm::RS512 => {
+            let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
+
+            match secret_string.ends_with(".pem") {
+                true => DecodingKey::from_rsa_pem(&secret).map(DecodingKey::into_static),
+                false => Ok(DecodingKey::from_rsa_der(&secret).into_static()),
+            }
+        }
+        Algorithm::ES256 | Algorithm::ES384 => {
+            let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
+
+            match secret_string.ends_with(".pem") {
+                true => DecodingKey::from_ec_pem(&secret).map(DecodingKey::into_static),
+                false => Ok(DecodingKey::from_ec_der(&secret).into_static()),
+            }
+        }
+        _ => panic!("Unsupported algorithm!"),
+    }
 }
 
 fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
@@ -375,9 +415,9 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
         .map(Option::unwrap)
         .collect();
     let Payload(claims) = Payload::from_payloads(payloads);
-    let secret = bytes_from_secret_string(matches.value_of("secret").unwrap());
 
-    encode(&header, &claims, &secret)
+    encoding_key_from_secret(&algorithm, matches.value_of("secret").unwrap())
+        .and_then(|secret| encode(&header, &claims, &secret))
 }
 
 fn decode_token(
@@ -390,7 +430,10 @@ fn decode_token(
     let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
         matches.value_of("algorithm").unwrap(),
     ));
-    let secret = bytes_from_secret_string(matches.value_of("secret").unwrap());
+    let secret = match matches.value_of("secret").map(|s| (s, s.len() > 0)) {
+        Some((secret, true)) => Some(decoding_key_from_secret(&algorithm, &secret)),
+        _ => None,
+    };
     let jwt = matches
         .value_of("jwt")
         .map(|value| {
@@ -411,10 +454,9 @@ fn decode_token(
     let secret_validator = create_validations(algorithm);
 
     (
-        if !secret.is_empty() {
-            decode::<Payload>(&jwt, &secret, &secret_validator)
-        } else {
-            dangerous_unsafe_decode::<Payload>(&jwt)
+        match secret {
+            Some(secret_key) => decode::<Payload>(&jwt, &secret_key.unwrap(), &secret_validator),
+            None => dangerous_unsafe_decode::<Payload>(&jwt),
         },
         dangerous_unsafe_decode::<Payload>(&jwt),
         if matches.is_present("json") {

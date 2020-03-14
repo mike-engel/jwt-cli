@@ -310,8 +310,6 @@ mod tests {
         let decode_matches = matches.subcommand_matches("decode").unwrap();
         let (result, _, _) = decode_token(&decode_matches);
 
-        println!("{:?}", result);
-
         assert!(result.is_ok());
     }
 
