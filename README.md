@@ -55,6 +55,17 @@ pkg install jwt-cli
 
 Big thanks to Sergey Osokin, the FreeBSD contributor who added `jwt-cli` to the FreeBSD ports tree!
 
+## GoFish
+
+`jwt-cli` is also avaible on Windows, MacOSX and Linux using GoFish.
+See [gofi.sh](https://gofi.sh/index.html#install) for instructions for getting GoFish.
+
+After installing GoFish, getting `jwt-cli` is just running:
+
+```sh
+gofish install jwt-cli
+```
+
 # Usage
 
 For usage info, use the `help` command.
