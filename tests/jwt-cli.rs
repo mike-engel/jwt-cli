@@ -328,7 +328,7 @@ mod tests {
         let exp = exp_claim.unwrap();
         assert!(iat.is_positive());
         assert!(exp.is_positive());
-        assert_eq!(exp-iat, lifetime*60);
+        assert_eq!(exp - iat, lifetime * 60);
     }
 
     #[test]
