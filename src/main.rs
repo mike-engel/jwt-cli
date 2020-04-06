@@ -84,10 +84,12 @@ impl PayloadItem {
 }
 
 impl Payload {
-    fn from_payloads(payloads: Vec<PayloadItem>) -> Payload {
+    fn from_payloads(payloads: Vec<PayloadItem>, matches: &ArgMatches) -> Payload {
         let mut payload = BTreeMap::new();
         let iat = json!(Utc::now().timestamp());
-        let exp = json!((Utc::now() + Duration::minutes(30)).timestamp());
+        let lifetime_arg = matches.value_of("lifetime").unwrap_or("30");
+        let lifetime: i64 = lifetime_arg.parse().unwrap();
+        let exp = json!((Utc::now() + Duration::minutes(lifetime)).timestamp());
 
         for PayloadItem(k, v) in payloads {
             payload.insert(k, v);
@@ -178,6 +180,14 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .long("exp")
                         .short("e")
                         .validator(is_num),
+                ).arg(
+                    Arg::with_name("lifetime")
+                        .help("the number of minutes token should be valid for [default: 30]")
+                        .takes_value(true)
+                        .long("lifetime")
+                        .short("l")
+                        .validator(is_num)
+                        .conflicts_with("expires"),
                 ).arg(
                     Arg::with_name("issuer")
                         .help("the issuer of the token")
@@ -414,7 +424,7 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
         .filter(Option::is_some)
         .map(Option::unwrap)
         .collect();
-    let Payload(claims) = Payload::from_payloads(payloads);
+    let Payload(claims) = Payload::from_payloads(payloads, matches);
 
     encoding_key_from_secret(&algorithm, matches.value_of("secret").unwrap())
         .and_then(|secret| encode(&header, &claims, &secret))

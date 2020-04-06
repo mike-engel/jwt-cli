@@ -53,10 +53,11 @@ mod tests {
 
     #[test]
     fn payload_from_payload_items() {
+        let matcher = config_options().get_matches();
         let payload_item_one = PayloadItem::from_string(Some("this=that")).unwrap();
         let payload_item_two = PayloadItem::from_string(Some("full=yolo")).unwrap();
         let payloads = vec![payload_item_one, payload_item_two];
-        let result = Payload::from_payloads(payloads);
+        let result = Payload::from_payloads(payloads, &matcher);
         let payload = result.0;
 
         assert!(payload.contains_key("this"));
@@ -292,6 +293,42 @@ mod tests {
 
         assert!(exp_claim.is_ok());
         assert_eq!(exp_claim.unwrap(), exp);
+    }
+
+    #[test]
+    fn sets_correct_lifetime() {
+        let lifetime: i64 = 17;
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "encode",
+                "-S",
+                "1234567890",
+                "-l",
+                &lifetime.to_string(),
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_matches);
+
+        assert!(decoded_token.is_ok());
+
+        let TokenData { claims, header: _ } = decoded_token.unwrap();
+        let exp_claim = from_value::<i64>(claims.0["exp"].clone());
+        let iat_claim = from_value::<i64>(claims.0["iat"].clone());
+
+        assert!(iat_claim.is_ok());
+        let iat = iat_claim.unwrap();
+        assert!(exp_claim.is_ok());
+        let exp = exp_claim.unwrap();
+        assert!(iat.is_positive());
+        assert!(exp.is_positive());
+        assert_eq!(exp-iat, lifetime*60);
     }
 
     #[test]
