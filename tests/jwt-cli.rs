@@ -125,7 +125,8 @@ mod tests {
 
     #[test]
     fn is_valid_expiry() {
-        is_valid_num();
+        assert!(is_expiry("2".to_string()).is_ok());
+        assert!(is_expiry("39874398".to_string()).is_ok());
         assert!(is_expiry("12h".to_string()).is_ok());
         assert!(is_expiry("1 day -1 hour".to_string()).is_ok());
         assert!(is_expiry("+30 min".to_string()).is_ok());
@@ -133,8 +134,9 @@ mod tests {
 
     #[test]
     fn is_invalid_expiry() {
-        is_invalid_num();
-        assert!(is_num("1 day -1 hourz".to_string()).is_err());
+        assert!(is_expiry("yolo".to_string()).is_err());
+        assert!(is_expiry("2398ybdfiud93".to_string()).is_err());
+        assert!(is_expiry("1 day -1 hourz".to_string()).is_err());
     }
 
     #[test]
