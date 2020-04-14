@@ -1,4 +1,4 @@
-use chrono::{Duration, Utc};
+use chrono::{Utc};
 use clap::{arg_enum, crate_authors, crate_version, App, Arg, ArgMatches, SubCommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{
@@ -13,6 +13,7 @@ use std::{fs, io};
 use term_painter::Attr::*;
 use term_painter::Color::*;
 use term_painter::ToStyle;
+use parse_duration::parse;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct PayloadItem(String, Value);
@@ -84,12 +85,10 @@ impl PayloadItem {
 }
 
 impl Payload {
-    fn from_payloads(payloads: Vec<PayloadItem>, matches: &ArgMatches) -> Payload {
+    fn from_payloads(payloads: Vec<PayloadItem>) -> Payload {
         let mut payload = BTreeMap::new();
-        let iat = json!(Utc::now().timestamp());
-        let lifetime_arg = matches.value_of("lifetime").unwrap_or("30");
-        let lifetime: i64 = lifetime_arg.parse().unwrap();
-        let exp = json!((Utc::now() + Duration::minutes(lifetime)).timestamp());
+        let now = Utc::now().timestamp();
+        let iat = json!(now);
 
         for PayloadItem(k, v) in payloads {
             payload.insert(k, v);
@@ -97,8 +96,19 @@ impl Payload {
 
         payload.insert("iat".to_string(), iat);
 
-        if !payload.contains_key("exp") {
-            payload.insert("exp".to_string(), exp);
+        let expiry = payload.get("exp")
+            // Exists
+            .filter(|e| e.is_string())
+            .map(|e| e.as_str().unwrap())
+            // Already a UNIX timestamp, no further processing needed
+            .filter(|e| is_num(e.to_string()).is_err())
+            // systemd.time format already validated via arg matcher
+            .map(|duration| parse(duration).unwrap().as_secs())
+            // Add parsed duration seconds to current timestamp for resulting expiry
+            .map(|duration| duration + now as u64);
+
+        if expiry.is_some() {
+            payload.insert("exp".to_string(), json!(expiry));
         }
 
         Payload(payload)
@@ -175,19 +185,12 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .validator(is_payload_item),
                 ).arg(
                     Arg::with_name("expires")
-                        .help("the time the token should expire, in seconds")
+                        .help("the time the token should expire, in seconds or systemd.time string")
+                        .default_value("+30 min")
                         .takes_value(true)
                         .long("exp")
                         .short("e")
-                        .validator(is_num),
-                ).arg(
-                    Arg::with_name("lifetime")
-                        .help("the number of minutes token should be valid for [default: 30]")
-                        .takes_value(true)
-                        .long("lifetime")
-                        .short("l")
-                        .validator(is_num)
-                        .conflicts_with("expires"),
+                        .validator(is_expiry),
                 ).arg(
                     Arg::with_name("issuer")
                         .help("the issuer of the token")
@@ -267,6 +270,19 @@ fn is_num(val: String) -> Result<(), String> {
     match parse_result {
         Ok(_) => Ok(()),
         Err(_) => Err(String::from("exp and nbf must be integers")),
+    }
+}
+
+fn is_expiry(val: String) -> Result<(), String> {
+    match i64::from_str_radix(&val, 10) {
+        Ok(_) => Ok(()),
+        Err(_) => {
+            let parse_result = parse(&val);
+            match parse_result {
+                Ok(_) => Ok(()),
+                Err(_) => Err(String::from("exp must be an integer or systemd.time string"))
+            }
+        },
     }
 }
 
@@ -424,7 +440,7 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
         .filter(Option::is_some)
         .map(Option::unwrap)
         .collect();
-    let Payload(claims) = Payload::from_payloads(payloads, matches);
+    let Payload(claims) = Payload::from_payloads(payloads);
 
     encoding_key_from_secret(&algorithm, matches.value_of("secret").unwrap())
         .and_then(|secret| encode(&header, &claims, &secret))

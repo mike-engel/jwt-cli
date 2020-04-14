@@ -9,6 +9,7 @@ mod tests {
     use chrono::{Duration, Utc};
     use jsonwebtoken::{Algorithm, Header, TokenData};
     use serde_json::{from_value, json};
+    use crate::is_expiry;
 
     #[test]
     fn payload_item_from_string() {
@@ -53,11 +54,11 @@ mod tests {
 
     #[test]
     fn payload_from_payload_items() {
-        let matcher = config_options().get_matches();
+        let _matcher = config_options().get_matches();
         let payload_item_one = PayloadItem::from_string(Some("this=that")).unwrap();
         let payload_item_two = PayloadItem::from_string(Some("full=yolo")).unwrap();
         let payloads = vec![payload_item_one, payload_item_two];
-        let result = Payload::from_payloads(payloads, &matcher);
+        let result = Payload::from_payloads(payloads);
         let payload = result.0;
 
         assert!(payload.contains_key("this"));
@@ -120,6 +121,20 @@ mod tests {
         assert!(is_payload_item("this".to_string()).is_err());
         assert!(is_payload_item("this=that=yolo".to_string()).is_err());
         assert!(is_payload_item("this-that_yolo".to_string()).is_err());
+    }
+
+    #[test]
+    fn is_valid_expiry() {
+        is_valid_num();
+        assert!(is_expiry("12h".to_string()).is_ok());
+        assert!(is_expiry("1 day -1 hour".to_string()).is_ok());
+        assert!(is_expiry("+30 min".to_string()).is_ok());
+    }
+
+    #[test]
+    fn is_invalid_expiry() {
+        is_invalid_num();
+        assert!(is_num("1 day -1 hourz".to_string()).is_err());
     }
 
     #[test]
@@ -296,16 +311,15 @@ mod tests {
     }
 
     #[test]
-    fn sets_correct_lifetime() {
-        let lifetime: i64 = 17;
+    fn allows_for_a_custom_exp_as_systemd_string() {
         let encode_matcher = config_options()
             .get_matches_from_safe(vec![
                 "jwt",
                 "encode",
                 "-S",
                 "1234567890",
-                "-l",
-                &lifetime.to_string(),
+                "-e",
+                "+10 min -30 sec",
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
@@ -328,7 +342,7 @@ mod tests {
         let exp = exp_claim.unwrap();
         assert!(iat.is_positive());
         assert!(exp.is_positive());
-        assert_eq!(exp - iat, lifetime * 60);
+        assert_eq!(exp - iat, (10*60-30));
     }
 
     #[test]
