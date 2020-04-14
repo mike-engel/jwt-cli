@@ -13,7 +13,7 @@ use std::{fs, io};
 use term_painter::Attr::*;
 use term_painter::Color::*;
 use term_painter::ToStyle;
-use parse_duration::parse;
+use parse_duration::parse as parse_systemd_time;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct PayloadItem(String, Value);
@@ -103,7 +103,7 @@ impl Payload {
             // Already a UNIX timestamp, no further processing needed
             .filter(|e| is_num(e.to_string()).is_err())
             // systemd.time format already validated via arg matcher
-            .map(|duration| parse(duration).unwrap().as_secs())
+            .map(|duration| parse_systemd_time(duration).unwrap().as_secs())
             // Add parsed duration seconds to current timestamp for resulting expiry
             .map(|duration| duration + now as u64);
 
@@ -277,8 +277,7 @@ fn is_expiry(val: String) -> Result<(), String> {
     match i64::from_str_radix(&val, 10) {
         Ok(_) => Ok(()),
         Err(_) => {
-            let parse_result = parse(&val);
-            match parse_result {
+            match parse_systemd_time(&val) {
                 Ok(_) => Ok(()),
                 Err(_) => Err(String::from("exp must be an integer or systemd.time string"))
             }
