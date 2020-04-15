@@ -414,8 +414,9 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
     let subject = PayloadItem::from_string_with_name(matches.value_of("subject"), "sub");
     let audience = PayloadItem::from_string_with_name(matches.value_of("audience"), "aud");
     let principal = PayloadItem::from_string_with_name(matches.value_of("principal"), "prn");
-    let mut maybe_payloads: Vec<Option<PayloadItem>> =
-        vec![issued_at, expires, issuer, subject, audience, principal, not_before];
+    let mut maybe_payloads: Vec<Option<PayloadItem>> = vec![
+        issued_at, expires, issuer, subject, audience, principal, not_before,
+    ];
 
     maybe_payloads.append(&mut custom_payloads.unwrap_or_default());
     maybe_payloads.append(&mut custom_payload.unwrap_or_default());
