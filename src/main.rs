@@ -1,10 +1,11 @@
-use chrono::{Utc};
+use chrono::Utc;
 use clap::{arg_enum, crate_authors, crate_version, App, Arg, ArgMatches, SubCommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{
     dangerous_unsafe_decode, decode, encode, Algorithm, DecodingKey, EncodingKey, Header,
     TokenData, Validation,
 };
+use parse_duration::parse as parse_systemd_time;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{from_str, json, to_string_pretty, Value};
 use std::collections::BTreeMap;
@@ -13,7 +14,6 @@ use std::{fs, io};
 use term_painter::Attr::*;
 use term_painter::Color::*;
 use term_painter::ToStyle;
-use parse_duration::parse as parse_systemd_time;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct PayloadItem(String, Value);
@@ -93,23 +93,10 @@ impl Payload {
         for PayloadItem(k, v) in payloads {
             payload.insert(k, v);
         }
-
         payload.insert("iat".to_string(), iat);
 
-        let expiry = payload.get("exp")
-            // Exists
-            .filter(|e| e.is_string())
-            .map(|e| e.as_str().unwrap())
-            // Already a UNIX timestamp, no further processing needed
-            .filter(|e| is_num(e.to_string()).is_err())
-            // systemd.time format already validated via arg matcher
-            .map(|duration| parse_systemd_time(duration).unwrap().as_secs())
-            // Add parsed duration seconds to current timestamp for resulting expiry
-            .map(|duration| duration + now as u64);
-
-        if expiry.is_some() {
-            payload.insert("exp".to_string(), json!(expiry));
-        }
+        process_duration(&mut payload, "exp", now);
+        process_duration(&mut payload, "nbf", now);
 
         Payload(payload)
     }
@@ -190,7 +177,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .takes_value(true)
                         .long("exp")
                         .short("e")
-                        .validator(is_expiry),
+                        .validator(is_timestamp_or_duration),
                 ).arg(
                     Arg::with_name("issuer")
                         .help("the issuer of the token")
@@ -219,11 +206,11 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .requires("audience"),
                 ).arg(
                     Arg::with_name("not_before")
-                        .help("the time the JWT should become valid, in seconds")
+                        .help("the time the JWT should become valid, in seconds or systemd.time string")
                         .takes_value(true)
                         .long("nbf")
                         .short("n")
-                        .validator(is_num),
+                        .validator(is_timestamp_or_duration),
                 ).arg(
                     Arg::with_name("secret")
                         .help("the secret to sign the JWT with. Can be prefixed with @ to read from a binary file")
@@ -264,23 +251,14 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-fn is_num(val: String) -> Result<(), String> {
-    let parse_result = i64::from_str_radix(&val, 10);
-
-    match parse_result {
-        Ok(_) => Ok(()),
-        Err(_) => Err(String::from("exp and nbf must be integers")),
-    }
-}
-
-fn is_expiry(val: String) -> Result<(), String> {
+fn is_timestamp_or_duration(val: String) -> Result<(), String> {
     match i64::from_str_radix(&val, 10) {
         Ok(_) => Ok(()),
-        Err(_) => {
-            match parse_systemd_time(&val) {
-                Ok(_) => Ok(()),
-                Err(_) => Err(String::from("exp must be an integer or systemd.time string"))
-            }
+        Err(_) => match parse_systemd_time(&val) {
+            Ok(_) => Ok(()),
+            Err(_) => Err(String::from(
+                "must be a UNIX timestamp or systemd.time string",
+            )),
         },
     }
 }
@@ -313,6 +291,20 @@ fn translate_algorithm(alg: SupportedAlgorithms) -> Algorithm {
         SupportedAlgorithms::ES256 => Algorithm::ES256,
         SupportedAlgorithms::ES384 => Algorithm::ES384,
     }
+}
+
+fn process_duration(payload: &mut BTreeMap<String, Value>, opt: &str, now: i64) {
+    payload
+        .get(opt)
+        .filter(|v| v.is_string())
+        .map(|v| v.as_str().unwrap())
+        // If it's already a UNIX timestamp, no further processing is needed
+        .filter(|v| v.parse::<u64>().is_err())
+        // systemd.time format already validated via arg matcher, so assume correctness
+        .map(|duration| parse_systemd_time(duration).unwrap().as_secs())
+        // Add parsed duration seconds to current timestamp for resulting expiry
+        .map(|duration| duration + now as u64)
+        .and_then(|duration| payload.insert(opt.to_string(), json!(duration)));
 }
 
 fn create_header(alg: Algorithm, kid: Option<&str>) -> Header {
