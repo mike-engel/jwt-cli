@@ -5,9 +5,8 @@ use jsonwebtoken::{
     dangerous_unsafe_decode, decode, encode, Algorithm, DecodingKey, EncodingKey, Header,
     TokenData, Validation,
 };
-use parse_duration::parse as parse_systemd_time;
 use serde_derive::{Deserialize, Serialize};
-use serde_json::{from_str, json, to_string_pretty, Value};
+use serde_json::{from_str, to_string_pretty, Value};
 use std::collections::BTreeMap;
 use std::process::exit;
 use std::{fs, io};
@@ -82,21 +81,28 @@ impl PayloadItem {
 
         payload_item.unwrap()
     }
+
+    // If the value is defined as systemd.time, converts the defined duration into a UNIX timestamp
+    fn process_timestamp(val: Option<&str>, name: &str, now: i64) -> Option<PayloadItem> {
+        if val.is_some() && val.unwrap().parse::<u64>().is_err() {
+            let duration = parse_duration::parse(val.unwrap());
+            if duration.is_ok() {
+                let seconds = (duration.unwrap().as_secs() + now as u64).to_string();
+                return PayloadItem::from_string_with_name(Some(seconds.as_str()), name);
+            }
+        }
+
+        return PayloadItem::from_string_with_name(val, name);
+    }
 }
 
 impl Payload {
     fn from_payloads(payloads: Vec<PayloadItem>) -> Payload {
         let mut payload = BTreeMap::new();
-        let now = Utc::now().timestamp();
-        let iat = json!(now);
 
         for PayloadItem(k, v) in payloads {
             payload.insert(k, v);
         }
-        payload.insert("iat".to_string(), iat);
-
-        process_duration(&mut payload, "exp", now);
-        process_duration(&mut payload, "nbf", now);
 
         Payload(payload)
     }
@@ -254,7 +260,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
 fn is_timestamp_or_duration(val: String) -> Result<(), String> {
     match i64::from_str_radix(&val, 10) {
         Ok(_) => Ok(()),
-        Err(_) => match parse_systemd_time(&val) {
+        Err(_) => match parse_duration::parse(&val) {
             Ok(_) => Ok(()),
             Err(_) => Err(String::from(
                 "must be a UNIX timestamp or systemd.time string",
@@ -291,20 +297,6 @@ fn translate_algorithm(alg: SupportedAlgorithms) -> Algorithm {
         SupportedAlgorithms::ES256 => Algorithm::ES256,
         SupportedAlgorithms::ES384 => Algorithm::ES384,
     }
-}
-
-fn process_duration(payload: &mut BTreeMap<String, Value>, opt: &str, now: i64) {
-    payload
-        .get(opt)
-        .filter(|v| v.is_string())
-        .map(|v| v.as_str().unwrap())
-        // If it's already a UNIX timestamp, no further processing is needed
-        .filter(|v| v.parse::<u64>().is_err())
-        // systemd.time format already validated via arg matcher, so assume correctness
-        .map(|duration| parse_systemd_time(duration).unwrap().as_secs())
-        // Add parsed duration seconds to current timestamp for resulting expiry
-        .map(|duration| duration + now as u64)
-        .and_then(|duration| payload.insert(opt.to_string(), json!(duration)));
 }
 
 fn create_header(alg: Algorithm, kid: Option<&str>) -> Header {
@@ -414,14 +406,16 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
                 .collect(),
             _ => panic!("Invalid JSON provided!"),
         });
-    let expires = PayloadItem::from_string_with_name(matches.value_of("expires"), "exp");
+    let now = Utc::now().timestamp();
+    let expires = PayloadItem::process_timestamp(matches.value_of("expires"), "exp", now);
+    let not_before = PayloadItem::process_timestamp(matches.value_of("not_before"), "nbf", now);
+    let issued_at = PayloadItem::from_string_with_name(Some(now.to_string().as_str()), "iat");
     let issuer = PayloadItem::from_string_with_name(matches.value_of("issuer"), "iss");
     let subject = PayloadItem::from_string_with_name(matches.value_of("subject"), "sub");
     let audience = PayloadItem::from_string_with_name(matches.value_of("audience"), "aud");
     let principal = PayloadItem::from_string_with_name(matches.value_of("principal"), "prn");
-    let not_before = PayloadItem::from_string_with_name(matches.value_of("not_before"), "nbf");
     let mut maybe_payloads: Vec<Option<PayloadItem>> =
-        vec![expires, issuer, subject, audience, principal, not_before];
+        vec![issued_at, expires, issuer, subject, audience, principal, not_before];
 
     maybe_payloads.append(&mut custom_payloads.unwrap_or_default());
     maybe_payloads.append(&mut custom_payload.unwrap_or_default());
