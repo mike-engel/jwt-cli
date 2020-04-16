@@ -409,7 +409,7 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
     let now = Utc::now().timestamp();
     let expires = PayloadItem::from_timestamp_with_name(matches.value_of("expires"), "exp", now);
     let not_before = PayloadItem::from_timestamp_with_name(matches.value_of("not_before"), "nbf", now);
-    let issued_at = PayloadItem::from_string_with_name(Some(&now.to_string()), "iat");
+    let issued_at = PayloadItem::from_timestamp_with_name(Some(&now.to_string()), "iat", now);
     let issuer = PayloadItem::from_string_with_name(matches.value_of("issuer"), "iss");
     let subject = PayloadItem::from_string_with_name(matches.value_of("subject"), "sub");
     let audience = PayloadItem::from_string_with_name(matches.value_of("audience"), "aud");
