@@ -74,25 +74,25 @@ impl PayloadItem {
         }
     }
 
+    // If the value is defined as systemd.time, converts the defined duration into a UNIX timestamp
+    fn from_timestamp_with_name(val: Option<&str>, name: &str, now: i64) -> Option<PayloadItem> {
+        if val.is_some() && val.unwrap().parse::<u64>().is_err() {
+            let duration = parse_duration::parse(val.unwrap());
+            if duration.is_ok() {
+                let seconds = duration.unwrap().as_secs() + now as u64;
+                return PayloadItem::from_string_with_name(Some(&seconds.to_string()), name);
+            }
+        }
+
+        return PayloadItem::from_string_with_name(val, name);
+    }
+
     fn split_payload_item(p: &str) -> PayloadItem {
         let split: Vec<&str> = p.split('=').collect();
         let (name, value) = (split[0], split[1]);
         let payload_item = PayloadItem::from_string_with_name(Some(value), name);
 
         payload_item.unwrap()
-    }
-
-    // If the value is defined as systemd.time, converts the defined duration into a UNIX timestamp
-    fn process_timestamp(val: Option<&str>, name: &str, now: i64) -> Option<PayloadItem> {
-        if val.is_some() && val.unwrap().parse::<u64>().is_err() {
-            let duration = parse_duration::parse(val.unwrap());
-            if duration.is_ok() {
-                let seconds = (duration.unwrap().as_secs() + now as u64).to_string();
-                return PayloadItem::from_string_with_name(Some(seconds.as_str()), name);
-            }
-        }
-
-        return PayloadItem::from_string_with_name(val, name);
     }
 }
 
@@ -407,9 +407,9 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
             _ => panic!("Invalid JSON provided!"),
         });
     let now = Utc::now().timestamp();
-    let expires = PayloadItem::process_timestamp(matches.value_of("expires"), "exp", now);
-    let not_before = PayloadItem::process_timestamp(matches.value_of("not_before"), "nbf", now);
-    let issued_at = PayloadItem::from_string_with_name(Some(now.to_string().as_str()), "iat");
+    let expires = PayloadItem::from_timestamp_with_name(matches.value_of("expires"), "exp", now);
+    let not_before = PayloadItem::from_timestamp_with_name(matches.value_of("not_before"), "nbf", now);
+    let issued_at = PayloadItem::from_string_with_name(Some(&now.to_string()), "iat");
     let issuer = PayloadItem::from_string_with_name(matches.value_of("issuer"), "iss");
     let subject = PayloadItem::from_string_with_name(matches.value_of("subject"), "sub");
     let audience = PayloadItem::from_string_with_name(matches.value_of("audience"), "aud");
