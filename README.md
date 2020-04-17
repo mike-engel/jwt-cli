@@ -136,6 +136,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
   </tr>
   <tr>
     <td align="center"><a href="https://medium.com/@therealklanni"><img src="https://avatars2.githubusercontent.com/u/626347?v=4" width="100px;" alt="Kevin Lanni"/><br /><sub><b>Kevin Lanni</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=therealklanni" title="Documentation">📖</a></td>
+    <td align="center"><a href="https://github.com/kkrauth"><img src="https://avatars3.githubusercontent.com/u/680123?v=4" width="100px;" alt="Kosta Krauth"/><br /><sub><b>Kosta Krauth</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=kkrauth" title="Code">💻</a> <a href="https://github.com/mike-engel/jwt-cli/commits?author=kkrauth" title="Tests">⚠️</a> <a href="https://github.com/mike-engel/jwt-cli/commits?author=kkrauth" title="Documentation">📖</a></td>
   </tr>
 </table>
 

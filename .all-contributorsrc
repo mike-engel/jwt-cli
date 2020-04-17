@@ -90,6 +90,17 @@
       "contributions": [
         "doc"
       ]
+    },
+    {
+      "login": "kkrauth",
+      "name": "Kosta Krauth",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/680123?v=4",
+      "profile": "https://github.com/kkrauth",
+      "contributions": [
+        "code",
+        "test",
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7
