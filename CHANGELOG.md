@@ -1,5 +1,13 @@
 # Unreleased
 
+# 3.1.0
+
+> 2020-04-17
+
+#### New features
+
+- Durations (`exp`, and `nbf`) can now be set with relative times #68
+
 # 3.0.1
 
 > 2020-03-14
