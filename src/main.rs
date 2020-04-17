@@ -1,4 +1,4 @@
-use chrono::{Duration, Utc};
+use chrono::Utc;
 use clap::{arg_enum, crate_authors, crate_version, App, Arg, ArgMatches, SubCommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{
@@ -6,7 +6,7 @@ use jsonwebtoken::{
     TokenData, Validation,
 };
 use serde_derive::{Deserialize, Serialize};
-use serde_json::{from_str, json, to_string_pretty, Value};
+use serde_json::{from_str, to_string_pretty, Value};
 use std::collections::BTreeMap;
 use std::process::exit;
 use std::{fs, io};
@@ -74,6 +74,19 @@ impl PayloadItem {
         }
     }
 
+    // If the value is defined as systemd.time, converts the defined duration into a UNIX timestamp
+    fn from_timestamp_with_name(val: Option<&str>, name: &str, now: i64) -> Option<PayloadItem> {
+        if val.is_some() && val.unwrap().parse::<u64>().is_err() {
+            let duration = parse_duration::parse(val.unwrap());
+            if duration.is_ok() {
+                let seconds = duration.unwrap().as_secs() + now as u64;
+                return PayloadItem::from_string_with_name(Some(&seconds.to_string()), name);
+            }
+        }
+
+        return PayloadItem::from_string_with_name(val, name);
+    }
+
     fn split_payload_item(p: &str) -> PayloadItem {
         let split: Vec<&str> = p.split('=').collect();
         let (name, value) = (split[0], split[1]);
@@ -86,17 +99,9 @@ impl PayloadItem {
 impl Payload {
     fn from_payloads(payloads: Vec<PayloadItem>) -> Payload {
         let mut payload = BTreeMap::new();
-        let iat = json!(Utc::now().timestamp());
-        let exp = json!((Utc::now() + Duration::minutes(30)).timestamp());
 
         for PayloadItem(k, v) in payloads {
             payload.insert(k, v);
-        }
-
-        payload.insert("iat".to_string(), iat);
-
-        if !payload.contains_key("exp") {
-            payload.insert("exp".to_string(), exp);
         }
 
         Payload(payload)
@@ -173,11 +178,12 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .validator(is_payload_item),
                 ).arg(
                     Arg::with_name("expires")
-                        .help("the time the token should expire, in seconds")
+                        .help("the time the token should expire, in seconds or systemd.time string")
+                        .default_value("+30 min")
                         .takes_value(true)
                         .long("exp")
                         .short("e")
-                        .validator(is_num),
+                        .validator(is_timestamp_or_duration),
                 ).arg(
                     Arg::with_name("issuer")
                         .help("the issuer of the token")
@@ -206,11 +212,11 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .requires("audience"),
                 ).arg(
                     Arg::with_name("not_before")
-                        .help("the time the JWT should become valid, in seconds")
+                        .help("the time the JWT should become valid, in seconds or systemd.time string")
                         .takes_value(true)
                         .long("nbf")
                         .short("n")
-                        .validator(is_num),
+                        .validator(is_timestamp_or_duration),
                 ).arg(
                     Arg::with_name("secret")
                         .help("the secret to sign the JWT with. Can be prefixed with @ to read from a binary file")
@@ -251,12 +257,15 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
         )
 }
 
-fn is_num(val: String) -> Result<(), String> {
-    let parse_result = i64::from_str_radix(&val, 10);
-
-    match parse_result {
+fn is_timestamp_or_duration(val: String) -> Result<(), String> {
+    match i64::from_str_radix(&val, 10) {
         Ok(_) => Ok(()),
-        Err(_) => Err(String::from("exp and nbf must be integers")),
+        Err(_) => match parse_duration::parse(&val) {
+            Ok(_) => Ok(()),
+            Err(_) => Err(String::from(
+                "must be a UNIX timestamp or systemd.time string",
+            )),
+        },
     }
 }
 
@@ -397,14 +406,17 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
                 .collect(),
             _ => panic!("Invalid JSON provided!"),
         });
-    let expires = PayloadItem::from_string_with_name(matches.value_of("expires"), "exp");
+    let now = Utc::now().timestamp();
+    let expires = PayloadItem::from_timestamp_with_name(matches.value_of("expires"), "exp", now);
+    let not_before = PayloadItem::from_timestamp_with_name(matches.value_of("not_before"), "nbf", now);
+    let issued_at = PayloadItem::from_timestamp_with_name(Some(&now.to_string()), "iat", now);
     let issuer = PayloadItem::from_string_with_name(matches.value_of("issuer"), "iss");
     let subject = PayloadItem::from_string_with_name(matches.value_of("subject"), "sub");
     let audience = PayloadItem::from_string_with_name(matches.value_of("audience"), "aud");
     let principal = PayloadItem::from_string_with_name(matches.value_of("principal"), "prn");
-    let not_before = PayloadItem::from_string_with_name(matches.value_of("not_before"), "nbf");
-    let mut maybe_payloads: Vec<Option<PayloadItem>> =
-        vec![expires, issuer, subject, audience, principal, not_before];
+    let mut maybe_payloads: Vec<Option<PayloadItem>> = vec![
+        issued_at, expires, issuer, subject, audience, principal, not_before,
+    ];
 
     maybe_payloads.append(&mut custom_payloads.unwrap_or_default());
     maybe_payloads.append(&mut custom_payload.unwrap_or_default());
