@@ -11,6 +11,10 @@ mod tests {
     use jsonwebtoken::{Algorithm, Header, TokenData};
     use serde_json::{from_value, json};
 
+    fn empty_args() -> impl IntoIterator<Item = String> {
+        std::iter::empty()
+    }
+
     #[test]
     fn payload_item_from_string() {
         let string = Some("this=that");
@@ -54,7 +58,7 @@ mod tests {
 
     #[test]
     fn payload_from_payload_items() {
-        let _matcher = config_options().get_matches();
+        let _matcher = config_options().get_matches_from_safe(empty_args());
         let payload_item_one = PayloadItem::from_string(Some("this=that")).unwrap();
         let payload_item_two = PayloadItem::from_string(Some("full=yolo")).unwrap();
         let payloads = vec![payload_item_one, payload_item_two];
