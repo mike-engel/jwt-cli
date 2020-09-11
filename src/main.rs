@@ -2,7 +2,7 @@ use chrono::Utc;
 use clap::{arg_enum, crate_authors, crate_version, App, Arg, ArgMatches, SubCommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{
-    dangerous_unsafe_decode, decode, encode, Algorithm, DecodingKey, EncodingKey, Header,
+    dangerous_insecure_decode, decode, encode, Algorithm, DecodingKey, EncodingKey, Header,
     TokenData, Validation,
 };
 use serde_derive::{Deserialize, Serialize};
@@ -408,7 +408,8 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
         });
     let now = Utc::now().timestamp();
     let expires = PayloadItem::from_timestamp_with_name(matches.value_of("expires"), "exp", now);
-    let not_before = PayloadItem::from_timestamp_with_name(matches.value_of("not_before"), "nbf", now);
+    let not_before =
+        PayloadItem::from_timestamp_with_name(matches.value_of("not_before"), "nbf", now);
     let issued_at = PayloadItem::from_timestamp_with_name(Some(&now.to_string()), "iat", now);
     let issuer = PayloadItem::from_string_with_name(matches.value_of("issuer"), "iss");
     let subject = PayloadItem::from_string_with_name(matches.value_of("subject"), "sub");
@@ -468,9 +469,9 @@ fn decode_token(
     (
         match secret {
             Some(secret_key) => decode::<Payload>(&jwt, &secret_key.unwrap(), &secret_validator),
-            None => dangerous_unsafe_decode::<Payload>(&jwt),
+            None => dangerous_insecure_decode::<Payload>(&jwt),
         },
-        dangerous_unsafe_decode::<Payload>(&jwt),
+        dangerous_insecure_decode::<Payload>(&jwt),
         if matches.is_present("json") {
             OutputFormat::JSON
         } else {
@@ -521,9 +522,14 @@ fn print_decoded_token(
                 Red.bold()
                     .paint("The secret provided isn't a valid ECDSA key",)
             ),
-            ErrorKind::ExpiredSignature => {
-                println!("{}", Red.bold().paint("The token has expired"))
-            }
+            ErrorKind::ExpiredSignature => match &token_data {
+                Ok(token) => {
+                    if token.claims.0.contains_key("exp") {
+                        println!("{}", Red.bold().paint("The token has expired"))
+                    }
+                }
+                _ => {}
+            },
             ErrorKind::InvalidIssuer => {
                 println!("{}", Red.bold().paint("The token issuer is invalid"))
             }
