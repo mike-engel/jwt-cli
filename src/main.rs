@@ -1,3 +1,4 @@
+use atty::Stream;
 use chrono::Utc;
 use clap::{arg_enum, crate_authors, crate_version, App, Arg, ArgMatches, SubCommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
@@ -483,7 +484,11 @@ fn decode_token(
 fn print_encoded_token(token: JWTResult<String>) {
     match token {
         Ok(jwt) => {
-            println!("{}", jwt);
+            if atty::is(Stream::Stdout) {
+                println!("{}", jwt);
+            } else {
+                print!("{}", jwt);
+            }
             exit(0);
         }
         Err(err) => {
