@@ -1,5 +1,17 @@
 # Unreleased
 
+# 3.2.0
+
+> 2020-09-11
+
+#### New features
+
+- When piping the output of `jwt` to another command, `jwt` won't add a trailing newline
+
+#### Bug fixes
+
+- When verifying token without an `exp` claim, `jwt` won't print that the jwt is inavalid
+
 # 3.1.0
 
 > 2020-04-17
