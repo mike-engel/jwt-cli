@@ -116,7 +116,7 @@ dependencies = [
 
 [[package]]
 name = "jwt-cli"
-version = "3.2.0"
+version = "3.2.1"
 dependencies = [
  "atty 0.2.14 (registry+https://github.com/rust-lang/crates.io-index)",
  "chrono 0.4.15 (registry+https://github.com/rust-lang/crates.io-index)",
