@@ -55,10 +55,9 @@ enum OutputFormat {
 
 impl PayloadItem {
     fn from_string(val: Option<&str>) -> Option<PayloadItem> {
-        if val.is_some() {
-            Some(PayloadItem::split_payload_item(val.unwrap()))
-        } else {
-            None
+        match val {
+            Some(item) => Some(PayloadItem::split_payload_item(item)),
+            None => None,
         }
     }
 
