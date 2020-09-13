@@ -76,11 +76,13 @@ impl PayloadItem {
 
     // If the value is defined as systemd.time, converts the defined duration into a UNIX timestamp
     fn from_timestamp_with_name(val: Option<&str>, name: &str, now: i64) -> Option<PayloadItem> {
-        if val.is_some() && val.unwrap().parse::<u64>().is_err() {
-            let duration = parse_duration::parse(val.unwrap());
-            if duration.is_ok() {
-                let seconds = duration.unwrap().as_secs() + now as u64;
-                return PayloadItem::from_string_with_name(Some(&seconds.to_string()), name);
+        if let Some(timestamp) = val {
+            if timestamp.parse::<u64>().is_err() {
+                let duration = parse_duration::parse(timestamp);
+                if let Ok(parsed_duration) = duration {
+                    let seconds = parsed_duration.as_secs() + now as u64;
+                    return PayloadItem::from_string_with_name(Some(&seconds.to_string()), name);
+                }
             }
         }
 
@@ -443,7 +445,7 @@ fn decode_token(
     let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
         matches.value_of("algorithm").unwrap(),
     ));
-    let secret = match matches.value_of("secret").map(|s| (s, s.len() > 0)) {
+    let secret = match matches.value_of("secret").map(|s| (s, !s.is_empty())) {
         Some((secret, true)) => Some(decoding_key_from_secret(&algorithm, &secret)),
         _ => None,
     };
@@ -462,8 +464,7 @@ fn decode_token(
 
             buffer
         })
-        .unwrap()
-        .to_string();
+        .unwrap();
     let secret_validator = create_validations(algorithm);
 
     (
@@ -526,14 +527,13 @@ fn print_decoded_token(
                 Red.bold()
                     .paint("The secret provided isn't a valid ECDSA key",)
             ),
-            ErrorKind::ExpiredSignature => match &token_data {
-                Ok(token) => {
+            ErrorKind::ExpiredSignature => {
+                if let Ok(token) = &token_data {
                     if token.claims.0.contains_key("exp") {
                         println!("{}", Red.bold().paint("The token has expired"))
                     }
                 }
-                _ => {}
-            },
+            }
             ErrorKind::InvalidIssuer => {
                 println!("{}", Red.bold().paint("The token issuer is invalid"))
             }
