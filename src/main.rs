@@ -85,7 +85,7 @@ impl PayloadItem {
             }
         }
 
-        return PayloadItem::from_string_with_name(val, name);
+        PayloadItem::from_string_with_name(val, name)
     }
 
     fn split_payload_item(p: &str) -> PayloadItem {
