@@ -252,7 +252,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .default_value(""),
                 ).arg(
                     Arg::with_name("json")
-                        .help("render decoded JWT as JSON")
+                        .help("render decoded JWT as JSON (default if stdout is not a TTY)")
                         .long("json")
                         .short("j"),
                 ),
@@ -473,7 +473,7 @@ fn decode_token(
             None => dangerous_insecure_decode::<Payload>(&jwt),
         },
         dangerous_insecure_decode::<Payload>(&jwt),
-        if matches.is_present("json") {
+        if matches.is_present("json") || !atty::is(Stream::Stdout) {
             OutputFormat::JSON
         } else {
             OutputFormat::Text
