@@ -1,5 +1,13 @@
 # Unreleased
 
+# 3.3.0
+
+> 2020-12-24
+
+#### New features
+
+- Default decoding to JSON when not in a TTY #100
+
 # 3.2.1
 
 > 2020-09-13
@@ -18,7 +26,7 @@
 
 #### Bug fixes
 
-- When verifying token without an `exp` claim, `jwt` won't print that the jwt is inavalid
+- When verifying token without an `exp` claim, `jwt` won't print that the jwt is invalid
 
 # 3.1.0
 
