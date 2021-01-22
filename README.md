@@ -78,6 +78,20 @@ jwt help
 jwt help encode
 ```
 
+## Usage as a pipe
+
+The `-` argument tells `jwt-cli` to read from standard input:
+
+```sh
+jwt encode --secret=fake '{"hello":"world"}' | jwt decode -
+```
+
+It's especially useful when you're dealing with a chain of shell commands that produce a JWT. Pipe the result through `jwt decode -` to decode it.
+
+```sh
+curl <auth API> | jq -r .access_token | jwt decode -
+```
+
 # Contributing
 
 I welcome all issues and pull requests! This is my first project in rust, so this project almost certainly could be better written. All I ask is that you follow the [code of conduct](code_of_conduct.md) and use [rustfmt](https://github.com/rust-lang-nursery/rustfmt) to have a consistent project code style.
