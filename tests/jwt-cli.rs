@@ -470,6 +470,21 @@ mod tests {
     }
 
     #[test]
+    fn decodes_a_token_with_leading_and_trailing_whitespace() {
+        let matches = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "    eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.SEQijh6tEuOOAAKpHPuKxgFqEvlTNP1jj4FUNoBwXaM ",
+            ])
+            .unwrap();
+        let decode_matches = matches.subcommand_matches("decode").unwrap();
+        let (result, _, _) = decode_token(&decode_matches);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn encodes_and_decodes_an_rsa_token_using_key_from_file() {
         let body: String = "{\"field\":\"value\"}".to_string();
         let encode_matcher = config_options()
