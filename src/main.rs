@@ -454,7 +454,10 @@ fn decode_token(
 
             buffer
         })
-        .unwrap();
+        .unwrap()
+        .trim()
+        .to_owned();
+
     let secret_validator = create_validations(algorithm);
 
     (
