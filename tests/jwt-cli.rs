@@ -250,9 +250,9 @@ mod tests {
     }
 
     #[test]
-    fn adds_iat_exp_automatically() {
+    fn adds_iat_automatically() {
         let encode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "encode", "-S", "1234567890"])
+            .get_matches_from_safe(vec!["jwt", "encode", "--exp", "-S", "1234567890"])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
@@ -266,12 +266,78 @@ mod tests {
 
         let TokenData { claims, header: _ } = decoded_token.unwrap();
         let iat = from_value::<i64>(claims.0["iat"].clone());
-        let exp = from_value::<i64>(claims.0["exp"].clone());
 
         assert!(iat.is_ok());
-        assert!(exp.is_ok());
         assert!(iat.unwrap().is_positive());
+    }
+
+    #[test]
+    fn stops_exp_from_automatically_being_added() {
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec!["jwt", "encode", "-S", "1234567890"])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let (decoded_token, token_data, _) = decode_token(&decode_matches);
+
+        assert!(decoded_token.is_err());
+
+        let TokenData { claims, header: _ } = token_data.unwrap();
+
+        assert!(claims.0.get("exp").is_none());
+    }
+
+    #[test]
+    fn adds_default_exp_automatically() {
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec!["jwt", "encode", "--exp", "-S", "1234567890"])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_matches);
+
+        assert!(decoded_token.is_ok());
+
+        let TokenData { claims, header: _ } = decoded_token.unwrap();
+        let exp = from_value::<i64>(claims.0["exp"].clone());
+
+        assert!(exp.is_ok());
         assert!(exp.unwrap().is_positive());
+    }
+
+    #[test]
+    fn stops_iat_from_automatically_being_added() {
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "encode",
+                "--no-iat",
+                "--exp",
+                "-S",
+                "1234567890",
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_matches);
+
+        assert!(decoded_token.is_ok());
+
+        let TokenData { claims, header: _ } = decoded_token.unwrap();
+
+        assert!(claims.0.get("iat").is_none());
     }
 
     #[test]
@@ -342,7 +408,15 @@ mod tests {
     #[test]
     fn allows_for_nbf_as_systemd_string() {
         let encode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "encode", "-S", "1234567890", "-n", "+5 min"])
+            .get_matches_from_safe(vec![
+                "jwt",
+                "encode",
+                "-S",
+                "1234567890",
+                "--exp",
+                "-n",
+                "+5 min",
+            ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
@@ -493,6 +567,7 @@ mod tests {
                 "encode",
                 "-A",
                 "RS256",
+                "--exp",
                 "-S",
                 "@./tests/private_rsa_key.der",
                 &body,
@@ -526,6 +601,7 @@ mod tests {
                 "encode",
                 "-A",
                 "ES256",
+                "--exp",
                 "-S",
                 "@./tests/private_ecdsa_key.pk8",
                 &body,

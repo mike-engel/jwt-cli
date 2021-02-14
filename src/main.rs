@@ -217,6 +217,10 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .short("n")
                         .validator(is_timestamp_or_duration),
                 ).arg(
+                    Arg::with_name("no_iat")
+                        .help("prevent an iat claim from being automatically added")
+                        .long("no-iat")
+                ).arg(
                     Arg::with_name("secret")
                         .help("the secret to sign the JWT with. Can be prefixed with @ to read from a binary file")
                         .takes_value(true)
@@ -406,10 +410,16 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
             _ => panic!("Invalid JSON provided!"),
         });
     let now = Utc::now().timestamp();
-    let expires = PayloadItem::from_timestamp_with_name(matches.value_of("expires"), "exp", now);
+    let expires = match matches.occurrences_of("expires") {
+        0 => None,
+        _ => PayloadItem::from_timestamp_with_name(matches.value_of("expires"), "exp", now),
+    };
     let not_before =
         PayloadItem::from_timestamp_with_name(matches.value_of("not_before"), "nbf", now);
-    let issued_at = PayloadItem::from_timestamp_with_name(Some(&now.to_string()), "iat", now);
+    let issued_at = match matches.is_present("no_iat") {
+        true => None,
+        false => PayloadItem::from_timestamp_with_name(Some(&now.to_string()), "iat", now),
+    };
     let issuer = PayloadItem::from_string_with_name(matches.value_of("issuer"), "iss");
     let subject = PayloadItem::from_string_with_name(matches.value_of("subject"), "sub");
     let audience = PayloadItem::from_string_with_name(matches.value_of("audience"), "aud");
@@ -507,6 +517,12 @@ fn print_decoded_token(
     token_data: JWTResult<TokenData<Payload>>,
     format: OutputFormat,
 ) {
+    let should_validate_exp = if let Ok(token) = &token_data {
+        token.claims.0.contains_key("exp")
+    } else {
+        false
+    };
+
     if let Err(err) = &validated_token {
         match err.kind() {
             ErrorKind::InvalidToken => {
@@ -528,10 +544,8 @@ fn print_decoded_token(
                     .paint("The secret provided isn't a valid ECDSA key",)
             ),
             ErrorKind::ExpiredSignature => {
-                if let Ok(token) = &token_data {
-                    if token.claims.0.contains_key("exp") {
-                        println!("{}", Red.bold().paint("The token has expired"))
-                    }
+                if should_validate_exp {
+                    println!("{}", Red.bold().paint("The token has expired"))
                 }
             }
             ErrorKind::InvalidIssuer => {
@@ -581,7 +595,10 @@ fn print_decoded_token(
     }
 
     exit(match validated_token {
-        Err(_) => 1,
+        Err(err) => match (err.kind(), should_validate_exp) {
+            (ErrorKind::ExpiredSignature, false) => 0,
+            _ => 1,
+        },
         Ok(_) => 0,
     })
 }

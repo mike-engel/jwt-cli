@@ -3,6 +3,8 @@
 - Remove the `prn` option as it's not included in the spec any longer #114
 - Trim whitespace around jwt before encoding #120
 - Support adding `jti` when encoding
+- Add `no-iat` flag to disable automatic `iat` claim generation
+- Avoid adding an `exp` claim automatically. Instead, the `--exp` flag must be present, with or without a value
 
 # 3.3.0
 
