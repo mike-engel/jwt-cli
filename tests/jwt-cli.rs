@@ -205,6 +205,8 @@ mod tests {
                 "1234",
                 "-n",
                 &nbf.to_string(),
+                "--jti",
+                "yolo-jti",
                 "-P",
                 "this=that",
                 "-P",
@@ -237,6 +239,7 @@ mod tests {
         assert_eq!(claims.0["sub"], "yolo-subject");
         assert_eq!(claims.0["nbf"], nbf);
         assert_eq!(claims.0["exp"], exp);
+        assert_eq!(claims.0["jti"], "yolo-jti");
         assert_eq!(claims.0["this"], "that");
         assert_eq!(claims.0["test"], "json value");
         assert_eq!(claims.0["bool"], true);

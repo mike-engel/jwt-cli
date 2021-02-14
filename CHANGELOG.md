@@ -1,6 +1,8 @@
 # Unreleased
 
 - Remove the `prn` option as it's not included in the spec any longer #114
+- Trim whitespace around jwt before encoding #120
+- Support adding `jti` when encoding
 
 # 3.3.0
 
