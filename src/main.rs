@@ -204,14 +204,6 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .takes_value(true)
                         .long("aud")
                         .short("a")
-                        .requires("principal"),
-                ).arg(
-                    Arg::with_name("principal")
-                        .help("the principal of the token")
-                        .takes_value(true)
-                        .long("prn")
-                        .short("p")
-                        .requires("audience"),
                 ).arg(
                     Arg::with_name("not_before")
                         .help("the time the JWT should become valid, in seconds or systemd.time string")
@@ -416,10 +408,8 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
     let issuer = PayloadItem::from_string_with_name(matches.value_of("issuer"), "iss");
     let subject = PayloadItem::from_string_with_name(matches.value_of("subject"), "sub");
     let audience = PayloadItem::from_string_with_name(matches.value_of("audience"), "aud");
-    let principal = PayloadItem::from_string_with_name(matches.value_of("principal"), "prn");
-    let mut maybe_payloads: Vec<Option<PayloadItem>> = vec![
-        issued_at, expires, issuer, subject, audience, principal, not_before,
-    ];
+    let mut maybe_payloads: Vec<Option<PayloadItem>> =
+        vec![issued_at, expires, issuer, subject, audience, not_before];
 
     maybe_payloads.append(&mut custom_payloads.unwrap_or_default());
     maybe_payloads.append(&mut custom_payload.unwrap_or_default());

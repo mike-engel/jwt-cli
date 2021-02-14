@@ -1,5 +1,7 @@
 # Unreleased
 
+- Remove the `prn` option as it's not included in the spec any longer #114
+
 # 3.3.0
 
 > 2020-12-24

@@ -213,8 +213,6 @@ mod tests {
                 "array=[1, 2, 3]",
                 "-P",
                 "object={\"foo\": \"bar\"}",
-                "-p",
-                "yolo-principal",
                 "-s",
                 "yolo-subject",
                 "{\"test\":\"json value\",\"bool\":true,\"json_number\":1}",
@@ -236,7 +234,6 @@ mod tests {
         assert_eq!(header.kid, Some("1234".to_string()));
         assert_eq!(claims.0["aud"], "yolo");
         assert_eq!(claims.0["iss"], "yolo-service");
-        assert_eq!(claims.0["prn"], "yolo-principal");
         assert_eq!(claims.0["sub"], "yolo-subject");
         assert_eq!(claims.0["nbf"], nbf);
         assert_eq!(claims.0["exp"], exp);
