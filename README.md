@@ -4,27 +4,26 @@
 
 A super fast CLI tool to decode and encode JWTs built in [Rust](https://rust-lang.org).
 
-[![Build Status](https://travis-ci.org/mike-engel/jwt-cli.svg?branch=master)](https://travis-ci.org/mike-engel/jwt-cli)
-[![Build status](https://ci.appveyor.com/api/projects/status/9p1lqbo8cmhixdns/branch/master?svg=true)](https://ci.appveyor.com/project/mike-engel/jwt-cli/branch/master)
+![Continuous Integration](https://github.com/mike-engel/jwt-cli/workflows/Continuous%20Integration/badge.svg)
 [![GitHub release](https://img.shields.io/github/tag/mike-engel/jwt-cli.svg)]()
 
 `jwt-cli` is a command line tool to help you work with JSON Web Tokens (JWTs). Like most JWT command line tools out there, you can decode almost any JWT header and claims body. Unlike any that I've found, however, `jwt-cli` allows you to encode a new JWT with nearly any piece of data you can think of. Custom header values (some), custom claim bodies (as long as it's JSON, it's game), and using any secret you need.
 
-On top of all that, it's written in Rust so it's fast and extremely portable (windows, macOS, and linux supported right now).
+On top of all that, it's written in Rust so it's fast and portable (windows, macOS, and linux supported right now).
 
 # Installation
 
-Currently, installation is supported via [Homebrew](https://brew.sh) (macOS), [Cargo](https://www.rust-lang.org/tools/install) (cross-platform), and [FreshPorts](https://www.freshports.org/www/jwt-cli) (FreeBSD). If you intend to use one of these methods, [skip ahead](#homebrew).
+Install `jwt-cli` via [Homebrew](https://brew.sh) (macOS), [Cargo](https://www.rust-lang.org/tools/install) (cross-platform), and [FreshPorts](https://www.freshports.org/www/jwt-cli) (FreeBSD). If you intend to use one of these methods, [skip ahead](#homebrew).
 
 You may also install the binary from the [release](https://github.com/mike-engel/jwt-cli/releases) page, if you're unable to use Homebrew or Cargo install methods below.
 
 Only 64bit linux, macOS, and Windows targets are pre-built. Sorry if you're not on one of those! You'll need to build it from the source. See the [contributing](#contributing) section on how to install and build the project.
 
-As to where you should install it, it should optimally go somewhere in your `PATH`. For Linux and macOS, a good place is generally `/usr/local/bin`. For Windows, there really isn't a good place by default :(.
+You should install it somewhere in your `$PATH`. For Linux and macOS, a good place is generally `/usr/local/bin`. For Windows, there isn't a good place by default :(.
 
 ## Homebrew
 
-For those with Homebrew, you'll need to `brew tap mike-engel/jwt-cli` repo in order to install it.
+For those with Homebrew, you'll need to `brew tap mike-engel/jwt-cli` repo to install it.
 
 ```sh
 # Tap and install jwt-cli
@@ -43,7 +42,7 @@ If your system [supports](https://forge.rust-lang.org/platform-support.html) it,
 cargo install jwt-cli
 ```
 
-The binary will be installed in your Cargo bin path (`~/.cargo/bin`). Make sure this path is included in your PATH environment variable.
+The binary installs to your Cargo bin path (`~/.cargo/bin`). Make sure your `$PATH` environment variable includes this path.
 
 ## FreshPorts
 
@@ -57,10 +56,10 @@ Big thanks to Sergey Osokin, the FreeBSD contributor who added `jwt-cli` to the 
 
 ## GoFish
 
-`jwt-cli` is also avaible on Windows, MacOSX and Linux using GoFish.
+`jwt-cli` is also available on Windows, macOS, and Linux using GoFish.
 See [gofi.sh](https://gofi.sh/index.html#install) for instructions for getting GoFish.
 
-After installing GoFish, getting `jwt-cli` is just running:
+After installing GoFish, run `jwt-cli` with:
 
 ```sh
 gofish install jwt-cli
@@ -86,7 +85,7 @@ The `-` argument tells `jwt-cli` to read from standard input:
 jwt encode --secret=fake '{"hello":"world"}' | jwt decode -
 ```
 
-It's especially useful when you're dealing with a chain of shell commands that produce a JWT. Pipe the result through `jwt decode -` to decode it.
+It's useful when you're dealing with a chain of shell commands that produce a JWT. Pipe the result through `jwt decode -` to decode it.
 
 ```sh
 curl <auth API> | jq -r .access_token | jwt decode -
@@ -120,7 +119,7 @@ cargo build
 cargo build --release
 ```
 
-If it built successfully, you should be able to run the command via `cargo`.
+If it built without any errors, you should be able to run the command via `cargo`.
 
 ```sh
 cargo run -- help

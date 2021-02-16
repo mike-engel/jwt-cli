@@ -5,6 +5,7 @@
 - Support adding `jti` when encoding
 - Add `no-iat` flag to disable automatic `iat` claim generation
 - Avoid adding an `exp` claim automatically. Instead, the `--exp` flag must be present, with or without a value
+- Add an `--iso8601` flag to represent date-based claims as ISO 8601 date strings. Only applies to `iat`, `exp`, and `nbf`
 
 # 3.3.0
 

@@ -7,7 +7,7 @@ mod tests {
         is_timestamp_or_duration, translate_algorithm, OutputFormat, Payload, PayloadItem,
         SupportedAlgorithms,
     };
-    use chrono::{Duration, Utc};
+    use chrono::{Duration, TimeZone, Utc};
     use jsonwebtoken::{Algorithm, Header, TokenData};
     use serde_json::{from_value, json};
 
@@ -626,5 +626,57 @@ mod tests {
         dbg!(&result);
 
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn shows_timestamps_as_iso_dates() {
+        let exp = (Utc::now() + Duration::minutes(60)).timestamp();
+        let nbf = Utc::now().timestamp();
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "encode",
+                "--exp",
+                &exp.to_string(),
+                "--nbf",
+                &nbf.to_string(),
+                "-S",
+                "1234567890",
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "--iso8601",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let (decoded_token, token_data, _) = decode_token(&decode_matches);
+
+        assert!(decoded_token.is_ok());
+
+        let TokenData { claims, header: _ } = token_data.unwrap();
+
+        assert!(claims.0.get("iat").is_some());
+        assert!(claims.0.get("nbf").is_some());
+        assert!(claims.0.get("exp").is_some());
+        assert_eq!(
+            claims.0.get("iat"),
+            Some(&Utc.timestamp(nbf, 0).to_rfc3339().into())
+        );
+        assert_eq!(
+            claims.0.get("nbf"),
+            Some(&Utc.timestamp(nbf, 0).to_rfc3339().into())
+        );
+        assert_eq!(
+            claims.0.get("exp"),
+            Some(&Utc.timestamp(exp, 0).to_rfc3339().into())
+        );
     }
 }

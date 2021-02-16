@@ -1,5 +1,5 @@
 use atty::Stream;
-use chrono::Utc;
+use chrono::{TimeZone, Utc};
 use clap::{arg_enum, crate_authors, crate_version, App, Arg, ArgMatches, SubCommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{
@@ -107,6 +107,19 @@ impl Payload {
         }
 
         Payload(payload)
+    }
+
+    fn convert_timestamps(&mut self) {
+        let timestamp_claims: Vec<String> = vec!["iat".into(), "nbf".into(), "exp".into()];
+
+        for (key, value) in self.0.iter_mut() {
+            if timestamp_claims.contains(key) && value.is_number() {
+                *value = match value.as_i64() {
+                    Some(timestamp) => Utc.timestamp(timestamp, 0).to_rfc3339().into(),
+                    None => value.clone(),
+                }
+            }
+        }
     }
 }
 
@@ -244,6 +257,11 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .short("A")
                         .possible_values(&SupportedAlgorithms::variants())
                         .default_value("HS256"),
+                ).arg(
+                    Arg::with_name("iso_dates")
+                        .help("display unix timestamps as ISO 8601 dates")
+                        .takes_value(false)
+                        .long("iso8601")
                 ).arg(
                     Arg::with_name("secret")
                         .help("the secret to validate the JWT with. Can be prefixed with @ to read from a binary file")
@@ -476,13 +494,20 @@ fn decode_token(
         .to_owned();
 
     let secret_validator = create_validations(algorithm);
+    let token_data = dangerous_insecure_decode::<Payload>(&jwt).map(|mut token| {
+        if matches.is_present("iso_dates") {
+            token.claims.convert_timestamps();
+        }
+
+        token
+    });
 
     (
         match secret {
             Some(secret_key) => decode::<Payload>(&jwt, &secret_key.unwrap(), &secret_validator),
             None => dangerous_insecure_decode::<Payload>(&jwt),
         },
-        dangerous_insecure_decode::<Payload>(&jwt),
+        token_data,
         if matches.is_present("json") {
             OutputFormat::JSON
         } else {
