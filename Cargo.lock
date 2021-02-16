@@ -217,7 +217,7 @@ dependencies = [
 
 [[package]]
 name = "jwt-cli"
-version = "3.3.0"
+version = "4.0.0"
 dependencies = [
  "atty",
  "chrono",

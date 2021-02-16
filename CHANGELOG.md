@@ -1,11 +1,20 @@
 # Unreleased
 
-- Remove the `prn` option as it's not included in the spec any longer #114
-- Trim whitespace around jwt before encoding #120
+# 4.0.0
+
+> 2021-02-16
+
+#### New features
+
+- **[BREAKING]** Remove the `prn` option as it's not included in the spec any longer #114
+- **[BREAKING]** Avoid adding an `exp` claim automatically. Instead, the `--exp` flag must be present, with or without a value
 - Support adding `jti` when encoding
 - Add `no-iat` flag to disable automatic `iat` claim generation
-- Avoid adding an `exp` claim automatically. Instead, the `--exp` flag must be present, with or without a value
 - Add an `--iso8601` flag to represent date-based claims as ISO 8601 date strings. Only applies to `iat`, `exp`, and `nbf`
+
+#### Bug fixes
+
+- Trim whitespace around a jwt before encoding #120
 
 # 3.3.0
 
@@ -135,7 +144,7 @@
 
 #### Breaking (maybe) changes
 
-- Updated to jsonwebtoken version 4
+- Updated to `jsonwebtoken` version 4
 - JWTs without the `typ` header can now be decoded
 
 # 1.2.0

@@ -1,7 +1,7 @@
 [package]
 name = "jwt-cli"
 description = "A super fast CLI tool to decode and encode JWTs built in Rust"
-version = "3.3.0"
+version = "4.0.0"
 authors = ["Mike Engel <mike@mike-engel.com>", "Corey McGregor <https://github.com/shousper>", "Aaron Schaef <https://github.com/atschaef>", "Hugh Simpson <https://github.com/hughsimpson>"]
 edition = "2018"
 license = "MIT"
