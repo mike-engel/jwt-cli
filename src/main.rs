@@ -28,6 +28,7 @@ struct TokenOutput {
 }
 
 arg_enum! {
+    #[allow(clippy::clippy::upper_case_acronyms)]
     #[derive(Debug, PartialEq)]
     enum SupportedAlgorithms {
         HS256,
@@ -42,6 +43,7 @@ arg_enum! {
 }
 
 arg_enum! {
+    #[allow(clippy::clippy::upper_case_acronyms)]
     enum SupportedTypes {
         JWT
     }
@@ -50,7 +52,7 @@ arg_enum! {
 #[derive(Debug, PartialEq)]
 enum OutputFormat {
     Text,
-    JSON,
+    Json,
 }
 
 impl PayloadItem {
@@ -509,7 +511,7 @@ fn decode_token(
         },
         token_data,
         if matches.is_present("json") {
-            OutputFormat::JSON
+            OutputFormat::Json
         } else {
             OutputFormat::Text
         },
@@ -607,7 +609,7 @@ fn print_decoded_token(
     }
 
     match (format, token_data) {
-        (OutputFormat::JSON, Ok(token)) => {
+        (OutputFormat::Json, Ok(token)) => {
             println!("{}", to_string_pretty(&TokenOutput::new(token)).unwrap())
         }
         (_, Ok(token)) => {
