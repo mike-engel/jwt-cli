@@ -474,7 +474,7 @@ mod tests {
         let (result, _, format) = decode_token(&decode_matches);
 
         assert!(result.is_ok());
-        assert!(format == OutputFormat::JSON);
+        assert!(format == OutputFormat::Json);
     }
 
     #[test]
