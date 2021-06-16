@@ -345,7 +345,12 @@ fn slurp_file(file_name: &str) -> Vec<u8> {
 fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResult<EncodingKey> {
     match alg {
         Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
-            Ok(EncodingKey::from_secret(secret_string.as_bytes()))
+            if secret_string.starts_with("@") {
+                let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
+                Ok(EncodingKey::from_secret(&secret))
+            } else {
+                Ok(EncodingKey::from_secret(secret_string.as_bytes()))
+            }
         }
         Algorithm::RS256 | Algorithm::RS384 | Algorithm::RS512 => {
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
@@ -373,7 +378,12 @@ fn decoding_key_from_secret(
 ) -> JWTResult<DecodingKey<'static>> {
     match alg {
         Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
-            Ok(DecodingKey::from_secret(secret_string.as_bytes()).into_static())
+            if secret_string.starts_with("@") {
+                let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
+                Ok(DecodingKey::from_secret(&secret).into_static())
+            } else {
+                Ok(DecodingKey::from_secret(secret_string.as_bytes()).into_static())
+            }
         }
         Algorithm::RS256 | Algorithm::RS384 | Algorithm::RS512 => {
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());

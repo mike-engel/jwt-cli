@@ -3,12 +3,12 @@ include!("../src/main.rs");
 #[cfg(test)]
 mod tests {
     use super::{
-        config_options, create_header, decode_token, encode_token, is_payload_item,
-        is_timestamp_or_duration, translate_algorithm, OutputFormat, Payload, PayloadItem,
-        SupportedAlgorithms,
+        config_options, create_header, decode_token, decoding_key_from_secret, encode_token,
+        encoding_key_from_secret, is_payload_item, is_timestamp_or_duration, translate_algorithm,
+        OutputFormat, Payload, PayloadItem, SupportedAlgorithms,
     };
     use chrono::{Duration, TimeZone, Utc};
-    use jsonwebtoken::{Algorithm, Header, TokenData};
+    use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, TokenData};
     use serde_json::{from_value, json};
 
     fn empty_args() -> impl IntoIterator<Item = String> {
@@ -590,6 +590,20 @@ mod tests {
         let (result, _, _) = decode_token(&decode_matches);
 
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn encoding_key_from_secret_handles_at() {
+        let expected = EncodingKey::from_secret(include_bytes!("hmac-key.bin"));
+        let key = encoding_key_from_secret(&Algorithm::HS256, "@./tests/hmac-key.bin").unwrap();
+        assert_eq!(expected, key);
+    }
+
+    #[test]
+    fn decoding_key_from_secret_handles_at() {
+        let expected = DecodingKey::from_secret(include_bytes!("hmac-key.bin"));
+        let key = decoding_key_from_secret(&Algorithm::HS256, "@./tests/hmac-key.bin").unwrap();
+        assert_eq!(expected, key);
     }
 
     #[test]
