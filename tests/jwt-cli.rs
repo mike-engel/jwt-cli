@@ -98,6 +98,18 @@ mod tests {
             SupportedAlgorithms::RS512
         );
         assert_eq!(
+            SupportedAlgorithms::from_string("PS256"),
+            SupportedAlgorithms::PS256
+        );
+        assert_eq!(
+            SupportedAlgorithms::from_string("PS384"),
+            SupportedAlgorithms::PS384
+        );
+        assert_eq!(
+            SupportedAlgorithms::from_string("PS512"),
+            SupportedAlgorithms::PS512
+        );
+        assert_eq!(
             SupportedAlgorithms::from_string("yolo"),
             SupportedAlgorithms::HS256
         );
@@ -156,6 +168,18 @@ mod tests {
         assert_eq!(
             translate_algorithm(SupportedAlgorithms::RS512),
             Algorithm::RS512
+        );
+        assert_eq!(
+            translate_algorithm(SupportedAlgorithms::PS256),
+            Algorithm::PS256
+        );
+        assert_eq!(
+            translate_algorithm(SupportedAlgorithms::PS384),
+            Algorithm::PS384
+        );
+        assert_eq!(
+            translate_algorithm(SupportedAlgorithms::PS512),
+            Algorithm::PS512
         );
     }
 
@@ -598,7 +622,7 @@ mod tests {
     }
 
     #[test]
-    fn encodes_and_decodes_an_rsa_token_using_key_from_file() {
+    fn encodes_and_decodes_an_rsa_ssa_pkcs1_v1_5_token_using_key_from_file() {
         let body: String = "{\"field\":\"value\"}".to_string();
         let encode_matcher = config_options()
             .get_matches_from_safe(vec![
@@ -643,6 +667,61 @@ mod tests {
         let expected = DecodingKey::from_secret(include_bytes!("hmac-key.bin"));
         let key = decoding_key_from_secret(&Algorithm::HS256, "@./tests/hmac-key.bin").unwrap();
         assert_eq!(expected, key);
+    }
+
+    #[test]
+    fn encodes_and_decodes_an_rsa_ssa_pss_token_using_key_from_file() {
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "PS256",
+                "--exp",
+                "-S",
+                "@./tests/private_rsa_key.der",
+                &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        println!("enc {}", encoded_token);
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "@./tests/public_rsa_key.der",
+                "-A",
+                "PS256",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let (result, _, _) = decode_token(&decode_matches);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn decodes_an_rsa_ssa_pss_token_using_key_from_file() {
+        let token: String = "eyJ0eXAiOiJKV1QiLCJhbGciOiJQUzUxMiJ9.eyJmaWVsZCI6InZhbHVlIiwiaWF0IjoxNjI1OTMxNjAwLCJleHAiOjkwMDAwMDAwMDB9.Tt1siDczvVAi89dH8QqTZ_n5Ejz4gAIzVLqucWN5tEqdAVRdWgP8psuRFdC8RKIn1Lp4OsUkAA7NJ79cZt32Eewy84hTYrCgZZ9mcWg5IfXPHcZmTUm6qSyKqANdsnRWThbG3IJSX1D6obI5Y91NhVI5PTRg8sFlDAXaNN9ZVTmAtZXj0b5-MgsjiRqWMW3xi9xQqTxvb5VN37Oot-KDWZXjkO022ixshzFWu8Jt582uMD4qYRp1d0VldgyGO_viDqqk8qTqNA7soUKWyDds0emuecE_bDMeELMfxMR-A1pQeu3FgEhliazIAdXJMNlwRuJG8znLNqCK1nB2Nd8sUQ".to_string();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "@./tests/public_rsa_key.der",
+                "-A",
+                "PS512",
+                &token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let (result, _, _) = decode_token(&decode_matches);
+
+        assert!(result.is_ok());
     }
 
     #[test]

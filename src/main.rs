@@ -34,6 +34,9 @@ arg_enum! {
         RS256,
         RS384,
         RS512,
+        PS256,
+        PS384,
+        PS512,
         ES256,
         ES384,
     }
@@ -128,6 +131,9 @@ impl SupportedAlgorithms {
             "RS256" => SupportedAlgorithms::RS256,
             "RS384" => SupportedAlgorithms::RS384,
             "RS512" => SupportedAlgorithms::RS512,
+            "PS256" => SupportedAlgorithms::PS256,
+            "PS384" => SupportedAlgorithms::PS384,
+            "PS512" => SupportedAlgorithms::PS512,
             "ES256" => SupportedAlgorithms::ES256,
             "ES384" => SupportedAlgorithms::ES384,
             _ => SupportedAlgorithms::HS256,
@@ -315,6 +321,9 @@ fn translate_algorithm(alg: SupportedAlgorithms) -> Algorithm {
         SupportedAlgorithms::RS256 => Algorithm::RS256,
         SupportedAlgorithms::RS384 => Algorithm::RS384,
         SupportedAlgorithms::RS512 => Algorithm::RS512,
+        SupportedAlgorithms::PS256 => Algorithm::PS256,
+        SupportedAlgorithms::PS384 => Algorithm::PS384,
+        SupportedAlgorithms::PS512 => Algorithm::PS512,
         SupportedAlgorithms::ES256 => Algorithm::ES256,
         SupportedAlgorithms::ES384 => Algorithm::ES384,
     }
@@ -342,7 +351,12 @@ fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResult<E
                 Ok(EncodingKey::from_secret(secret_string.as_bytes()))
             }
         }
-        Algorithm::RS256 | Algorithm::RS384 | Algorithm::RS512 => {
+        Algorithm::RS256
+        | Algorithm::RS384
+        | Algorithm::RS512
+        | Algorithm::PS256
+        | Algorithm::PS384
+        | Algorithm::PS512 => {
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
             match secret_string.ends_with(".pem") {
@@ -358,7 +372,6 @@ fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResult<E
                 false => Ok(EncodingKey::from_ec_der(&secret)),
             }
         }
-        _ => panic!("Unsupported algorithm!"),
     }
 }
 
@@ -375,7 +388,12 @@ fn decoding_key_from_secret(
                 Ok(DecodingKey::from_secret(secret_string.as_bytes()).into_static())
             }
         }
-        Algorithm::RS256 | Algorithm::RS384 | Algorithm::RS512 => {
+        Algorithm::RS256
+        | Algorithm::RS384
+        | Algorithm::RS512
+        | Algorithm::PS256
+        | Algorithm::PS384
+        | Algorithm::PS512 => {
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
             match secret_string.ends_with(".pem") {
@@ -391,7 +409,6 @@ fn decoding_key_from_secret(
                 false => Ok(DecodingKey::from_ec_der(&secret).into_static()),
             }
         }
-        _ => panic!("Unsupported algorithm!"),
     }
 }
 
