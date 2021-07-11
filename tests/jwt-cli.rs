@@ -223,7 +223,15 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "-A",
+                "HS256",
+                &encoded_token,
+            ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
@@ -257,7 +265,15 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "-A",
+                "HS256",
+                &encoded_token,
+            ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
@@ -279,7 +295,15 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "-A",
+                "HS256",
+                &encoded_token,
+            ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, token_data, _) = decode_token(&decode_matches);
@@ -299,7 +323,15 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "-A",
+                "HS256",
+                &encoded_token,
+            ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
@@ -328,7 +360,15 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "-A",
+                "HS256",
+                &encoded_token,
+            ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
@@ -356,7 +396,15 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "-A",
+                "HS256",
+                &encoded_token,
+            ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
@@ -378,7 +426,15 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "-A",
+                "HS512",
+                &encoded_token,
+            ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
@@ -399,6 +455,8 @@ mod tests {
                 "decode",
                 "-S",
                 "1234567890",
+                "-A",
+                "HS256",
                 "--ignore-exp",
                 &encoded_token,
             ])
@@ -424,7 +482,15 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "-A",
+                "HS256",
+                &encoded_token,
+            ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
@@ -460,7 +526,15 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "-A",
+                "HS256",
+                &encoded_token,
+            ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
@@ -598,6 +672,108 @@ mod tests {
     }
 
     #[test]
+    fn encodes_and_decodes_a_token_with_multiple_algorithms() {
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "HS256",
+                "--exp",
+                "-S",
+                "1234567890",
+                &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "-A",
+                "HS256,HS384,HS512",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let (result, _, _) = decode_token(&decode_matches);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn encodes_and_decodes_a_token_with_invalid_algorithms_family() {
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "HS256",
+                "--exp",
+                "-S",
+                "1234567890",
+                &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "-A",
+                "RS256,RS384,RS512", // invalid algorithm family
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let (result, _, _) = decode_token(&decode_matches);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn encodes_and_decodes_a_token_with_mixed_algorithms_family() {
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "HS256",
+                "--exp",
+                "-S",
+                "1234567890",
+                &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "-A",
+                "HS256,RS512", // algorithms from incompatible algorithm families
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let (result, _, _) = decode_token(&decode_matches);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn encodes_and_decodes_an_rsa_token_using_key_from_file() {
         let body: String = "{\"field\":\"value\"}".to_string();
         let encode_matcher = config_options()
@@ -705,6 +881,8 @@ mod tests {
                 "decode",
                 "-S",
                 "1234567890",
+                "-A",
+                "HS256",
                 "--iso8601",
                 &encoded_token,
             ])
