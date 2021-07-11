@@ -486,7 +486,7 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
 fn decode_token(
     matches: &ArgMatches,
 ) -> (
-    JWTResult<TokenData<Payload>>,
+    Option<JWTResult<TokenData<Payload>>>,
     JWTResult<TokenData<Payload>>,
     OutputFormat,
 ) {
@@ -533,8 +533,12 @@ fn decode_token(
 
     (
         match secret {
-            Some(secret_key) => decode::<Payload>(&jwt, &secret_key.unwrap(), &secret_validator),
-            None => dangerous_insecure_decode::<Payload>(&jwt),
+            Some(secret_key) => Some(decode::<Payload>(
+                &jwt,
+                &secret_key.unwrap(),
+                &secret_validator,
+            )),
+            None => None, // unable to safely decode token => validated_token is set to None
         },
         token_data,
         if matches.is_present("json") {
@@ -564,12 +568,13 @@ fn print_encoded_token(token: JWTResult<String>) {
 }
 
 fn print_decoded_token(
-    validated_token: JWTResult<TokenData<Payload>>,
+    validated_token: Option<JWTResult<TokenData<Payload>>>,
     token_data: JWTResult<TokenData<Payload>>,
+    options_algorithm: Algorithm,
     format: OutputFormat,
 ) {
-    if let Err(err) = &validated_token {
-        match err.kind() {
+    match validated_token {
+        Some(Err(ref err)) => match err.kind() {
             ErrorKind::InvalidToken => {
                 bunt::println!("{$red+bold}The JWT provided is invalid{/$}")
             }
@@ -597,15 +602,20 @@ fn print_decoded_token(
             ErrorKind::ImmatureSignature => bunt::eprintln!(
                 "{$red+bold}The `nbf` claim is in the future which isn't allowed{/$}"
             ),
-            ErrorKind::InvalidAlgorithm => bunt::eprintln!(
-                "{$red+bold}The JWT provided has a different signing algorithm than the one you \
-                     provided{/$}",
-            ),
+            ErrorKind::InvalidAlgorithm => {
+                let jwt_algorithm = match token_data {
+                    Ok(ref token) => token.header.alg,
+                    Err(_) => panic!("Error: Invalid token data."),
+                };
+                bunt::eprintln!("{$red+bold}Error: Invalid Signature! The JWT provided has a different signing algorithm ({:?}) than the one selected for validation ({:?}){/$}",jwt_algorithm, options_algorithm)
+            }
             _ => bunt::eprintln!(
-                "{$red+bold}The JWT provided is invalid because{/$} {:?}",
+                "{$red+bold}The JWT provided is invalid because {:?}{/$}",
                 err
             ),
-        };
+        },
+        Some(Ok(_)) => bunt::eprintln!("{$green+bold}Success! JWT signature is valid!{/$}"),
+        None => bunt::eprintln!("{$red+bold}Warning! JWT signature has not been validated!{/$}"),
     }
 
     match (format, token_data) {
@@ -622,8 +632,9 @@ fn print_decoded_token(
     }
 
     exit(match validated_token {
-        Err(_) => 1,
-        Ok(_) => 0,
+        Some(Ok(_)) => 0,  // successful signature check
+        Some(Err(_)) => 1, // token validation error
+        None => 2,         // no signature check performed
     })
 }
 
@@ -641,7 +652,11 @@ fn main() {
         ("decode", Some(decode_matches)) => {
             let (validated_token, token_data, format) = decode_token(decode_matches);
 
-            print_decoded_token(validated_token, token_data, format);
+            let options_algorithm = translate_algorithm(SupportedAlgorithms::from_string(
+                decode_matches.value_of("algorithm").unwrap(),
+            ));
+
+            print_decoded_token(validated_token, token_data, options_algorithm, format);
         }
         _ => (),
     }

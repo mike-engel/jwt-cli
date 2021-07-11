@@ -253,9 +253,9 @@ mod tests {
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
 
-        assert!(decoded_token.is_ok());
+        assert!(decoded_token.as_ref().unwrap().is_ok());
 
-        let TokenData { claims, header } = decoded_token.unwrap();
+        let TokenData { claims, header } = decoded_token.unwrap().unwrap();
 
         assert_eq!(header.alg, Algorithm::HS256);
         assert_eq!(header.kid, Some("1234".to_string()));
@@ -287,9 +287,9 @@ mod tests {
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
 
-        assert!(decoded_token.is_ok());
+        assert!(decoded_token.as_ref().unwrap().is_ok());
 
-        let TokenData { claims, header: _ } = decoded_token.unwrap();
+        let TokenData { claims, header: _ } = decoded_token.unwrap().unwrap();
         let iat = from_value::<i64>(claims.0["iat"].clone());
 
         assert!(iat.is_ok());
@@ -309,7 +309,7 @@ mod tests {
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, token_data, _) = decode_token(&decode_matches);
 
-        assert!(decoded_token.is_err());
+        assert!(decoded_token.as_ref().unwrap().is_err());
 
         let TokenData { claims, header: _ } = token_data.unwrap();
 
@@ -329,9 +329,9 @@ mod tests {
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
 
-        assert!(decoded_token.is_ok());
+        assert!(decoded_token.as_ref().unwrap().is_ok());
 
-        let TokenData { claims, header: _ } = decoded_token.unwrap();
+        let TokenData { claims, header: _ } = decoded_token.unwrap().unwrap();
         let exp = from_value::<i64>(claims.0["exp"].clone());
 
         assert!(exp.is_ok());
@@ -358,9 +358,9 @@ mod tests {
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
 
-        assert!(decoded_token.is_ok());
+        assert!(decoded_token.as_ref().unwrap().is_ok());
 
-        let TokenData { claims, header: _ } = decoded_token.unwrap();
+        let TokenData { claims, header: _ } = decoded_token.unwrap().unwrap();
 
         assert!(claims.0.get("iat").is_none());
     }
@@ -386,9 +386,9 @@ mod tests {
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
 
-        assert!(decoded_token.is_ok());
+        assert!(decoded_token.as_ref().unwrap().is_ok());
 
-        let TokenData { claims, header: _ } = decoded_token.unwrap();
+        let TokenData { claims, header: _ } = decoded_token.unwrap().unwrap();
         let exp_claim = from_value::<i64>(claims.0["exp"].clone());
 
         assert!(exp_claim.is_ok());
@@ -408,7 +408,7 @@ mod tests {
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
 
-        assert!(decoded_token.is_err());
+        assert!(decoded_token.as_ref().unwrap().is_err());
     }
 
     #[test]
@@ -431,7 +431,7 @@ mod tests {
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
 
-        assert!(decoded_token.is_ok());
+        assert!(decoded_token.as_ref().unwrap().is_ok());
     }
 
     #[test]
@@ -454,9 +454,9 @@ mod tests {
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
 
-        assert!(decoded_token.is_ok());
+        assert!(decoded_token.as_ref().unwrap().is_ok());
 
-        let TokenData { claims, header: _ } = decoded_token.unwrap();
+        let TokenData { claims, header: _ } = decoded_token.unwrap().unwrap();
         let exp_claim = from_value::<i64>(claims.0["exp"].clone());
         let iat_claim = from_value::<i64>(claims.0["iat"].clone());
 
@@ -490,9 +490,9 @@ mod tests {
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, _, _) = decode_token(&decode_matches);
 
-        assert!(decoded_token.is_ok());
+        assert!(decoded_token.as_ref().unwrap().is_ok());
 
-        let TokenData { claims, header: _ } = decoded_token.unwrap();
+        let TokenData { claims, header: _ } = decoded_token.unwrap().unwrap();
         let nbf_claim = from_value::<i64>(claims.0["nbf"].clone());
         let iat_claim = from_value::<i64>(claims.0["iat"].clone());
 
@@ -521,7 +521,7 @@ mod tests {
         let decode_matches = matches.subcommand_matches("decode").unwrap();
         let (result, _, _) = decode_token(&decode_matches);
 
-        assert!(result.is_ok());
+        assert!(result.unwrap().is_ok());
     }
 
     #[test]
@@ -535,9 +535,10 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, format) = decode_token(&decode_matches);
+        let (validated_token, token_data, format) = decode_token(&decode_matches);
 
-        assert!(result.is_ok());
+        assert!(validated_token.is_none()); // no signature validation
+        assert!(token_data.is_ok());
         assert!(format == OutputFormat::Json);
     }
 
@@ -557,7 +558,7 @@ mod tests {
         let decode_matches = matches.subcommand_matches("decode").unwrap();
         let (result, _, _) = decode_token(&decode_matches);
 
-        assert!(result.is_err());
+        assert!(result.unwrap().is_err());
     }
 
     #[test]
@@ -572,9 +573,10 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let (validated_token, token_data, _) = decode_token(&decode_matches);
 
-        assert!(result.is_ok());
+        assert!(validated_token.is_none()); // no signature validation
+        assert!(token_data.is_ok());
     }
 
     #[test]
@@ -587,9 +589,10 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let (validated_token, token_data, _) = decode_token(&decode_matches);
 
-        assert!(result.is_ok());
+        assert!(validated_token.is_none()); // no signature validation
+        assert!(token_data.is_ok());
     }
 
     #[test]
@@ -602,9 +605,10 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let (validated_token, token_data, _) = decode_token(&decode_matches);
 
-        assert!(result.is_ok());
+        assert!(validated_token.is_none()); // no signature validation
+        assert!(token_data.is_ok());
     }
 
     #[test]
@@ -617,9 +621,10 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let (validated_token, token_data, _) = decode_token(&decode_matches);
 
-        assert!(result.is_ok());
+        assert!(validated_token.is_none()); // no signature validation
+        assert!(token_data.is_ok());
     }
 
     #[test]
@@ -653,7 +658,7 @@ mod tests {
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (result, _, _) = decode_token(&decode_matches);
 
-        assert!(result.is_ok());
+        assert!(result.unwrap().is_ok());
     }
 
     #[test]
@@ -774,9 +779,7 @@ mod tests {
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (result, _, _) = decode_token(&decode_matches);
 
-        dbg!(&result);
-
-        assert!(result.is_ok());
+        assert!(result.unwrap().is_ok());
     }
 
     #[test]
@@ -810,7 +813,7 @@ mod tests {
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let (decoded_token, token_data, _) = decode_token(&decode_matches);
 
-        assert!(decoded_token.is_ok());
+        assert!(decoded_token.as_ref().unwrap().is_ok());
 
         let TokenData { claims, header: _ } = token_data.unwrap();
 
