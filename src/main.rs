@@ -276,6 +276,10 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .help("render decoded JWT as JSON")
                         .long("json")
                         .short("j"),
+                ).arg(
+                    Arg::with_name("ignore_exp")
+                        .help("Ignore token expiration date (`exp` claim) during validation.")
+                        .long("ignore-exp")
                 ),
         )
 }
@@ -328,14 +332,6 @@ fn create_header(alg: Algorithm, kid: Option<&str>) -> Header {
     header.kid = kid.map(str::to_string);
 
     header
-}
-
-fn create_validations(alg: Algorithm) -> Validation {
-    Validation {
-        leeway: 1000,
-        algorithms: vec![alg],
-        ..Default::default()
-    }
 }
 
 fn slurp_file(file_name: &str) -> Vec<u8> {
@@ -495,7 +491,13 @@ fn decode_token(
         .trim()
         .to_owned();
 
-    let secret_validator = create_validations(algorithm);
+    let secret_validator = Validation {
+        leeway: 1000,
+        algorithms: vec![algorithm],
+        validate_exp: !matches.is_present("ignore_exp"),
+        ..Default::default()
+    };
+
     let token_data = dangerous_insecure_decode::<Payload>(&jwt).map(|mut token| {
         if matches.is_present("iso_dates") {
             token.claims.convert_timestamps();
@@ -544,12 +546,6 @@ fn print_decoded_token(
     token_data: JWTResult<TokenData<Payload>>,
     format: OutputFormat,
 ) {
-    let should_validate_exp = if let Ok(token) = &token_data {
-        token.claims.0.contains_key("exp")
-    } else {
-        false
-    };
-
     if let Err(err) = &validated_token {
         match err.kind() {
             ErrorKind::InvalidToken => {
@@ -571,9 +567,7 @@ fn print_decoded_token(
                     .paint("The secret provided isn't a valid ECDSA key",)
             ),
             ErrorKind::ExpiredSignature => {
-                if should_validate_exp {
-                    println!("{}", Red.bold().paint("The token has expired"))
-                }
+                eprintln!("{}", Red.bold().paint("The token has expired (or the `exp` claim is not set). This error can be ignored via the `--ignore-exp` parameter.",))
             }
             ErrorKind::InvalidIssuer => {
                 println!("{}", Red.bold().paint("The token issuer is invalid"))
@@ -622,10 +616,7 @@ fn print_decoded_token(
     }
 
     exit(match validated_token {
-        Err(err) => match (err.kind(), should_validate_exp) {
-            (ErrorKind::ExpiredSignature, false) => 0,
-            _ => 1,
-        },
+        Err(_) => 1,
         Ok(_) => 0,
     })
 }
