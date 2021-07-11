@@ -465,7 +465,7 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
 fn decode_token(
     matches: &ArgMatches,
 ) -> (
-    JWTResult<TokenData<Payload>>,
+    Option<JWTResult<TokenData<Payload>>>,
     JWTResult<TokenData<Payload>>,
     OutputFormat,
 ) {
@@ -506,8 +506,12 @@ fn decode_token(
 
     (
         match secret {
-            Some(secret_key) => decode::<Payload>(&jwt, &secret_key.unwrap(), &secret_validator),
-            None => dangerous_insecure_decode::<Payload>(&jwt),
+            Some(secret_key) => Some(decode::<Payload>(
+                &jwt,
+                &secret_key.unwrap(),
+                &secret_validator,
+            )),
+            None => None, // unable to safely decode token => validated_token is set to None
         },
         token_data,
         if matches.is_present("json") {
@@ -540,8 +544,9 @@ fn print_encoded_token(token: JWTResult<String>) {
 }
 
 fn print_decoded_token(
-    validated_token: JWTResult<TokenData<Payload>>,
+    validated_token: Option<JWTResult<TokenData<Payload>>>,
     token_data: JWTResult<TokenData<Payload>>,
+    options_algorithm: Algorithm,
     format: OutputFormat,
 ) {
     let should_validate_exp = if let Ok(token) = &token_data {
@@ -550,62 +555,89 @@ fn print_decoded_token(
         false
     };
 
-    if let Err(err) = &validated_token {
-        match err.kind() {
+    match validated_token {
+        Some(Err(ref err)) => match err.kind() {
             ErrorKind::InvalidToken => {
-                println!("{}", Red.bold().paint("The JWT provided is invalid"))
+                println!(
+                    "{}",
+                    Red.bold().paint("Error: The JWT provided is invalid.")
+                )
             }
             ErrorKind::InvalidSignature => eprintln!(
                 "{}",
                 Red.bold()
-                    .paint("The JWT provided has an invalid signature",)
+                    .paint("Error: The JWT provided has an invalid signature",)
             ),
             ErrorKind::InvalidRsaKey => eprintln!(
                 "{}",
                 Red.bold()
-                    .paint("The secret provided isn't a valid RSA key",)
+                    .paint("Error: The secret provided isn't a valid RSA key.",)
             ),
             ErrorKind::InvalidEcdsaKey => eprintln!(
                 "{}",
                 Red.bold()
-                    .paint("The secret provided isn't a valid ECDSA key",)
+                    .paint("Error: The secret provided isn't a valid ECDSA key.",)
             ),
             ErrorKind::ExpiredSignature => {
                 if should_validate_exp {
-                    println!("{}", Red.bold().paint("The token has expired"))
+                    println!("{}", Red.bold().paint("Error: The token has expired."))
+                } else {
+                    println!(
+                        "{}",
+                        Red.bold().paint(
+                            "Warning: The `exp` claim is not set. Skipping token expiration check."
+                        )
+                    )
                 }
             }
             ErrorKind::InvalidIssuer => {
-                println!("{}", Red.bold().paint("The token issuer is invalid"))
+                println!(
+                    "{}",
+                    Red.bold().paint("Error: The token issuer is invalid.")
+                )
             }
             ErrorKind::InvalidAudience => eprintln!(
                 "{}",
                 Red.bold()
-                    .paint("The token audience doesn't match the subject",)
+                    .paint("Error: The token audience doesn't match the subject.",)
             ),
             ErrorKind::InvalidSubject => eprintln!(
                 "{}",
                 Red.bold()
-                    .paint("The token subject doesn't match the audience",)
+                    .paint("Error: The token subject doesn't match the audience.",)
             ),
             ErrorKind::ImmatureSignature => eprintln!(
                 "{}",
                 Red.bold()
-                    .paint("The `nbf` claim is in the future which isn't allowed",)
+                    .paint("Error: The `nbf` claim is in the future which isn't allowed.",)
             ),
-            ErrorKind::InvalidAlgorithm => eprintln!(
-                "{}",
-                Red.bold().paint(
-                    "The JWT provided has a different signing algorithm than the one you \
-                     provided",
+            ErrorKind::InvalidAlgorithm => {
+                let jwt_algorithm = match token_data {
+                    Ok(ref token) => token.header.alg,
+                    Err(_) => panic!("Error: Invalid token data."),
+                };
+                eprintln!(
+                    "{}",
+                    Red.bold().paint(format!(
+                        "Error: Invalid signature! The JWT provided has a different signing \
+                        algorithm ({:?}) than the one selected for validation ({:?}).",
+                        jwt_algorithm, options_algorithm
+                    ))
                 )
-            ),
+            }
             _ => eprintln!(
                 "{} {:?}",
-                Red.bold().paint("The JWT provided is invalid because"),
+                Red.bold()
+                    .paint("Error: The JWT provided is invalid because"),
                 err
             ),
-        };
+        },
+        Some(Ok(_)) => eprintln!("{}", Green.bold().paint("Success! JWT signature is valid!")),
+        None => eprintln!(
+            "{}",
+            Red.bold()
+                .paint("Warning! JWT signature has not been validated!")
+        ),
     }
 
     match (format, token_data) {
@@ -622,11 +654,12 @@ fn print_decoded_token(
     }
 
     exit(match validated_token {
-        Err(err) => match (err.kind(), should_validate_exp) {
-            (ErrorKind::ExpiredSignature, false) => 0,
-            _ => 1,
+        Some(Err(err)) => match (err.kind(), should_validate_exp) {
+            (ErrorKind::ExpiredSignature, false) => 0, // signature expired, but expiration time should be ignored
+            _ => 1,                                    // token validation error
         },
-        Ok(_) => 0,
+        Some(Ok(_)) => 0, // successful signature check
+        None => 2,        // no signature check performed
     })
 }
 
@@ -644,7 +677,11 @@ fn main() {
         ("decode", Some(decode_matches)) => {
             let (validated_token, token_data, format) = decode_token(&decode_matches);
 
-            print_decoded_token(validated_token, token_data, format);
+            let options_algorithm = translate_algorithm(SupportedAlgorithms::from_string(
+                decode_matches.value_of("algorithm").unwrap(),
+            ));
+
+            print_decoded_token(validated_token, token_data, options_algorithm, format);
         }
         _ => (),
     }
