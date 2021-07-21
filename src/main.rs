@@ -57,10 +57,7 @@ enum OutputFormat {
 
 impl PayloadItem {
     fn from_string(val: Option<&str>) -> Option<PayloadItem> {
-        match val {
-            Some(item) => Some(PayloadItem::split_payload_item(item)),
-            None => None,
-        }
+        val.map(|item| PayloadItem::split_payload_item(item))
     }
 
     fn from_string_with_name(val: Option<&str>, name: &str) -> Option<PayloadItem> {
@@ -285,7 +282,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
 }
 
 fn is_timestamp_or_duration(val: String) -> Result<(), String> {
-    match i64::from_str_radix(&val, 10) {
+    match val.parse::<i64>() {
         Ok(_) => Ok(()),
         Err(_) => match parse_duration::parse(&val) {
             Ok(_) => Ok(()),
@@ -341,7 +338,7 @@ fn slurp_file(file_name: &str) -> Vec<u8> {
 fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResult<EncodingKey> {
     match alg {
         Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
-            if secret_string.starts_with("@") {
+            if secret_string.starts_with('@') {
                 let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
                 Ok(EncodingKey::from_secret(&secret))
             } else {
@@ -374,7 +371,7 @@ fn decoding_key_from_secret(
 ) -> JWTResult<DecodingKey<'static>> {
     match alg {
         Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
-            if secret_string.starts_with("@") {
+            if secret_string.starts_with('@') {
                 let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
                 Ok(DecodingKey::from_secret(&secret).into_static())
             } else {
@@ -457,11 +454,7 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
     maybe_payloads.append(&mut custom_payloads.unwrap_or_default());
     maybe_payloads.append(&mut custom_payload.unwrap_or_default());
 
-    let payloads = maybe_payloads
-        .into_iter()
-        .filter(Option::is_some)
-        .map(Option::unwrap)
-        .collect();
+    let payloads = maybe_payloads.into_iter().flatten().collect();
     let Payload(claims) = Payload::from_payloads(payloads);
 
     encoding_key_from_secret(&algorithm, matches.value_of("secret").unwrap())
