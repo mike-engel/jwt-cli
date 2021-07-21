@@ -371,6 +371,45 @@ mod tests {
     }
 
     #[test]
+    fn returns_error_when_exp_is_not_set() {
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec!["jwt", "encode", "-S", "1234567890"])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_matches);
+
+        assert!(decoded_token.is_err());
+    }
+
+    #[test]
+    fn returns_no_error_when_ignore_exp_parameter_is_set() {
+        let encode_matcher = config_options()
+            .get_matches_from_safe(vec!["jwt", "encode", "-S", "1234567890"])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encoded_token = encode_token(&encode_matches).unwrap();
+        let decode_matcher = config_options()
+            .get_matches_from_safe(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "--ignore-exp",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_matches);
+
+        assert!(decoded_token.is_ok());
+    }
+
+    #[test]
     fn allows_for_a_custom_exp_as_systemd_string() {
         let encode_matcher = config_options()
             .get_matches_from_safe(vec![
