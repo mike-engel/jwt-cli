@@ -11,9 +11,6 @@ use serde_json::{from_str, to_string_pretty, Value};
 use std::collections::BTreeMap;
 use std::process::exit;
 use std::{fs, io};
-use term_painter::Attr::*;
-use term_painter::Color::*;
-use term_painter::ToStyle;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 struct PayloadItem(String, Value);
@@ -534,10 +531,7 @@ fn print_encoded_token(token: JWTResult<String>) {
             exit(0);
         }
         Err(err) => {
-            eprintln!(
-                "{}",
-                Red.bold().paint("Something went awry creating the jwt\n")
-            );
+            bunt::eprintln!("{$red+bold}Something went awry creating the jwt{/$}\n");
             eprintln!("{}", err);
             exit(1);
         }
@@ -552,54 +546,38 @@ fn print_decoded_token(
     if let Err(err) = &validated_token {
         match err.kind() {
             ErrorKind::InvalidToken => {
-                println!("{}", Red.bold().paint("The JWT provided is invalid"))
+                bunt::println!("{$red+bold}The JWT provided is invalid{/$}")
             }
-            ErrorKind::InvalidSignature => eprintln!(
-                "{}",
-                Red.bold()
-                    .paint("The JWT provided has an invalid signature",)
-            ),
-            ErrorKind::InvalidRsaKey => eprintln!(
-                "{}",
-                Red.bold()
-                    .paint("The secret provided isn't a valid RSA key",)
-            ),
-            ErrorKind::InvalidEcdsaKey => eprintln!(
-                "{}",
-                Red.bold()
-                    .paint("The secret provided isn't a valid ECDSA key",)
-            ),
+            ErrorKind::InvalidSignature => {
+                bunt::eprintln!("{$red+bold}The JWT provided has an invalid signature{/$}")
+            }
+            ErrorKind::InvalidRsaKey => {
+                bunt::eprintln!("{$red+bold}The secret provided isn't a valid RSA key{/$}")
+            }
+            ErrorKind::InvalidEcdsaKey => {
+                bunt::eprintln!("{$red+bold}The secret provided isn't a valid ECDSA key{/$}")
+            }
             ErrorKind::ExpiredSignature => {
-                eprintln!("{}", Red.bold().paint("The token has expired (or the `exp` claim is not set). This error can be ignored via the `--ignore-exp` parameter.",))
+                bunt::eprintln!("{$red+bold}The token has expired (or the `exp` claim is not set). This error can be ignored via the `--ignore-exp` parameter.{/$}")
             }
             ErrorKind::InvalidIssuer => {
-                println!("{}", Red.bold().paint("The token issuer is invalid"))
+                bunt::println!("{$red+bold}The token issuer is invalid{/$}")
             }
-            ErrorKind::InvalidAudience => eprintln!(
-                "{}",
-                Red.bold()
-                    .paint("The token audience doesn't match the subject",)
+            ErrorKind::InvalidAudience => {
+                bunt::eprintln!("{$red+bold}The token audience doesn't match the subject{/$}")
+            }
+            ErrorKind::InvalidSubject => {
+                bunt::eprintln!("{$red+bold}The token subject doesn't match the audience{/$}")
+            }
+            ErrorKind::ImmatureSignature => bunt::eprintln!(
+                "{$red+bold}The `nbf` claim is in the future which isn't allowed{/$}"
             ),
-            ErrorKind::InvalidSubject => eprintln!(
-                "{}",
-                Red.bold()
-                    .paint("The token subject doesn't match the audience",)
+            ErrorKind::InvalidAlgorithm => bunt::eprintln!(
+                "{$red+bold}The JWT provided has a different signing algorithm than the one you \
+                     provided{/$}",
             ),
-            ErrorKind::ImmatureSignature => eprintln!(
-                "{}",
-                Red.bold()
-                    .paint("The `nbf` claim is in the future which isn't allowed",)
-            ),
-            ErrorKind::InvalidAlgorithm => eprintln!(
-                "{}",
-                Red.bold().paint(
-                    "The JWT provided has a different signing algorithm than the one you \
-                     provided",
-                )
-            ),
-            _ => eprintln!(
-                "{} {:?}",
-                Red.bold().paint("The JWT provided is invalid because"),
+            _ => bunt::eprintln!(
+                "{$red+bold}The JWT provided is invalid because{/$} {:?}",
                 err
             ),
         };
@@ -610,9 +588,9 @@ fn print_decoded_token(
             println!("{}", to_string_pretty(&TokenOutput::new(token)).unwrap())
         }
         (_, Ok(token)) => {
-            println!("\n{}", Plain.bold().paint("Token header\n------------"));
+            bunt::println!("\n{$bold}Token header\n------------{/$}");
             println!("{}\n", to_string_pretty(&token.header).unwrap());
-            println!("{}", Plain.bold().paint("Token claims\n------------"));
+            bunt::println!("{$bold}Token claims\n------------{/$}");
             println!("{}", to_string_pretty(&token.claims).unwrap());
         }
         (_, Err(_)) => exit(1),

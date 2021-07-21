@@ -14,7 +14,7 @@ test = true
 [dependencies]
 clap = "2"
 jsonwebtoken = "7"
-term-painter = "0.3"
+bunt = "0.2"
 serde = "1"
 serde_derive = "1"
 serde_json = "1"
