@@ -151,6 +151,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="https://medium.com/@therealklanni"><img src="https://avatars2.githubusercontent.com/u/626347?v=4" width="100px;" alt="Kevin Lanni"/><br /><sub><b>Kevin Lanni</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=therealklanni" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/kkrauth"><img src="https://avatars3.githubusercontent.com/u/680123?v=4" width="100px;" alt="Kosta Krauth"/><br /><sub><b>Kosta Krauth</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=kkrauth" title="Code">💻</a> <a href="https://github.com/mike-engel/jwt-cli/commits?author=kkrauth" title="Tests">⚠️</a> <a href="https://github.com/mike-engel/jwt-cli/commits?author=kkrauth" title="Documentation">📖</a></td>
     <td align="center"><a href="https://github.com/codedust"><img src="https://avatars.githubusercontent.com/u/7175914?v=4" width="100px;" alt="codedust"/><br /><sub><b>codedust</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=codedust" title="Code">💻</a></td>
+    <td align="center"><a href="https://github.com/lizfeed"><img src="https://avatars.githubusercontent.com/u/61433510?v=4" width="100px;" alt="Liz Frost"/><br /><sub><b>Liz Frost</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=lizfeed" title="Code">💻</a></td>
   </tr>
 </table>
 
