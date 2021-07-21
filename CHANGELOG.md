@@ -1,5 +1,10 @@
 # Unreleased
 
+#### New features
+
+- Secrets can be files for both encoding and decoding #130
+- **[BREAKING]** `jwt-cli` will always validate `exp` unless you pass `--ignore-exp` #137
+
 # 4.0.0
 
 > 2021-02-16
