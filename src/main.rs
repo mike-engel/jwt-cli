@@ -246,13 +246,13 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .index(1)
                         .required(true),
                 ).arg(
-                    Arg::with_name("algorithm")
-                        .help("the algorithm to use for signing the JWT")
+                    Arg::with_name("algorithms")
+                        .help("a comma-separated list of algorithms to be used for signature validation. All algorithms need to be of the same family (HMAC, RSA, EC).")
+                        .require_delimiter(true)
                         .takes_value(true)
-                        .long("alg")
+                        .long("algs")
                         .short("A")
                         .possible_values(&SupportedAlgorithms::variants())
-                        .default_value("HS256"),
                 ).arg(
                     Arg::with_name("iso_dates")
                         .help("display unix timestamps as ISO 8601 dates")
@@ -264,7 +264,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .takes_value(true)
                         .long("secret")
                         .short("S")
-                        .default_value(""),
+                        .requires("algorithms")
                 ).arg(
                     Arg::with_name("json")
                         .help("render decoded JWT as JSON")
@@ -465,13 +465,6 @@ fn decode_token(
     JWTResult<TokenData<Payload>>,
     OutputFormat,
 ) {
-    let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
-        matches.value_of("algorithm").unwrap(),
-    ));
-    let secret = match matches.value_of("secret").map(|s| (s, !s.is_empty())) {
-        Some((secret, true)) => Some(decoding_key_from_secret(&algorithm, &secret)),
-        _ => None,
-    };
     let jwt = matches
         .value_of("jwt")
         .map(|value| {
@@ -491,13 +484,7 @@ fn decode_token(
         .trim()
         .to_owned();
 
-    let secret_validator = Validation {
-        leeway: 1000,
-        algorithms: vec![algorithm],
-        validate_exp: !matches.is_present("ignore_exp"),
-        ..Default::default()
-    };
-
+    // decode token without signature verification
     let token_data = dangerous_insecure_decode::<Payload>(&jwt).map(|mut token| {
         if matches.is_present("iso_dates") {
             token.claims.convert_timestamps();
@@ -506,6 +493,31 @@ fn decode_token(
         token
     });
 
+    // get vector of allowed algorithms from command line argument
+    let algorithms: Vec<Algorithm> = match matches.values_of("algorithms") {
+        Some(algorithms) => algorithms
+            .map(|x| translate_algorithm(SupportedAlgorithms::from_string(x)))
+            .collect(),
+        None => vec![],
+    };
+
+    let secret_validator = Validation {
+        leeway: 1000,
+        algorithms: algorithms,
+        validate_exp: !matches.is_present("ignore_exp"),
+        ..Default::default()
+    };
+
+    // get the shared secret/public key to be used for signature validation
+    let secret = match matches.value_of("secret").map(|s| (s, !s.is_empty())) {
+        Some((secret, true)) => Some(decoding_key_from_secret(
+            &token_data.as_ref().unwrap().header.alg, // decode key according to algorithm used in the JWT
+            &secret,
+        )),
+        _ => None,
+    };
+
+    // return validated token, non-validated token data and output format
     (
         match secret {
             Some(secret_key) => decode::<Payload>(&jwt, &secret_key.unwrap(), &secret_validator),
