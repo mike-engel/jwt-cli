@@ -291,9 +291,7 @@ fn is_timestamp_or_duration(val: String) -> Result<(), String> {
 }
 
 fn is_payload_item(val: String) -> Result<(), String> {
-    let split: Vec<&str> = val.split('=').collect();
-
-    match split.len() {
+    match val.split('=').count() {
         2 => Ok(()),
         _ => Err(String::from(
             "payloads must have a key and value in the form key=value",
@@ -469,7 +467,7 @@ fn decode_token(
         matches.value_of("algorithm").unwrap(),
     ));
     let secret = match matches.value_of("secret").map(|s| (s, !s.is_empty())) {
-        Some((secret, true)) => Some(decoding_key_from_secret(&algorithm, &secret)),
+        Some((secret, true)) => Some(decoding_key_from_secret(&algorithm, secret)),
         _ => None,
     };
     let jwt = matches
@@ -607,14 +605,14 @@ fn main() {
 
     match matches.subcommand() {
         ("encode", Some(encode_matches)) => {
-            warn_unsupported(&encode_matches);
+            warn_unsupported(encode_matches);
 
-            let token = encode_token(&encode_matches);
+            let token = encode_token(encode_matches);
 
             print_encoded_token(token);
         }
         ("decode", Some(decode_matches)) => {
-            let (validated_token, token_data, format) = decode_token(&decode_matches);
+            let (validated_token, token_data, format) = decode_token(decode_matches);
 
             print_decoded_token(validated_token, token_data, format);
         }
