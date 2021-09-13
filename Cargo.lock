@@ -63,9 +63,9 @@ checksum = "9c59e7af012c713f529e7a3ee57ce9b31ddd858d4b512923602f74608b009631"
 
 [[package]]
 name = "bunt"
-version = "0.2.5"
+version = "0.2.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b8ed2025819d7052531680b6473127df0f8ceb1306fea78e8eb697c902fde01"
+checksum = "192bac6c13e04373feb683e4438cbc156e6bbe432f614a9d6247445108fc5551"
 dependencies = [
  "bunt-macros",
  "termcolor",
