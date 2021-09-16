@@ -166,6 +166,7 @@ name = "jwt-cli"
 version = "4.0.0"
 dependencies = [
  "atty",
+ "base64 0.13.0",
  "bunt",
  "chrono",
  "clap",
