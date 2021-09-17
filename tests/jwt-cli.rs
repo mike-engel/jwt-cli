@@ -667,7 +667,7 @@ mod tests {
     fn encoding_key_from_secret_handles_base64() {
         let b64 = "+t0vs/PPB0dvyYKIk1DYvz5WyCUds5DLy07ycOK5oHA=";
         let mut arg: String = "b64:".to_owned();
-        arg.push_str(&b64);
+        arg.push_str(b64);
         let expected = EncodingKey::from_secret(&base64_decode(b64).unwrap());
         let key = encoding_key_from_secret(&Algorithm::HS256, &arg).unwrap();
         assert_eq!(expected, key);
@@ -684,7 +684,7 @@ mod tests {
     fn decoding_key_from_secret_handles_base64() {
         let b64 = "+t0vs/PPB0dvyYKIk1DYvz5WyCUds5DLy07ycOK5oHA=";
         let mut arg: String = "b64:".to_owned();
-        arg.push_str(&b64);
+        arg.push_str(b64);
         let expected = DecodingKey::from_secret(&base64_decode(b64).unwrap()).into_static();
         let key = decoding_key_from_secret(&Algorithm::HS256, &arg).unwrap();
         assert_eq!(expected, key);
