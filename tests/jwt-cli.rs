@@ -659,16 +659,17 @@ mod tests {
     #[test]
     fn encoding_key_from_secret_handles_at() {
         let expected = EncodingKey::from_secret(include_bytes!("hmac-key.bin"));
-        let key =
-            encoding_key_from_secret(&Algorithm::HS256, "@./tests/hmac-key.bin", false).unwrap();
+        let key = encoding_key_from_secret(&Algorithm::HS256, "@./tests/hmac-key.bin").unwrap();
         assert_eq!(expected, key);
     }
 
     #[test]
     fn encoding_key_from_secret_handles_base64() {
         let b64 = "+t0vs/PPB0dvyYKIk1DYvz5WyCUds5DLy07ycOK5oHA=";
+        let mut arg: String = "b64:".to_owned();
+        arg.push_str(&b64);
         let expected = EncodingKey::from_secret(&base64_decode(b64).unwrap());
-        let key = encoding_key_from_secret(&Algorithm::HS256, b64, true).unwrap();
+        let key = encoding_key_from_secret(&Algorithm::HS256, &arg).unwrap();
         assert_eq!(expected, key);
     }
 
@@ -676,6 +677,16 @@ mod tests {
     fn decoding_key_from_secret_handles_at() {
         let expected = DecodingKey::from_secret(include_bytes!("hmac-key.bin"));
         let key = decoding_key_from_secret(&Algorithm::HS256, "@./tests/hmac-key.bin").unwrap();
+        assert_eq!(expected, key);
+    }
+
+    #[test]
+    fn decoding_key_from_secret_handles_base64() {
+        let b64 = "+t0vs/PPB0dvyYKIk1DYvz5WyCUds5DLy07ycOK5oHA=";
+        let mut arg: String = "b64:".to_owned();
+        arg.push_str(&b64);
+        let expected = DecodingKey::from_secret(&base64_decode(b64).unwrap()).into_static();
+        let key = decoding_key_from_secret(&Algorithm::HS256, &arg).unwrap();
         assert_eq!(expected, key);
     }
 

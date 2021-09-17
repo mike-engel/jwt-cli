@@ -237,15 +237,8 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .help("prevent an iat claim from being automatically added")
                         .long("no-iat")
                 ).arg(
-                    Arg::with_name("base64")
-                        .help("interpret the secret string as base64-encoded bytes")
-                        .takes_value(false)
-                        .long("base64")
-                        .short("B")
-                        .required(false),
-                ).arg(
                     Arg::with_name("secret")
-                        .help("the secret to sign the JWT with. Can be prefixed with @ to read from a binary file")
+                        .help("the secret to sign the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes")
                         .takes_value(true)
                         .long("secret")
                         .short("S")
@@ -274,7 +267,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .long("iso8601")
                 ).arg(
                     Arg::with_name("secret")
-                        .help("the secret to validate the JWT with. Can be prefixed with @ to read from a binary file")
+                        .help("the secret to validate the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes")
                         .takes_value(true)
                         .long("secret")
                         .short("S")
@@ -347,19 +340,15 @@ fn slurp_file(file_name: &str) -> Vec<u8> {
     fs::read(file_name).unwrap_or_else(|_| panic!("Unable to read file {}", file_name))
 }
 
-fn encoding_key_from_secret(
-    alg: &Algorithm,
-    secret_string: &str,
-    base64: bool,
-) -> JWTResult<EncodingKey> {
+fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResult<EncodingKey> {
     match alg {
         Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
             if secret_string.starts_with('@') {
                 let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
                 Ok(EncodingKey::from_secret(&secret))
-            } else if base64 {
+            } else if secret_string.starts_with("b64:") {
                 Ok(EncodingKey::from_secret(
-                    &base64_decode(secret_string).unwrap(),
+                    &base64_decode(&secret_string.chars().skip(4).collect::<String>()).unwrap(),
                 ))
             } else {
                 Ok(EncodingKey::from_secret(secret_string.as_bytes()))
@@ -398,6 +387,11 @@ fn decoding_key_from_secret(
             if secret_string.starts_with('@') {
                 let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
                 Ok(DecodingKey::from_secret(&secret).into_static())
+            } else if secret_string.starts_with("b64:") {
+                Ok(DecodingKey::from_secret(
+                    &base64_decode(&secret_string.chars().skip(4).collect::<String>()).unwrap(),
+                )
+                .into_static())
             } else {
                 Ok(DecodingKey::from_secret(secret_string.as_bytes()).into_static())
             }
@@ -485,12 +479,8 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
     let payloads = maybe_payloads.into_iter().flatten().collect();
     let Payload(claims) = Payload::from_payloads(payloads);
 
-    encoding_key_from_secret(
-        &algorithm,
-        matches.value_of("secret").unwrap(),
-        matches.is_present("base64"),
-    )
-    .and_then(|secret| encode(&header, &claims, &secret))
+    encoding_key_from_secret(&algorithm, matches.value_of("secret").unwrap())
+        .and_then(|secret| encode(&header, &claims, &secret))
 }
 
 fn decode_token(
