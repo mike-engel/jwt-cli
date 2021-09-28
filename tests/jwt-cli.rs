@@ -7,6 +7,7 @@ mod tests {
         encoding_key_from_secret, is_payload_item, is_timestamp_or_duration, translate_algorithm,
         OutputFormat, Payload, PayloadItem, SupportedAlgorithms,
     };
+    use base64::decode as base64_decode;
     use chrono::{Duration, TimeZone, Utc};
     use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, TokenData};
     use serde_json::{from_value, json};
@@ -663,9 +664,27 @@ mod tests {
     }
 
     #[test]
+    fn encoding_key_from_secret_handles_base64() {
+        let b64 = "+t0vs/PPB0dvyYKIk1DYvz5WyCUds5DLy07ycOK5oHA=";
+        let arg = format!("b64:{}", b64);
+        let expected = EncodingKey::from_secret(&base64_decode(b64).unwrap());
+        let key = encoding_key_from_secret(&Algorithm::HS256, &arg).unwrap();
+        assert_eq!(expected, key);
+    }
+
+    #[test]
     fn decoding_key_from_secret_handles_at() {
         let expected = DecodingKey::from_secret(include_bytes!("hmac-key.bin"));
         let key = decoding_key_from_secret(&Algorithm::HS256, "@./tests/hmac-key.bin").unwrap();
+        assert_eq!(expected, key);
+    }
+
+    #[test]
+    fn decoding_key_from_secret_handles_base64() {
+        let b64 = "+t0vs/PPB0dvyYKIk1DYvz5WyCUds5DLy07ycOK5oHA=";
+        let arg = format!("b64:{}", b64);
+        let expected = DecodingKey::from_secret(&base64_decode(b64).unwrap()).into_static();
+        let key = decoding_key_from_secret(&Algorithm::HS256, &arg).unwrap();
         assert_eq!(expected, key);
     }
 

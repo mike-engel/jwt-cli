@@ -1,4 +1,5 @@
 use atty::Stream;
+use base64::decode as base64_decode;
 use chrono::{TimeZone, Utc};
 use clap::{arg_enum, crate_authors, crate_version, App, Arg, ArgMatches, SubCommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
@@ -237,7 +238,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .long("no-iat")
                 ).arg(
                     Arg::with_name("secret")
-                        .help("the secret to sign the JWT with. Can be prefixed with @ to read from a binary file")
+                        .help("the secret to sign the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes")
                         .takes_value(true)
                         .long("secret")
                         .short("S")
@@ -266,7 +267,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .long("iso8601")
                 ).arg(
                     Arg::with_name("secret")
-                        .help("the secret to validate the JWT with. Can be prefixed with @ to read from a binary file")
+                        .help("the secret to validate the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes")
                         .takes_value(true)
                         .long("secret")
                         .short("S")
@@ -345,6 +346,10 @@ fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResult<E
             if secret_string.starts_with('@') {
                 let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
                 Ok(EncodingKey::from_secret(&secret))
+            } else if secret_string.starts_with("b64:") {
+                Ok(EncodingKey::from_secret(
+                    &base64_decode(&secret_string.chars().skip(4).collect::<String>()).unwrap(),
+                ))
             } else {
                 Ok(EncodingKey::from_secret(secret_string.as_bytes()))
             }
@@ -382,6 +387,11 @@ fn decoding_key_from_secret(
             if secret_string.starts_with('@') {
                 let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
                 Ok(DecodingKey::from_secret(&secret).into_static())
+            } else if secret_string.starts_with("b64:") {
+                Ok(DecodingKey::from_secret(
+                    &base64_decode(&secret_string.chars().skip(4).collect::<String>()).unwrap(),
+                )
+                .into_static())
             } else {
                 Ok(DecodingKey::from_secret(secret_string.as_bytes()).into_static())
             }
