@@ -1,7 +1,7 @@
 use atty::Stream;
 use base64::decode as base64_decode;
 use chrono::{TimeZone, Utc};
-use clap::{arg_enum, crate_authors, crate_version, App, Arg, ArgMatches, SubCommand};
+use clap::{arg_enum, crate_authors, crate_version, App, AppSettings, Arg, ArgMatches, SubCommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{
     dangerous_insecure_decode, decode, encode, Algorithm, DecodingKey, EncodingKey, Header,
@@ -156,6 +156,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
         .about("Encode and decode JWTs from the command line. RSA and ECDSA encryption currently only supports keys in DER format")
         .version(crate_version!())
         .author(crate_authors!())
+        .setting(AppSettings::ArgRequiredElseHelp)
         .subcommand(
             SubCommand::with_name("encode")
                 .about("Encode new JWTs")
