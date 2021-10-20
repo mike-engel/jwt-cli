@@ -252,7 +252,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
         let (jwt, token_data, _) = decode_token(&decode_matches);
-        let validated_token = verify_token(&jwt, &decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(token_data.is_ok());
         assert!(validated_token.as_ref().is_ok());
@@ -330,7 +330,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
         let (jwt, decoded_token, _) = decode_token(&decode_matches);
-        let validated_token = verify_token(&jwt, &decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
         assert!(validated_token.is_ok());
@@ -411,7 +411,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
         let (jwt, decoded_token, _) = decode_token(&decode_matches);
-        let validated_token = verify_token(&jwt, &decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
         assert!(validated_token.is_err());
@@ -436,7 +436,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
         let (jwt, decoded_token, _) = decode_token(&decode_matches);
-        let validated_token = verify_token(&jwt, &decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
         assert!(validated_token.is_ok());
@@ -461,7 +461,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
         let (jwt, decoded_token, _) = decode_token(&decode_matches);
-        let validated_token = verify_token(&jwt, &decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
         assert!(validated_token.is_ok());
@@ -499,7 +499,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
         let (jwt, decoded_token, _) = decode_token(&decode_matches);
-        let validated_token = verify_token(&jwt, &decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
         assert!(validated_token.is_ok());
@@ -532,7 +532,7 @@ mod tests {
             .unwrap();
         let decode_matches = matches.subcommand_matches("verify").unwrap();
         let (jwt, decoded_token, _) = decode_token(&decode_matches);
-        let validated_token = verify_token(&jwt, &decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
         assert!(validated_token.is_ok());
@@ -570,7 +570,7 @@ mod tests {
             .unwrap();
         let decode_matches = matches.subcommand_matches("verify").unwrap();
         let (jwt, decoded_token, _) = decode_token(&decode_matches);
-        let validated_token = verify_token(&jwt, &decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
         assert!(validated_token.is_err());
@@ -636,7 +636,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
         let (jwt, decoded_token, _) = decode_token(&decode_matches);
-        let validated_token = verify_token(&jwt, &decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
         assert!(validated_token.is_ok());
@@ -705,7 +705,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
         let (jwt, decoded_token, _) = decode_token(&decode_matches);
-        let validated_token = verify_token(&jwt, &decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
         assert!(validated_token.is_ok());
@@ -727,7 +727,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
         let (jwt, decoded_token, _) = decode_token(&decode_matches);
-        let validated_token = verify_token(&jwt, &decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
         assert!(validated_token.is_ok());
@@ -763,7 +763,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
         let (jwt, decoded_token, _) = decode_token(&decode_matches);
-        let validated_token = verify_token(&jwt, &decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
         assert!(validated_token.is_ok());

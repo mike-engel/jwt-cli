@@ -541,7 +541,7 @@ fn decode_token(matches: &ArgMatches) -> (String, JWTResult<TokenData<Payload>>,
     )
 }
 
-fn verify_token(jwt: &String, matches: &ArgMatches) -> JWTResult<TokenData<Payload>> {
+fn verify_token(jwt: String, matches: &ArgMatches) -> JWTResult<TokenData<Payload>> {
     let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
         matches.value_of("algorithm").unwrap(),
     ));
@@ -554,9 +554,9 @@ fn verify_token(jwt: &String, matches: &ArgMatches) -> JWTResult<TokenData<Paylo
     };
 
     let secret = matches.value_of("secret").unwrap();
-    let secret_key = decoding_key_from_secret(&algorithm, &secret).unwrap();
+    let secret_key = decoding_key_from_secret(&algorithm, secret).unwrap();
 
-    decode::<Payload>(jwt, &secret_key, &secret_validator)
+    decode::<Payload>(&jwt, &secret_key, &secret_validator)
 }
 
 fn print_encoded_token(token: JWTResult<String>) {
@@ -669,7 +669,7 @@ fn main() {
             exit(return_code)
         }
         ("decode", Some(decode_matches)) => {
-            let (_, token_data, format) = decode_token(&decode_matches);
+            let (_, token_data, format) = decode_token(decode_matches);
             let return_code: i32 = match &token_data {
                 Ok(_) => 0,  // token decoded sucessfully
                 Err(_) => 1, // token could not be decoded
@@ -679,8 +679,8 @@ fn main() {
             exit(return_code)
         }
         ("verify", Some(decode_matches)) => {
-            let (jwt, token_data, format) = decode_token(&decode_matches);
-            let validated_token = verify_token(&jwt, &decode_matches);
+            let (jwt, token_data, format) = decode_token(decode_matches);
+            let validated_token = verify_token(jwt, decode_matches);
             let return_code: i32 = match validated_token {
                 Ok(_) => 0,  // successful signature check
                 Err(_) => 1, // unsuccessful signature check
