@@ -3,8 +3,11 @@
 #### New features
 
 - Secrets can be files for both encoding and decoding #130
+- Support `RSASSA-PSS` signatures #132
 - **[BREAKING]** `jwt-cli` will always validate `exp` unless you pass `--ignore-exp` #137
 - Swapped out [term-painter](https://github.com/LukasKalbertodt/term-painter#when-not-to-use-this-crate) for [bunt](https://crates.io/crates/bunt)
+- Allow the secret to be base64 encoded #144
+- Show help if no subcommands are used #146
 
 # 4.0.0
 
