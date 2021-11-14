@@ -1,5 +1,9 @@
 # Unreleased
 
+# 5.0.0
+
+> 2021-11-14
+
 #### New features
 
 - Secrets can be files for both encoding and decoding #130
