@@ -129,6 +129,16 @@
         "code",
         "test"
       ]
+    },
+    {
+      "login": "komi1230",
+      "name": "Yusuke Kominami",
+      "avatar_url": "https://avatars.githubusercontent.com/u/27967726?v=4",
+      "profile": "https://komi.dev",
+      "contributions": [
+        "code",
+        "doc"
+      ]
     }
   ],
   "contributorsPerLine": 7

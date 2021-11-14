@@ -153,6 +153,7 @@ Thanks goes to these wonderful people ([emoji key](https://allcontributors.org/d
     <td align="center"><a href="https://github.com/codedust"><img src="https://avatars.githubusercontent.com/u/7175914?v=4" width="100px;" alt="codedust"/><br /><sub><b>codedust</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=codedust" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/lizfeed"><img src="https://avatars.githubusercontent.com/u/61433510?v=4" width="100px;" alt="Liz Frost"/><br /><sub><b>Liz Frost</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=lizfeed" title="Code">💻</a></td>
     <td align="center"><a href="https://github.com/ceharris"><img src="https://avatars.githubusercontent.com/u/3943178?v=4" width="100px;" alt="Carl Harris"/><br /><sub><b>Carl Harris</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=ceharris" title="Code">💻</a> <a href="https://github.com/mike-engel/jwt-cli/commits?author=ceharris" title="Tests">⚠️</a></td>
+    <td align="center"><a href="https://komi.dev"><img src="https://avatars.githubusercontent.com/u/27967726?v=4" width="100px;" alt="Yusuke Kominami"/><br /><sub><b>Yusuke Kominami</b></sub></a><br /><a href="https://github.com/mike-engel/jwt-cli/commits?author=komi1230" title="Code">💻</a> <a href="https://github.com/mike-engel/jwt-cli/commits?author=komi1230" title="Documentation">📖</a></td>
   </tr>
 </table>
 
