@@ -2,10 +2,27 @@ on: [push, pull_request]
 name: Continuous Integration
 
 jobs:
-
   test:
-    name: Test Suite
-    runs-on: ubuntu-latest
+    name: Test Suite on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+        rust: [stable]
+        include:
+          - os: macos-latest
+            artifact_prefix: macOS
+            target: x86_64-apple-darwin
+            binary_postfix: ""
+          - os: ubuntu-latest
+            artifact_prefix: linux
+            target: x86_64-unknown-linux-gnu
+            binary_postfix: ""
+          - os: windows-latest
+            artifact_prefix: windows
+            target: x86_64-pc-windows-msvc
+            binary_postfix: ".exe"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v2
