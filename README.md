@@ -23,12 +23,9 @@ You should install it somewhere in your `$PATH`. For Linux and macOS, a good pla
 
 ## Homebrew
 
-For those with Homebrew, you'll need to `brew tap mike-engel/jwt-cli` repo to install it.
-
 ```sh
-# Tap and install jwt-cli
-brew tap mike-engel/jwt-cli
-brew install jwt-cli
+# Install jwt-cli
+brew install mike-engel/jwt-cli/jwt-cli
 
 # Ensure it worked ok by running the help command
 jwt help
