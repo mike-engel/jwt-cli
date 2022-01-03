@@ -58,7 +58,7 @@ enum OutputFormat {
 
 impl PayloadItem {
     fn from_string(val: Option<&str>) -> Option<PayloadItem> {
-        val.map(|item| PayloadItem::split_payload_item(item))
+        val.map(PayloadItem::split_payload_item)
     }
 
     fn from_string_with_name(val: Option<&str>, name: &str) -> Option<PayloadItem> {
