@@ -12,7 +12,7 @@ path = "src/main.rs"
 test = true
 
 [dependencies]
-clap = "2"
+clap = "3"
 jsonwebtoken = "7"
 bunt = "0.2"
 serde = "1"
