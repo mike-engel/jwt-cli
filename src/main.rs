@@ -247,7 +247,26 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                 ),
         ).subcommand(
             SubCommand::with_name("decode")
-                .about("Decode a JWT")
+                .about("Decode a JWT (no signature check is performed)")
+                .arg(
+                    Arg::with_name("jwt")
+                        .help("the jwt to decode")
+                        .index(1)
+                        .required(true),
+                ).arg(
+                    Arg::with_name("iso_dates")
+                        .help("display unix timestamps as ISO 8601 dates")
+                        .takes_value(false)
+                        .long("iso8601")
+                ).arg(
+                    Arg::with_name("json")
+                        .help("render decoded JWT as JSON")
+                        .long("json")
+                        .short("j"),
+                ),
+        ).subcommand(
+            SubCommand::with_name("verify")
+                .about("Decode a JWT and validate its signature")
                 .arg(
                     Arg::with_name("jwt")
                         .help("the jwt to decode")
@@ -272,7 +291,7 @@ fn config_options<'a, 'b>() -> App<'a, 'b> {
                         .takes_value(true)
                         .long("secret")
                         .short("S")
-                        .default_value(""),
+                        .required(true),
                 ).arg(
                     Arg::with_name("json")
                         .help("render decoded JWT as JSON")
@@ -484,20 +503,7 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
         .and_then(|secret| encode(&header, &claims, &secret))
 }
 
-fn decode_token(
-    matches: &ArgMatches,
-) -> (
-    JWTResult<TokenData<Payload>>,
-    JWTResult<TokenData<Payload>>,
-    OutputFormat,
-) {
-    let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
-        matches.value_of("algorithm").unwrap(),
-    ));
-    let secret = match matches.value_of("secret").map(|s| (s, !s.is_empty())) {
-        Some((secret, true)) => Some(decoding_key_from_secret(&algorithm, secret)),
-        _ => None,
-    };
+fn decode_token(matches: &ArgMatches) -> (String, JWTResult<TokenData<Payload>>, OutputFormat) {
     let jwt = matches
         .value_of("jwt")
         .map(|value| {
@@ -517,13 +523,6 @@ fn decode_token(
         .trim()
         .to_owned();
 
-    let secret_validator = Validation {
-        leeway: 1000,
-        algorithms: vec![algorithm],
-        validate_exp: !matches.is_present("ignore_exp"),
-        ..Default::default()
-    };
-
     let token_data = dangerous_insecure_decode::<Payload>(&jwt).map(|mut token| {
         if matches.is_present("iso_dates") {
             token.claims.convert_timestamps();
@@ -533,10 +532,7 @@ fn decode_token(
     });
 
     (
-        match secret {
-            Some(secret_key) => decode::<Payload>(&jwt, &secret_key.unwrap(), &secret_validator),
-            None => dangerous_insecure_decode::<Payload>(&jwt),
-        },
+        jwt,
         token_data,
         if matches.is_present("json") {
             OutputFormat::Json
@@ -544,6 +540,24 @@ fn decode_token(
             OutputFormat::Text
         },
     )
+}
+
+fn verify_token(jwt: String, matches: &ArgMatches) -> JWTResult<TokenData<Payload>> {
+    let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
+        matches.value_of("algorithm").unwrap(),
+    ));
+
+    let secret_validator = Validation {
+        leeway: 1000,
+        algorithms: vec![algorithm],
+        validate_exp: !matches.is_present("ignore_exp"),
+        ..Default::default()
+    };
+
+    let secret = matches.value_of("secret").unwrap();
+    let secret_key = decoding_key_from_secret(&algorithm, secret).unwrap();
+
+    decode::<Payload>(&jwt, &secret_key, &secret_validator)
 }
 
 fn print_encoded_token(token: JWTResult<String>) {
@@ -554,25 +568,24 @@ fn print_encoded_token(token: JWTResult<String>) {
             } else {
                 print!("{}", jwt);
             }
-            exit(0);
         }
         Err(err) => {
             bunt::eprintln!("{$red+bold}Something went awry creating the jwt{/$}\n");
             eprintln!("{}", err);
-            exit(1);
         }
     }
 }
 
 fn print_decoded_token(
-    validated_token: JWTResult<TokenData<Payload>>,
+    validated_token: Option<JWTResult<TokenData<Payload>>>,
     token_data: JWTResult<TokenData<Payload>>,
+    options_algorithm: Option<Algorithm>,
     format: OutputFormat,
 ) {
-    if let Err(err) = &validated_token {
-        match err.kind() {
+    match validated_token {
+        Some(Err(ref err)) => match err.kind() {
             ErrorKind::InvalidToken => {
-                bunt::println!("{$red+bold}The JWT provided is invalid{/$}")
+                bunt::eprintln!("{$red+bold}The JWT provided is invalid{/$}")
             }
             ErrorKind::InvalidSignature => {
                 bunt::eprintln!("{$red+bold}The JWT provided has an invalid signature{/$}")
@@ -587,7 +600,7 @@ fn print_decoded_token(
                 bunt::eprintln!("{$red+bold}The token has expired (or the `exp` claim is not set). This error can be ignored via the `--ignore-exp` parameter.{/$}")
             }
             ErrorKind::InvalidIssuer => {
-                bunt::println!("{$red+bold}The token issuer is invalid{/$}")
+                bunt::eprintln!("{$red+bold}The token issuer is invalid{/$}")
             }
             ErrorKind::InvalidAudience => {
                 bunt::eprintln!("{$red+bold}The token audience doesn't match the subject{/$}")
@@ -598,15 +611,32 @@ fn print_decoded_token(
             ErrorKind::ImmatureSignature => bunt::eprintln!(
                 "{$red+bold}The `nbf` claim is in the future which isn't allowed{/$}"
             ),
-            ErrorKind::InvalidAlgorithm => bunt::eprintln!(
-                "{$red+bold}The JWT provided has a different signing algorithm than the one you \
-                     provided{/$}",
-            ),
+            ErrorKind::InvalidAlgorithm => {
+                let jwt_algorithm = match token_data {
+                    Ok(ref token) => token.header.alg,
+                    Err(_) => panic!("Error: Invalid token data."),
+                };
+                bunt::eprintln!("{$red+bold}Error: Invalid Signature! The JWT provided has a different signing algorithm ({:?}) than the one selected for validation ({:?}){/$}",jwt_algorithm, options_algorithm.unwrap())
+            }
             _ => bunt::eprintln!(
-                "{$red+bold}The JWT provided is invalid because{/$} {:?}",
+                "{$red+bold}The JWT provided is invalid because {:?}{/$}",
                 err
             ),
-        };
+        },
+        Some(Ok(_)) => bunt::eprintln!("{$green+bold}Success! JWT signature is valid!{/$}"),
+        None => {
+            // the signature could not be verified
+            match token_data {
+                Err(ref err) => match err.kind() {
+                    ErrorKind::InvalidToken => bunt::eprintln!("{$red+bold}Error: The token could not be decoded (invalid token structure).{/$}"),
+                    ErrorKind::Base64(_) => bunt::eprintln!("{$red+bold}Error: The token could not be decoded (invalid Base64 encoding).{/$}"),
+                    ErrorKind::Json(_) => bunt::eprintln!("{$red+bold}Error: The token could not be decoded (error while decoding json).{/$}"),
+                    ErrorKind::Utf8(_) => bunt::eprintln!("{$red+bold}Error: The token could not be decoded (error while decoding UTF8 string).{/$}"),
+                    _ => bunt::eprintln!("{$red+bold}Error: Unexpected error while decoding the token!{/$}"),
+                }
+                Ok(_) => bunt::eprintln!("{$red+bold}Warning! JWT signature has not been validated!{/$}"),
+            }
+        }
     }
 
     match (format, token_data) {
@@ -619,13 +649,8 @@ fn print_decoded_token(
             bunt::println!("{$bold}Token claims\n------------{/$}");
             println!("{}", to_string_pretty(&token.claims).unwrap());
         }
-        (_, Err(_)) => exit(1),
+        (_, Err(_)) => {}
     }
-
-    exit(match validated_token {
-        Err(_) => 1,
-        Ok(_) => 0,
-    })
 }
 
 fn main() {
@@ -636,13 +661,43 @@ fn main() {
             warn_unsupported(encode_matches);
 
             let token = encode_token(encode_matches);
+            let return_code: i32 = match &token {
+                Ok(_) => 0,  // token encoded sucessfully
+                Err(_) => 1, // token could not be encoded
+            };
 
             print_encoded_token(token);
+            exit(return_code)
         }
         ("decode", Some(decode_matches)) => {
-            let (validated_token, token_data, format) = decode_token(decode_matches);
+            let (_, token_data, format) = decode_token(decode_matches);
+            let return_code: i32 = match &token_data {
+                Ok(_) => 0,  // token decoded sucessfully
+                Err(_) => 1, // token could not be decoded
+            };
 
-            print_decoded_token(validated_token, token_data, format);
+            print_decoded_token(None, token_data, None, format);
+            exit(return_code)
+        }
+        ("verify", Some(decode_matches)) => {
+            let (jwt, token_data, format) = decode_token(decode_matches);
+            let validated_token = verify_token(jwt, decode_matches);
+            let return_code: i32 = match validated_token {
+                Ok(_) => 0,  // successful signature check
+                Err(_) => 1, // unsuccessful signature check
+            };
+            let options_algorithm = translate_algorithm(SupportedAlgorithms::from_string(
+                decode_matches.value_of("algorithm").unwrap(),
+            ));
+
+            print_decoded_token(
+                Some(validated_token),
+                token_data,
+                Some(options_algorithm),
+                format,
+            );
+
+            exit(return_code)
         }
         _ => (),
     }

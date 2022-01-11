@@ -5,7 +5,7 @@ mod tests {
     use super::{
         config_options, create_header, decode_token, decoding_key_from_secret, encode_token,
         encoding_key_from_secret, is_payload_item, is_timestamp_or_duration, translate_algorithm,
-        OutputFormat, Payload, PayloadItem, SupportedAlgorithms,
+        verify_token, OutputFormat, Payload, PayloadItem, SupportedAlgorithms,
     };
     use base64::decode as base64_decode;
     use chrono::{Duration, TimeZone, Utc};
@@ -248,14 +248,16 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec!["jwt", "verify", "-S", "1234567890", &encoded_token])
             .unwrap();
-        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
+        let (jwt, token_data, _) = decode_token(&decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
-        assert!(decoded_token.is_ok());
+        assert!(token_data.is_ok());
+        assert!(validated_token.as_ref().is_ok());
 
-        let TokenData { claims, header } = decoded_token.unwrap();
+        let TokenData { claims, header } = validated_token.unwrap();
 
         assert_eq!(header.alg, Algorithm::HS256);
         assert_eq!(header.kid, Some("1234".to_string()));
@@ -282,10 +284,10 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec!["jwt", "decode", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let (_, decoded_token, _) = decode_token(&decode_matches);
 
         assert!(decoded_token.is_ok());
 
@@ -304,14 +306,14 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec!["jwt", "verify", "-S", "1234567890", &encoded_token])
             .unwrap();
-        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, token_data, _) = decode_token(&decode_matches);
+        let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
+        let (_, decoded_token, _) = decode_token(&decode_matches);
 
-        assert!(decoded_token.is_err());
+        assert!(decoded_token.is_ok());
 
-        let TokenData { claims, header: _ } = token_data.unwrap();
+        let TokenData { claims, header: _ } = decoded_token.unwrap();
 
         assert!(claims.0.get("exp").is_none());
     }
@@ -324,12 +326,14 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec!["jwt", "verify", "-S", "1234567890", &encoded_token])
             .unwrap();
-        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
+        let (jwt, decoded_token, _) = decode_token(&decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
+        assert!(validated_token.is_ok());
 
         let TokenData { claims, header: _ } = decoded_token.unwrap();
         let exp = from_value::<i64>(claims.0["exp"].clone());
@@ -353,10 +357,10 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec!["jwt", "decode", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let (_, decoded_token, _) = decode_token(&decode_matches);
 
         assert!(decoded_token.is_ok());
 
@@ -381,10 +385,10 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec!["jwt", "decode", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let (_, decoded_token, _) = decode_token(&decode_matches);
 
         assert!(decoded_token.is_ok());
 
@@ -403,12 +407,14 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec!["jwt", "verify", "-S", "1234567890", &encoded_token])
             .unwrap();
-        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
+        let (jwt, decoded_token, _) = decode_token(&decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
-        assert!(decoded_token.is_err());
+        assert!(decoded_token.is_ok());
+        assert!(validated_token.is_err());
     }
 
     #[test]
@@ -421,17 +427,19 @@ mod tests {
         let decode_matcher = config_options()
             .get_matches_from_safe(vec![
                 "jwt",
-                "decode",
+                "verify",
                 "-S",
                 "1234567890",
                 "--ignore-exp",
                 &encoded_token,
             ])
             .unwrap();
-        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
+        let (jwt, decoded_token, _) = decode_token(&decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
+        assert!(validated_token.is_ok());
     }
 
     #[test]
@@ -449,12 +457,14 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec!["jwt", "verify", "-S", "1234567890", &encoded_token])
             .unwrap();
-        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
+        let (jwt, decoded_token, _) = decode_token(&decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
+        assert!(validated_token.is_ok());
 
         let TokenData { claims, header: _ } = decoded_token.unwrap();
         let exp_claim = from_value::<i64>(claims.0["exp"].clone());
@@ -485,12 +495,14 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .get_matches_from_safe(vec!["jwt", "verify", "-S", "1234567890", &encoded_token])
             .unwrap();
-        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
+        let (jwt, decoded_token, _) = decode_token(&decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
         assert!(decoded_token.is_ok());
+        assert!(validated_token.is_ok());
 
         let TokenData { claims, header: _ } = decoded_token.unwrap();
         let nbf_claim = from_value::<i64>(claims.0["nbf"].clone());
@@ -506,11 +518,11 @@ mod tests {
     }
 
     #[test]
-    fn decodes_a_token() {
+    fn validate_a_token() {
         let matches = config_options()
             .get_matches_from_safe(vec![
                 "jwt",
-                "decode",
+                "verify",
                 "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4OTM0NTYwMDAsImlhdCI6MTU0MjQ5MjMxMywidGhpcyI6InRoYXQifQ.YTWit46_AEMMVv0P48NeJJIqXmMHarGjfRxtR7jLlxE",
                 "-S",
                 "1234567890",
@@ -518,10 +530,12 @@ mod tests {
                 "HS256",
             ])
             .unwrap();
-        let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_matches = matches.subcommand_matches("verify").unwrap();
+        let (jwt, decoded_token, _) = decode_token(&decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
-        assert!(result.is_ok());
+        assert!(decoded_token.is_ok());
+        assert!(validated_token.is_ok());
     }
 
     #[test]
@@ -535,18 +549,18 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, format) = decode_token(&decode_matches);
+        let (_, decoded_token, format) = decode_token(&decode_matches);
 
-        assert!(result.is_ok());
+        assert!(decoded_token.is_ok());
         assert!(format == OutputFormat::Json);
     }
 
     #[test]
-    fn decodes_a_token_with_invalid_secret() {
+    fn validates_a_token_with_invalid_secret() {
         let matches = config_options()
             .get_matches_from_safe(vec![
                 "jwt",
-                "decode",
+                "verify",
                 "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
                 "-S",
                 "yolo",
@@ -554,42 +568,12 @@ mod tests {
                 "HS256",
             ])
             .unwrap();
-        let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_matches = matches.subcommand_matches("verify").unwrap();
+        let (jwt, decoded_token, _) = decode_token(&decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn decodes_a_token_without_a_secret() {
-        let matches = config_options()
-            .get_matches_from_safe(vec![
-                "jwt",
-                "decode",
-                "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
-                "-A",
-                "HS256",
-            ])
-            .unwrap();
-        let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
-
-        assert!(result.is_ok());
-    }
-
-    #[test]
-    fn decodes_a_token_without_an_alg() {
-        let matches = config_options()
-            .get_matches_from_safe(vec![
-                "jwt",
-                "decode",
-                "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
-            ])
-            .unwrap();
-        let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
-
-        assert!(result.is_ok());
+        assert!(decoded_token.is_ok());
+        assert!(validated_token.is_err());
     }
 
     #[test]
@@ -602,9 +586,9 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let (_, decoded_token, _) = decode_token(&decode_matches);
 
-        assert!(result.is_ok());
+        assert!(decoded_token.is_ok());
     }
 
     #[test]
@@ -617,9 +601,9 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let (_, decoded_token, _) = decode_token(&decode_matches);
 
-        assert!(result.is_ok());
+        assert!(decoded_token.is_ok());
     }
 
     #[test]
@@ -642,7 +626,7 @@ mod tests {
         let decode_matcher = config_options()
             .get_matches_from_safe(vec![
                 "jwt",
-                "decode",
+                "verify",
                 "-S",
                 "@./tests/public_rsa_key.der",
                 "-A",
@@ -650,10 +634,12 @@ mod tests {
                 &encoded_token,
             ])
             .unwrap();
-        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
+        let (jwt, decoded_token, _) = decode_token(&decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
-        assert!(result.is_ok());
+        assert!(decoded_token.is_ok());
+        assert!(validated_token.is_ok());
     }
 
     #[test]
@@ -689,7 +675,7 @@ mod tests {
     }
 
     #[test]
-    fn encodes_and_decodes_an_rsa_ssa_pss_token_using_key_from_file() {
+    fn encodes_and_verifies_an_rsa_ssa_pss_token_using_key_from_file() {
         let body: String = "{\"field\":\"value\"}".to_string();
         let encode_matcher = config_options()
             .get_matches_from_safe(vec![
@@ -709,7 +695,7 @@ mod tests {
         let decode_matcher = config_options()
             .get_matches_from_safe(vec![
                 "jwt",
-                "decode",
+                "verify",
                 "-S",
                 "@./tests/public_rsa_key.der",
                 "-A",
@@ -717,19 +703,21 @@ mod tests {
                 &encoded_token,
             ])
             .unwrap();
-        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
+        let (jwt, decoded_token, _) = decode_token(&decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
-        assert!(result.is_ok());
+        assert!(decoded_token.is_ok());
+        assert!(validated_token.is_ok());
     }
 
     #[test]
-    fn decodes_an_rsa_ssa_pss_token_using_key_from_file() {
+    fn verify_an_rsa_ssa_pss_token_using_key_from_file() {
         let token: String = "eyJ0eXAiOiJKV1QiLCJhbGciOiJQUzUxMiJ9.eyJmaWVsZCI6InZhbHVlIiwiaWF0IjoxNjI1OTMxNjAwLCJleHAiOjkwMDAwMDAwMDB9.Tt1siDczvVAi89dH8QqTZ_n5Ejz4gAIzVLqucWN5tEqdAVRdWgP8psuRFdC8RKIn1Lp4OsUkAA7NJ79cZt32Eewy84hTYrCgZZ9mcWg5IfXPHcZmTUm6qSyKqANdsnRWThbG3IJSX1D6obI5Y91NhVI5PTRg8sFlDAXaNN9ZVTmAtZXj0b5-MgsjiRqWMW3xi9xQqTxvb5VN37Oot-KDWZXjkO022ixshzFWu8Jt582uMD4qYRp1d0VldgyGO_viDqqk8qTqNA7soUKWyDds0emuecE_bDMeELMfxMR-A1pQeu3FgEhliazIAdXJMNlwRuJG8znLNqCK1nB2Nd8sUQ".to_string();
         let decode_matcher = config_options()
             .get_matches_from_safe(vec![
                 "jwt",
-                "decode",
+                "verify",
                 "-S",
                 "@./tests/public_rsa_key.der",
                 "-A",
@@ -737,10 +725,12 @@ mod tests {
                 &token,
             ])
             .unwrap();
-        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
+        let (jwt, decoded_token, _) = decode_token(&decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
-        assert!(result.is_ok());
+        assert!(decoded_token.is_ok());
+        assert!(validated_token.is_ok());
     }
 
     #[test]
@@ -763,7 +753,7 @@ mod tests {
         let decode_matcher = config_options()
             .get_matches_from_safe(vec![
                 "jwt",
-                "decode",
+                "verify",
                 "-S",
                 "@./tests/public_ecdsa_key.pk8",
                 "-A",
@@ -771,12 +761,12 @@ mod tests {
                 &encoded_token,
             ])
             .unwrap();
-        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_matches = decode_matcher.subcommand_matches("verify").unwrap();
+        let (jwt, decoded_token, _) = decode_token(&decode_matches);
+        let validated_token = verify_token(jwt, &decode_matches);
 
-        dbg!(&result);
-
-        assert!(result.is_ok());
+        assert!(decoded_token.is_ok());
+        assert!(validated_token.is_ok());
     }
 
     #[test]
@@ -798,21 +788,14 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encoded_token = encode_token(&encode_matches).unwrap();
         let decode_matcher = config_options()
-            .get_matches_from_safe(vec![
-                "jwt",
-                "decode",
-                "-S",
-                "1234567890",
-                "--iso8601",
-                &encoded_token,
-            ])
+            .get_matches_from_safe(vec!["jwt", "decode", "--iso8601", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, token_data, _) = decode_token(&decode_matches);
+        let (_, decoded_token, _) = decode_token(&decode_matches);
 
         assert!(decoded_token.is_ok());
 
-        let TokenData { claims, header: _ } = token_data.unwrap();
+        let TokenData { claims, header: _ } = decoded_token.unwrap();
 
         assert!(claims.0.get("iat").is_some());
         assert!(claims.0.get("nbf").is_some());
