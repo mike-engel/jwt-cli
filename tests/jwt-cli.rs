@@ -3,42 +3,23 @@ include!("../src/main.rs");
 #[cfg(test)]
 mod tests {
     use super::{
-        config_options, create_header, decode_token, decoding_key_from_secret, encode_token,
-        encoding_key_from_secret, is_payload_item, is_timestamp_or_duration, translate_algorithm,
-        OutputFormat, Payload, PayloadItem, SupportedAlgorithms,
+        create_header, decode_token, decoding_key_from_secret, encode_token,
+        encoding_key_from_secret, is_payload_item, is_timestamp_or_duration, App, DecodeArgs,
+        EncodeArgs, OutputFormat, Payload, PayloadItem,
     };
     use base64::decode as base64_decode;
     use chrono::{Duration, TimeZone, Utc};
+    use clap::{FromArgMatches, IntoApp};
     use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, TokenData};
     use serde_json::{from_value, json};
 
-    fn empty_args() -> impl IntoIterator<Item = String> {
-        std::iter::empty()
-    }
-
-    #[test]
-    fn payload_item_from_string() {
-        let string = Some("this=that");
-        let result = PayloadItem::from_string(string);
-        let expected = Some(PayloadItem("this".to_string(), json!("that")));
-
-        assert_eq!(result, expected);
-    }
-
     #[test]
     fn payload_item_from_string_with_name() {
-        let string = Some("that");
-        let result = PayloadItem::from_string_with_name(string, "this");
+        let string = String::from("that");
+        let result = PayloadItem::from_string_with_name(Some(&string), "this");
         let expected = Some(PayloadItem("this".to_string(), json!("that")));
 
         assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn payload_item_from_none() {
-        let result = PayloadItem::from_string(None);
-
-        assert_eq!(result, None);
     }
 
     #[test]
@@ -49,23 +30,16 @@ mod tests {
     }
 
     #[test]
-    fn split_payload_item() {
-        let string = "this=that";
-        let result = PayloadItem::split_payload_item(string);
-        let expected = PayloadItem("this".to_string(), json!("that"));
-
-        assert_eq!(result, expected);
-    }
-
-    #[test]
     fn payload_from_payload_items() {
-        let _matcher = config_options().get_matches_from_safe(empty_args());
-        let payload_item_one = PayloadItem::from_string(Some("this=that")).unwrap();
-        let payload_item_two = PayloadItem::from_string(Some("full=yolo")).unwrap();
+        let payload_item_one =
+            PayloadItem::from_string_with_name(Some(&String::from("that")), "this").unwrap();
+        let payload_item_two =
+            PayloadItem::from_string_with_name(Some(&String::from("yolo")), "full").unwrap();
         let payloads = vec![payload_item_one, payload_item_two];
         let result = Payload::from_payloads(payloads);
         let payload = result.0;
 
+        println!("{:?}", payload.keys());
         assert!(payload.contains_key("this"));
         assert!(payload.contains_key("full"));
         assert_eq!(payload["this"], json!("that"));
@@ -73,125 +47,41 @@ mod tests {
     }
 
     #[test]
-    fn supported_algorithm_from_string() {
-        assert_eq!(
-            SupportedAlgorithms::from_string("HS256"),
-            SupportedAlgorithms::HS256
-        );
-        assert_eq!(
-            SupportedAlgorithms::from_string("HS384"),
-            SupportedAlgorithms::HS384
-        );
-        assert_eq!(
-            SupportedAlgorithms::from_string("HS512"),
-            SupportedAlgorithms::HS512
-        );
-        assert_eq!(
-            SupportedAlgorithms::from_string("RS256"),
-            SupportedAlgorithms::RS256
-        );
-        assert_eq!(
-            SupportedAlgorithms::from_string("RS384"),
-            SupportedAlgorithms::RS384
-        );
-        assert_eq!(
-            SupportedAlgorithms::from_string("RS512"),
-            SupportedAlgorithms::RS512
-        );
-        assert_eq!(
-            SupportedAlgorithms::from_string("PS256"),
-            SupportedAlgorithms::PS256
-        );
-        assert_eq!(
-            SupportedAlgorithms::from_string("PS384"),
-            SupportedAlgorithms::PS384
-        );
-        assert_eq!(
-            SupportedAlgorithms::from_string("PS512"),
-            SupportedAlgorithms::PS512
-        );
-        assert_eq!(
-            SupportedAlgorithms::from_string("yolo"),
-            SupportedAlgorithms::HS256
-        );
-    }
-
-    #[test]
     fn is_valid_payload_item() {
-        assert!(is_payload_item("this=that".to_string()).is_ok());
+        assert!(is_payload_item("this=that").is_ok());
     }
 
     #[test]
     fn is_invalid_payload_item() {
-        assert!(is_payload_item("this".to_string()).is_err());
-        assert!(is_payload_item("this=that=yolo".to_string()).is_err());
-        assert!(is_payload_item("this-that_yolo".to_string()).is_err());
+        assert!(is_payload_item("this").is_err());
+        assert!(is_payload_item("this=that=yolo").is_err());
+        assert!(is_payload_item("this-that_yolo").is_err());
     }
 
     #[test]
     fn is_valid_timestamp_or_duration() {
-        assert!(is_timestamp_or_duration("2".to_string()).is_ok());
-        assert!(is_timestamp_or_duration("39874398".to_string()).is_ok());
-        assert!(is_timestamp_or_duration("12h".to_string()).is_ok());
-        assert!(is_timestamp_or_duration("1 day -1 hour".to_string()).is_ok());
-        assert!(is_timestamp_or_duration("+30 min".to_string()).is_ok());
+        assert!(is_timestamp_or_duration("2").is_ok());
+        assert!(is_timestamp_or_duration("39874398").is_ok());
+        assert!(is_timestamp_or_duration("12h").is_ok());
+        assert!(is_timestamp_or_duration("1 day -1 hour").is_ok());
+        assert!(is_timestamp_or_duration("+30 min").is_ok());
     }
 
     #[test]
     fn is_invalid_timestamp_or_duration() {
-        assert!(is_timestamp_or_duration("yolo".to_string()).is_err());
-        assert!(is_timestamp_or_duration("2398ybdfiud93".to_string()).is_err());
-        assert!(is_timestamp_or_duration("1 day -1 hourz".to_string()).is_err());
-    }
-
-    #[test]
-    fn translates_algorithm() {
-        assert_eq!(
-            translate_algorithm(SupportedAlgorithms::HS256),
-            Algorithm::HS256
-        );
-        assert_eq!(
-            translate_algorithm(SupportedAlgorithms::HS384),
-            Algorithm::HS384
-        );
-        assert_eq!(
-            translate_algorithm(SupportedAlgorithms::HS512),
-            Algorithm::HS512
-        );
-        assert_eq!(
-            translate_algorithm(SupportedAlgorithms::RS256),
-            Algorithm::RS256
-        );
-        assert_eq!(
-            translate_algorithm(SupportedAlgorithms::RS384),
-            Algorithm::RS384
-        );
-        assert_eq!(
-            translate_algorithm(SupportedAlgorithms::RS512),
-            Algorithm::RS512
-        );
-        assert_eq!(
-            translate_algorithm(SupportedAlgorithms::PS256),
-            Algorithm::PS256
-        );
-        assert_eq!(
-            translate_algorithm(SupportedAlgorithms::PS384),
-            Algorithm::PS384
-        );
-        assert_eq!(
-            translate_algorithm(SupportedAlgorithms::PS512),
-            Algorithm::PS512
-        );
+        assert!(is_timestamp_or_duration("yolo").is_err());
+        assert!(is_timestamp_or_duration("2398ybdfiud93").is_err());
+        assert!(is_timestamp_or_duration("1 day -1 hourz").is_err());
     }
 
     #[test]
     fn creates_jwt_header_with_kid() {
         let algorithm = Algorithm::HS256;
-        let kid = Some("yolo");
-        let result = create_header(algorithm, kid);
+        let kid = String::from("yolo");
+        let result = create_header(algorithm, Some(&kid));
         let mut expected = Header::new(algorithm);
 
-        expected.kid = kid.map(|k| k.to_string());
+        expected.kid = Some(kid);
 
         assert_eq!(result, expected);
     }
@@ -212,8 +102,8 @@ mod tests {
     fn encodes_a_token() {
         let exp = (Utc::now() + Duration::minutes(60)).timestamp();
         let nbf = Utc::now().timestamp();
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "encode",
                 "-S",
@@ -246,12 +136,14 @@ mod tests {
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -276,16 +168,18 @@ mod tests {
 
     #[test]
     fn adds_iat_automatically() {
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "encode", "--exp", "-S", "1234567890"])
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "encode", "--exp", "-S", "1234567890"])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -298,16 +192,18 @@ mod tests {
 
     #[test]
     fn stops_exp_from_automatically_being_added() {
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "encode", "-S", "1234567890"])
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "encode", "-S", "1234567890"])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, token_data, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, token_data, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_err());
 
@@ -318,16 +214,18 @@ mod tests {
 
     #[test]
     fn adds_default_exp_automatically() {
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "encode", "--exp", "-S", "1234567890"])
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "encode", "--exp", "-S", "1234567890"])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -340,8 +238,8 @@ mod tests {
 
     #[test]
     fn stops_iat_from_automatically_being_added() {
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "encode",
                 "--no-iat",
@@ -351,12 +249,14 @@ mod tests {
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -368,8 +268,8 @@ mod tests {
     #[test]
     fn allows_for_a_custom_exp() {
         let exp = (Utc::now() + Duration::minutes(60)).timestamp();
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "encode",
                 "-S",
@@ -379,12 +279,14 @@ mod tests {
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -397,29 +299,32 @@ mod tests {
 
     #[test]
     fn returns_error_when_exp_is_not_set() {
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "encode", "-S", "1234567890"])
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "encode", "-S", "1234567890"])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_err());
     }
 
     #[test]
     fn returns_no_error_when_ignore_exp_parameter_is_set() {
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "encode", "-S", "1234567890"])
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "encode", "-S", "1234567890"])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "decode",
                 "-S",
@@ -429,15 +334,16 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
     }
 
     #[test]
     fn allows_for_a_custom_exp_as_systemd_string() {
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "encode",
                 "-S",
@@ -447,12 +353,14 @@ mod tests {
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -471,8 +379,8 @@ mod tests {
 
     #[test]
     fn allows_for_nbf_as_systemd_string() {
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "encode",
                 "-S",
@@ -483,12 +391,14 @@ mod tests {
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -507,8 +417,8 @@ mod tests {
 
     #[test]
     fn decodes_a_token() {
-        let matches = config_options()
-            .get_matches_from_safe(vec![
+        let matches = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "decode",
                 "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJleHAiOjE4OTM0NTYwMDAsImlhdCI6MTU0MjQ5MjMxMywidGhpcyI6InRoYXQifQ.YTWit46_AEMMVv0P48NeJJIqXmMHarGjfRxtR7jLlxE",
@@ -519,15 +429,16 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
 
     #[test]
     fn decodes_a_token_as_json() {
-        let matches = config_options()
-            .get_matches_from_safe(vec![
+        let matches = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "decode",
                 "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
@@ -535,7 +446,8 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, format) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, format) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
         assert!(format == OutputFormat::Json);
@@ -543,8 +455,8 @@ mod tests {
 
     #[test]
     fn decodes_a_token_with_invalid_secret() {
-        let matches = config_options()
-            .get_matches_from_safe(vec![
+        let matches = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "decode",
                 "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
@@ -555,15 +467,16 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_err());
     }
 
     #[test]
     fn decodes_a_token_without_a_secret() {
-        let matches = config_options()
-            .get_matches_from_safe(vec![
+        let matches = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "decode",
                 "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
@@ -572,52 +485,56 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
 
     #[test]
     fn decodes_a_token_without_an_alg() {
-        let matches = config_options()
-            .get_matches_from_safe(vec![
+        let matches = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "decode",
                 "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
 
     #[test]
     fn decodes_a_token_without_a_typ() {
-        let matches = config_options()
-            .get_matches_from_safe(vec![
+        let matches = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "decode",
                 "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.SEQijh6tEuOOAAKpHPuKxgFqEvlTNP1jj4FUNoBwXaM",
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
 
     #[test]
     fn decodes_a_token_with_leading_and_trailing_whitespace() {
-        let matches = config_options()
-            .get_matches_from_safe(vec![
+        let matches = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "decode",
                 "    eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.SEQijh6tEuOOAAKpHPuKxgFqEvlTNP1jj4FUNoBwXaM ",
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -625,8 +542,8 @@ mod tests {
     #[test]
     fn encodes_and_decodes_an_rsa_ssa_pkcs1_v1_5_token_using_key_from_file() {
         let body: String = "{\"field\":\"value\"}".to_string();
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "encode",
                 "-A",
@@ -638,9 +555,10 @@ mod tests {
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "decode",
                 "-S",
@@ -651,7 +569,8 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -691,8 +610,8 @@ mod tests {
     #[test]
     fn encodes_and_decodes_an_rsa_ssa_pss_token_using_key_from_file() {
         let body: String = "{\"field\":\"value\"}".to_string();
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "encode",
                 "-A",
@@ -704,10 +623,11 @@ mod tests {
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
         println!("enc {}", encoded_token);
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "decode",
                 "-S",
@@ -718,7 +638,8 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -726,8 +647,8 @@ mod tests {
     #[test]
     fn decodes_an_rsa_ssa_pss_token_using_key_from_file() {
         let token: String = "eyJ0eXAiOiJKV1QiLCJhbGciOiJQUzUxMiJ9.eyJmaWVsZCI6InZhbHVlIiwiaWF0IjoxNjI1OTMxNjAwLCJleHAiOjkwMDAwMDAwMDB9.Tt1siDczvVAi89dH8QqTZ_n5Ejz4gAIzVLqucWN5tEqdAVRdWgP8psuRFdC8RKIn1Lp4OsUkAA7NJ79cZt32Eewy84hTYrCgZZ9mcWg5IfXPHcZmTUm6qSyKqANdsnRWThbG3IJSX1D6obI5Y91NhVI5PTRg8sFlDAXaNN9ZVTmAtZXj0b5-MgsjiRqWMW3xi9xQqTxvb5VN37Oot-KDWZXjkO022ixshzFWu8Jt582uMD4qYRp1d0VldgyGO_viDqqk8qTqNA7soUKWyDds0emuecE_bDMeELMfxMR-A1pQeu3FgEhliazIAdXJMNlwRuJG8znLNqCK1nB2Nd8sUQ".to_string();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "decode",
                 "-S",
@@ -738,7 +659,8 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -746,8 +668,8 @@ mod tests {
     #[test]
     fn encodes_and_decodes_an_ecdsa_token_using_key_from_file() {
         let body: String = "{\"field\":\"value\"}".to_string();
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "encode",
                 "-A",
@@ -759,9 +681,10 @@ mod tests {
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "decode",
                 "-S",
@@ -772,7 +695,8 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (result, _, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
 
         dbg!(&result);
 
@@ -783,8 +707,8 @@ mod tests {
     fn shows_timestamps_as_iso_dates() {
         let exp = (Utc::now() + Duration::minutes(60)).timestamp();
         let nbf = Utc::now().timestamp();
-        let encode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let encode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "encode",
                 "--exp",
@@ -796,9 +720,10 @@ mod tests {
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
-        let encoded_token = encode_token(&encode_matches).unwrap();
-        let decode_matcher = config_options()
-            .get_matches_from_safe(vec![
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::into_app()
+            .try_get_matches_from(vec![
                 "jwt",
                 "decode",
                 "-S",
@@ -808,7 +733,8 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
-        let (decoded_token, token_data, _) = decode_token(&decode_matches);
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, token_data, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
