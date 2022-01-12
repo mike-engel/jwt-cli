@@ -1,5 +1,13 @@
 # Unreleased
 
+# 5.0.1
+
+? 2022-01-12
+
+### Changes
+
+- Upgrade clap to version 3 #164
+
 # 5.0.0
 
 > 2021-11-14
