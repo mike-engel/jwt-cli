@@ -12,7 +12,7 @@ path = "src/main.rs"
 test = true
 
 [dependencies]
-clap = "2"
+clap = { version = "3", features = ["derive"] }
 jsonwebtoken = "7"
 bunt = "0.2"
 serde = "1"

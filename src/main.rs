@@ -1,7 +1,7 @@
 use atty::Stream;
 use base64::decode as base64_decode;
 use chrono::{TimeZone, Utc};
-use clap::{arg_enum, crate_authors, crate_version, App, AppSettings, Arg, ArgMatches, SubCommand};
+use clap::{AppSettings, ArgEnum, Parser, Subcommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{
     dangerous_insecure_decode, decode, encode, Algorithm, DecodingKey, EncodingKey, Header,
@@ -13,7 +13,7 @@ use std::collections::BTreeMap;
 use std::process::exit;
 use std::{fs, io};
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 struct PayloadItem(String, Value);
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
@@ -25,29 +25,27 @@ struct TokenOutput {
     payload: Payload,
 }
 
-arg_enum! {
-    #[allow(clippy::clippy::upper_case_acronyms)]
-    #[derive(Debug, PartialEq)]
-    enum SupportedAlgorithms {
-        HS256,
-        HS384,
-        HS512,
-        RS256,
-        RS384,
-        RS512,
-        PS256,
-        PS384,
-        PS512,
-        ES256,
-        ES384,
-    }
+#[allow(clippy::upper_case_acronyms)]
+#[derive(Debug, Clone, PartialEq, ArgEnum)]
+#[clap(rename_all = "UPPERCASE")]
+enum SupportedAlgorithms {
+    HS256,
+    HS384,
+    HS512,
+    RS256,
+    RS384,
+    RS512,
+    PS256,
+    PS384,
+    PS512,
+    ES256,
+    ES384,
 }
 
-arg_enum! {
-    #[allow(clippy::clippy::upper_case_acronyms)]
-    enum SupportedTypes {
-        JWT
-    }
+#[allow(clippy::upper_case_acronyms)]
+#[derive(Debug, Clone, ArgEnum)]
+enum SupportedTypes {
+    JWT,
 }
 
 #[derive(Debug, PartialEq)]
@@ -57,13 +55,9 @@ enum OutputFormat {
 }
 
 impl PayloadItem {
-    fn from_string(val: Option<&str>) -> Option<PayloadItem> {
-        val.map(PayloadItem::split_payload_item)
-    }
-
-    fn from_string_with_name(val: Option<&str>, name: &str) -> Option<PayloadItem> {
+    fn from_string_with_name(val: Option<&String>, name: &str) -> Option<PayloadItem> {
         match val {
-            Some(value) => match from_str(value) {
+            Some(value) => match from_str(&value) {
                 Ok(json_value) => Some(PayloadItem(name.to_string(), json_value)),
                 Err(_) => match from_str(format!("\"{}\"", value).as_str()) {
                     Ok(json_value) => Some(PayloadItem(name.to_string(), json_value)),
@@ -75,10 +69,10 @@ impl PayloadItem {
     }
 
     // If the value is defined as systemd.time, converts the defined duration into a UNIX timestamp
-    fn from_timestamp_with_name(val: Option<&str>, name: &str, now: i64) -> Option<PayloadItem> {
+    fn from_timestamp_with_name(val: Option<&String>, name: &str, now: i64) -> Option<PayloadItem> {
         if let Some(timestamp) = val {
             if timestamp.parse::<u64>().is_err() {
-                let duration = parse_duration::parse(timestamp);
+                let duration = parse_duration::parse(&timestamp);
                 if let Ok(parsed_duration) = duration {
                     let seconds = parsed_duration.as_secs() + now as u64;
                     return PayloadItem::from_string_with_name(Some(&seconds.to_string()), name);
@@ -87,14 +81,6 @@ impl PayloadItem {
         }
 
         PayloadItem::from_string_with_name(val, name)
-    }
-
-    fn split_payload_item(p: &str) -> PayloadItem {
-        let split: Vec<&str> = p.split('=').collect();
-        let (name, value) = (split[0], split[1]);
-        let payload_item = PayloadItem::from_string_with_name(Some(value), name);
-
-        payload_item.unwrap()
     }
 }
 
@@ -123,25 +109,6 @@ impl Payload {
     }
 }
 
-impl SupportedAlgorithms {
-    fn from_string(alg: &str) -> SupportedAlgorithms {
-        match alg {
-            "HS256" => SupportedAlgorithms::HS256,
-            "HS384" => SupportedAlgorithms::HS384,
-            "HS512" => SupportedAlgorithms::HS512,
-            "RS256" => SupportedAlgorithms::RS256,
-            "RS384" => SupportedAlgorithms::RS384,
-            "RS512" => SupportedAlgorithms::RS512,
-            "PS256" => SupportedAlgorithms::PS256,
-            "PS384" => SupportedAlgorithms::PS384,
-            "PS512" => SupportedAlgorithms::PS512,
-            "ES256" => SupportedAlgorithms::ES256,
-            "ES384" => SupportedAlgorithms::ES384,
-            _ => SupportedAlgorithms::HS256,
-        }
-    }
-}
-
 impl TokenOutput {
     fn new(data: TokenData<Payload>) -> Self {
         TokenOutput {
@@ -151,146 +118,123 @@ impl TokenOutput {
     }
 }
 
-fn config_options<'a, 'b>() -> App<'a, 'b> {
-    App::new("jwt")
-        .about("Encode and decode JWTs from the command line. RSA and ECDSA encryption currently only supports keys in DER format")
-        .version(crate_version!())
-        .author(crate_authors!())
-        .setting(AppSettings::ArgRequiredElseHelp)
-        .subcommand(
-            SubCommand::with_name("encode")
-                .about("Encode new JWTs")
-                .arg(
-                    Arg::with_name("algorithm")
-                        .help("the algorithm to use for signing the JWT")
-                        .takes_value(true)
-                        .long("alg")
-                        .short("A")
-                        .possible_values(&SupportedAlgorithms::variants())
-                        .default_value("HS256"),
-                ).arg(
-                    Arg::with_name("kid")
-                        .help("the kid to place in the header")
-                        .takes_value(true)
-                        .long("kid")
-                        .short("k"),
-                ).arg(
-                    Arg::with_name("type")
-                        .help("the type of token being encoded")
-                        .takes_value(true)
-                        .long("typ")
-                        .short("t")
-                        .possible_values(&SupportedTypes::variants()),
-                ).arg(
-                    Arg::with_name("json")
-                        .help("the json payload to encode")
-                        .index(1)
-                        .required(false),
-                ).arg(
-                    Arg::with_name("payload")
-                        .help("a key=value pair to add to the payload")
-                        .number_of_values(1)
-                        .multiple(true)
-                        .takes_value(true)
-                        .long("payload")
-                        .short("P")
-                        .validator(is_payload_item),
-                ).arg(
-                    Arg::with_name("expires")
-                        .help("the time the token should expire, in seconds or systemd.time string")
-                        .default_value("+30 min")
-                        .takes_value(true)
-                        .long("exp")
-                        .short("e")
-                        .validator(is_timestamp_or_duration),
-                ).arg(
-                    Arg::with_name("issuer")
-                        .help("the issuer of the token")
-                        .takes_value(true)
-                        .long("iss")
-                        .short("i"),
-                ).arg(
-                    Arg::with_name("subject")
-                        .help("the subject of the token")
-                        .takes_value(true)
-                        .long("sub")
-                        .short("s"),
-                ).arg(
-                    Arg::with_name("audience")
-                        .help("the audience of the token")
-                        .takes_value(true)
-                        .long("aud")
-                        .short("a")
-                ).arg(
-                    Arg::with_name("jwt_id")
-                        .help("the jwt id of the token")
-                        .takes_value(true)
-                        .long("jti")
-                ).arg(
-                    Arg::with_name("not_before")
-                        .help("the time the JWT should become valid, in seconds or systemd.time string")
-                        .takes_value(true)
-                        .long("nbf")
-                        .short("n")
-                        .validator(is_timestamp_or_duration),
-                ).arg(
-                    Arg::with_name("no_iat")
-                        .help("prevent an iat claim from being automatically added")
-                        .long("no-iat")
-                ).arg(
-                    Arg::with_name("secret")
-                        .help("the secret to sign the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes")
-                        .takes_value(true)
-                        .long("secret")
-                        .short("S")
-                        .required(true),
-                ),
-        ).subcommand(
-            SubCommand::with_name("decode")
-                .about("Decode a JWT")
-                .arg(
-                    Arg::with_name("jwt")
-                        .help("the jwt to decode")
-                        .index(1)
-                        .required(true),
-                ).arg(
-                    Arg::with_name("algorithm")
-                        .help("the algorithm to use for signing the JWT")
-                        .takes_value(true)
-                        .long("alg")
-                        .short("A")
-                        .possible_values(&SupportedAlgorithms::variants())
-                        .default_value("HS256"),
-                ).arg(
-                    Arg::with_name("iso_dates")
-                        .help("display unix timestamps as ISO 8601 dates")
-                        .takes_value(false)
-                        .long("iso8601")
-                ).arg(
-                    Arg::with_name("secret")
-                        .help("the secret to validate the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes")
-                        .takes_value(true)
-                        .long("secret")
-                        .short("S")
-                        .default_value(""),
-                ).arg(
-                    Arg::with_name("json")
-                        .help("render decoded JWT as JSON")
-                        .long("json")
-                        .short("j"),
-                ).arg(
-                    Arg::with_name("ignore_exp")
-                        .help("Ignore token expiration date (`exp` claim) during validation.")
-                        .long("ignore-exp")
-                ),
-        )
+#[derive(Parser, Debug)]
+#[clap(name = "jwt")]
+#[clap(about, version, author)]
+#[clap(global_setting(AppSettings::PropagateVersion))]
+#[clap(global_setting(AppSettings::UseLongFormatForHelpSubcommand))]
+struct App {
+    #[clap(subcommand)]
+    command: Commands,
 }
 
-fn is_timestamp_or_duration(val: String) -> Result<(), String> {
+#[derive(Debug, Subcommand)]
+enum Commands {
+    /// Encode new JWTs
+    Encode(EncodeArgs),
+
+    /// Decode a JWT
+    Decode(DecodeArgs),
+}
+
+#[derive(Debug, Clone, Parser)]
+struct EncodeArgs {
+    /// the algorithm to use for signing the JWT
+    #[clap(long = "alg", short = 'A')]
+    #[clap(arg_enum)]
+    #[clap(default_value = "HS256")]
+    algorithm: SupportedAlgorithms,
+
+    /// the kid to place in the header
+    #[clap(long = "kid", short = 'k')]
+    kid: Option<String>,
+
+    /// the type of token being encoded
+    #[clap(name = "type")]
+    #[clap(long = "typ", short = 't')]
+    #[clap(arg_enum)]
+    typ: Option<SupportedTypes>,
+
+    /// the json payload to encode
+    #[clap(index = 1)]
+    json: Option<String>,
+
+    /// a key=value pair to add to the payload
+    #[clap(long = "payload", short = 'P')]
+    #[clap(parse(try_from_str = is_payload_item), multiple_occurrences(true))]
+    payload: Option<Vec<Option<PayloadItem>>>,
+
+    /// the time the token should expire, in seconds or a systemd.time string
+    #[clap(long = "exp", short = 'e')]
+    #[clap(parse(try_from_str = is_timestamp_or_duration))]
+    #[clap(default_missing_value = "+30m")]
+    expires: Option<String>,
+
+    /// the issuer of the token
+    #[clap(long = "iss", short = 'i')]
+    issuer: Option<String>,
+
+    /// the subject of the token
+    #[clap(long = "sub", short = 's')]
+    subject: Option<String>,
+
+    /// the audience of the token
+    #[clap(long = "aud", short = 'a')]
+    audience: Option<String>,
+
+    /// the jwt id of the token
+    #[clap(long = "jti")]
+    jwt_id: Option<String>,
+
+    /// the time the JWT should become valid, in seconds or a systemd.time string
+    #[clap(long = "nbf", short = 'n')]
+    #[clap(parse(try_from_str = is_timestamp_or_duration))]
+    not_before: Option<String>,
+
+    /// prevent an iat claim from being automatically added
+    #[clap(long)]
+    no_iat: bool,
+
+    /// the secret to sign the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes
+    #[clap(long, short = 'S')]
+    secret: String,
+}
+
+#[derive(Debug, Clone, Parser)]
+struct DecodeArgs {
+    /// the JWT to decode
+    #[clap(index = 1)]
+    jwt: String,
+
+    /// the algorithm used to sign the JWT
+    #[clap(long = "alg", short = 'A')]
+    #[clap(arg_enum)]
+    #[clap(default_value = "HS256")]
+    algorithm: SupportedAlgorithms,
+
+    /// display unix timestamps as ISO 8601 dates
+    #[clap(long = "iso8601")]
+    iso_dates: bool,
+
+    /// the secret to validate the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes
+    #[clap(long = "secret", short = 'S')]
+    #[clap(default_value = "")]
+    secret: String,
+
+    /// render the decoded JWT as JSON
+    #[clap(long = "json", short = 'j')]
+    json: bool,
+
+    /// ignore token expiration date (`exp` claim) during validation
+    #[clap(long = "ignore-exp")]
+    ignore_exp: bool,
+}
+
+fn is_timestamp_or_duration(val: &str) -> Result<String, String> {
     match val.parse::<i64>() {
-        Ok(_) => Ok(()),
+        Ok(_) => Ok(val.into()),
         Err(_) => match parse_duration::parse(&val) {
-            Ok(_) => Ok(()),
+            Ok(_) => Ok(val.into()),
             Err(_) => Err(String::from(
                 "must be a UNIX timestamp or systemd.time string",
             )),
@@ -298,22 +242,30 @@ fn is_timestamp_or_duration(val: String) -> Result<(), String> {
     }
 }
 
-fn is_payload_item(val: String) -> Result<(), String> {
-    match val.split('=').count() {
-        2 => Ok(()),
+fn is_payload_item(val: &str) -> Result<Option<PayloadItem>, String> {
+    let item: Vec<&str> = val.split('=').collect();
+
+    match item.len() {
+        2 => Ok(PayloadItem::from_string_with_name(
+            Some(&String::from(item[1])),
+            item[0].into(),
+        )),
         _ => Err(String::from(
             "payloads must have a key and value in the form key=value",
         )),
     }
 }
 
-fn warn_unsupported(matches: &ArgMatches) {
-    if matches.value_of("type").is_some() {
-        println!("Sorry, `typ` isn't supported quite yet!");
-    }
+fn warn_unsupported(arguments: &EncodeArgs) {
+    match arguments {
+        EncodeArgs { typ: Some(_), .. } => {
+            println!("Sorry, `typ` isn't supported quite yet!");
+        }
+        _ => {}
+    };
 }
 
-fn translate_algorithm(alg: SupportedAlgorithms) -> Algorithm {
+fn translate_algorithm(alg: &SupportedAlgorithms) -> Algorithm {
     match alg {
         SupportedAlgorithms::HS256 => Algorithm::HS256,
         SupportedAlgorithms::HS384 => Algorithm::HS384,
@@ -329,10 +281,10 @@ fn translate_algorithm(alg: SupportedAlgorithms) -> Algorithm {
     }
 }
 
-fn create_header(alg: Algorithm, kid: Option<&str>) -> Header {
+fn create_header(alg: Algorithm, kid: Option<&String>) -> Header {
     let mut header = Header::new(alg);
 
-    header.kid = kid.map(str::to_string);
+    header.kid = kid.map(|k| k.to_owned());
 
     header
 }
@@ -421,20 +373,13 @@ fn decoding_key_from_secret(
     }
 }
 
-fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
-    let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
-        matches.value_of("algorithm").unwrap(),
-    ));
-    let kid = matches.value_of("kid");
-    let header = create_header(algorithm, kid);
-    let custom_payloads: Option<Vec<Option<PayloadItem>>> =
-        matches.values_of("payload").map(|maybe_payloads| {
-            maybe_payloads
-                .map(|p| PayloadItem::from_string(Some(p)))
-                .collect()
-        });
-    let custom_payload = matches
-        .value_of("json")
+fn encode_token(arguments: &EncodeArgs) -> JWTResult<String> {
+    let algorithm = translate_algorithm(&arguments.algorithm);
+    let header = create_header(algorithm, arguments.kid.as_ref());
+    let custom_payloads = arguments.payload.clone();
+    let custom_payload = arguments
+        .json
+        .as_ref()
         .map(|value| {
             if value != "-" {
                 return String::from(value);
@@ -456,20 +401,17 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
             _ => panic!("Invalid JSON provided!"),
         });
     let now = Utc::now().timestamp();
-    let expires = match matches.occurrences_of("expires") {
-        0 => None,
-        _ => PayloadItem::from_timestamp_with_name(matches.value_of("expires"), "exp", now),
-    };
+    let expires = PayloadItem::from_timestamp_with_name(arguments.expires.as_ref(), "exp", now);
     let not_before =
-        PayloadItem::from_timestamp_with_name(matches.value_of("not_before"), "nbf", now);
-    let issued_at = match matches.is_present("no_iat") {
+        PayloadItem::from_timestamp_with_name(arguments.not_before.as_ref(), "nbf", now);
+    let issued_at = match arguments.no_iat {
         true => None,
         false => PayloadItem::from_timestamp_with_name(Some(&now.to_string()), "iat", now),
     };
-    let issuer = PayloadItem::from_string_with_name(matches.value_of("issuer"), "iss");
-    let subject = PayloadItem::from_string_with_name(matches.value_of("subject"), "sub");
-    let audience = PayloadItem::from_string_with_name(matches.value_of("audience"), "aud");
-    let jwt_id = PayloadItem::from_string_with_name(matches.value_of("jwt_id"), "jti");
+    let issuer = PayloadItem::from_string_with_name(arguments.issuer.as_ref(), "iss");
+    let subject = PayloadItem::from_string_with_name(arguments.subject.as_ref(), "sub");
+    let audience = PayloadItem::from_string_with_name(arguments.audience.as_ref(), "aud");
+    let jwt_id = PayloadItem::from_string_with_name(arguments.jwt_id.as_ref(), "jti");
     let mut maybe_payloads: Vec<Option<PayloadItem>> = vec![
         issued_at, expires, issuer, subject, audience, jwt_id, not_before,
     ];
@@ -480,31 +422,24 @@ fn encode_token(matches: &ArgMatches) -> JWTResult<String> {
     let payloads = maybe_payloads.into_iter().flatten().collect();
     let Payload(claims) = Payload::from_payloads(payloads);
 
-    encoding_key_from_secret(&algorithm, matches.value_of("secret").unwrap())
+    encoding_key_from_secret(&algorithm, &arguments.secret)
         .and_then(|secret| encode(&header, &claims, &secret))
 }
 
 fn decode_token(
-    matches: &ArgMatches,
+    arguments: &DecodeArgs,
 ) -> (
     JWTResult<TokenData<Payload>>,
     JWTResult<TokenData<Payload>>,
     OutputFormat,
 ) {
-    let algorithm = translate_algorithm(SupportedAlgorithms::from_string(
-        matches.value_of("algorithm").unwrap(),
-    ));
-    let secret = match matches.value_of("secret").map(|s| (s, !s.is_empty())) {
-        Some((secret, true)) => Some(decoding_key_from_secret(&algorithm, secret)),
-        _ => None,
+    let algorithm = translate_algorithm(&arguments.algorithm);
+    let secret = match arguments.secret.len() {
+        0 => None,
+        _ => Some(decoding_key_from_secret(&algorithm, &arguments.secret)),
     };
-    let jwt = matches
-        .value_of("jwt")
-        .map(|value| {
-            if value != "-" {
-                return String::from(value);
-            }
-
+    let jwt = match arguments.jwt.as_str() {
+        "-" => {
             let mut buffer = String::new();
 
             io::stdin()
@@ -512,20 +447,21 @@ fn decode_token(
                 .expect("STDIN was not valid UTF-8");
 
             buffer
-        })
-        .unwrap()
-        .trim()
-        .to_owned();
+        }
+        _ => arguments.jwt.clone(),
+    }
+    .trim()
+    .to_owned();
 
     let secret_validator = Validation {
         leeway: 1000,
         algorithms: vec![algorithm],
-        validate_exp: !matches.is_present("ignore_exp"),
+        validate_exp: !arguments.ignore_exp,
         ..Default::default()
     };
 
     let token_data = dangerous_insecure_decode::<Payload>(&jwt).map(|mut token| {
-        if matches.is_present("iso_dates") {
+        if arguments.iso_dates {
             token.claims.convert_timestamps();
         }
 
@@ -538,7 +474,7 @@ fn decode_token(
             None => dangerous_insecure_decode::<Payload>(&jwt),
         },
         token_data,
-        if matches.is_present("json") {
+        if arguments.json {
             OutputFormat::Json
         } else {
             OutputFormat::Text
@@ -629,21 +565,21 @@ fn print_decoded_token(
 }
 
 fn main() {
-    let matches = config_options().get_matches();
+    let app = App::parse();
+    // let matches = config_options().get_matches();
 
-    match matches.subcommand() {
-        ("encode", Some(encode_matches)) => {
-            warn_unsupported(encode_matches);
+    match &app.command {
+        Commands::Encode(arguments) => {
+            warn_unsupported(&arguments);
 
-            let token = encode_token(encode_matches);
+            let token = encode_token(&arguments);
 
             print_encoded_token(token);
         }
-        ("decode", Some(decode_matches)) => {
-            let (validated_token, token_data, format) = decode_token(decode_matches);
+        Commands::Decode(arguments) => {
+            let (validated_token, token_data, format) = decode_token(&arguments);
 
             print_decoded_token(validated_token, token_data, format);
         }
-        _ => (),
     }
 }
