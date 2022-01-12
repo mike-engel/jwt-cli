@@ -57,7 +57,7 @@ enum OutputFormat {
 impl PayloadItem {
     fn from_string_with_name(val: Option<&String>, name: &str) -> Option<PayloadItem> {
         match val {
-            Some(value) => match from_str(&value) {
+            Some(value) => match from_str(value) {
                 Ok(json_value) => Some(PayloadItem(name.to_string(), json_value)),
                 Err(_) => match from_str(format!("\"{}\"", value).as_str()) {
                     Ok(json_value) => Some(PayloadItem(name.to_string(), json_value)),
@@ -72,7 +72,7 @@ impl PayloadItem {
     fn from_timestamp_with_name(val: Option<&String>, name: &str, now: i64) -> Option<PayloadItem> {
         if let Some(timestamp) = val {
             if timestamp.parse::<u64>().is_err() {
-                let duration = parse_duration::parse(&timestamp);
+                let duration = parse_duration::parse(timestamp);
                 if let Ok(parsed_duration) = duration {
                     let seconds = parsed_duration.as_secs() + now as u64;
                     return PayloadItem::from_string_with_name(Some(&seconds.to_string()), name);
@@ -233,7 +233,7 @@ struct DecodeArgs {
 fn is_timestamp_or_duration(val: &str) -> Result<String, String> {
     match val.parse::<i64>() {
         Ok(_) => Ok(val.into()),
-        Err(_) => match parse_duration::parse(&val) {
+        Err(_) => match parse_duration::parse(val) {
             Ok(_) => Ok(val.into()),
             Err(_) => Err(String::from(
                 "must be a UNIX timestamp or systemd.time string",
@@ -248,7 +248,7 @@ fn is_payload_item(val: &str) -> Result<Option<PayloadItem>, String> {
     match item.len() {
         2 => Ok(PayloadItem::from_string_with_name(
             Some(&String::from(item[1])),
-            item[0].into(),
+            item[0],
         )),
         _ => Err(String::from(
             "payloads must have a key and value in the form key=value",
@@ -257,11 +257,8 @@ fn is_payload_item(val: &str) -> Result<Option<PayloadItem>, String> {
 }
 
 fn warn_unsupported(arguments: &EncodeArgs) {
-    match arguments {
-        EncodeArgs { typ: Some(_), .. } => {
-            println!("Sorry, `typ` isn't supported quite yet!");
-        }
-        _ => {}
+    if arguments.typ.is_some() {
+        println!("Sorry, `typ` isn't supported quite yet!");
     };
 }
 
@@ -570,14 +567,14 @@ fn main() {
 
     match &app.command {
         Commands::Encode(arguments) => {
-            warn_unsupported(&arguments);
+            warn_unsupported(arguments);
 
-            let token = encode_token(&arguments);
+            let token = encode_token(arguments);
 
             print_encoded_token(token);
         }
         Commands::Decode(arguments) => {
-            let (validated_token, token_data, format) = decode_token(&arguments);
+            let (validated_token, token_data, format) = decode_token(arguments);
 
             print_decoded_token(validated_token, token_data, format);
         }
