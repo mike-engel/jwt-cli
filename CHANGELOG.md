@@ -1,8 +1,20 @@
 # Unreleased
 
+# 5.0.2
+
+> 2022-01-20
+
+### Fixes
+
+- Fixes parsing of systemd.time date strings when they're in the past
+
+### Changes
+
+- Updates dependencies
+
 # 5.0.1
 
-? 2022-01-12
+> 2022-01-12
 
 ### Changes
 
