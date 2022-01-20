@@ -72,9 +72,9 @@ impl PayloadItem {
     fn from_timestamp_with_name(val: Option<&String>, name: &str, now: i64) -> Option<PayloadItem> {
         if let Some(timestamp) = val {
             if timestamp.parse::<u64>().is_err() {
-                let duration = parse_duration::parse(timestamp);
+                let duration = parse_duration_string(timestamp);
                 if let Ok(parsed_duration) = duration {
-                    let seconds = parsed_duration.as_secs() + now as u64;
+                    let seconds = parsed_duration + now as i64;
                     return PayloadItem::from_string_with_name(Some(&seconds.to_string()), name);
                 }
             }
@@ -233,7 +233,7 @@ struct DecodeArgs {
 fn is_timestamp_or_duration(val: &str) -> Result<String, String> {
     match val.parse::<i64>() {
         Ok(_) => Ok(val.into()),
-        Err(_) => match parse_duration::parse(val) {
+        Err(_) => match parse_duration_string(val) {
             Ok(_) => Ok(val.into()),
             Err(_) => Err(String::from(
                 "must be a UNIX timestamp or systemd.time string",
@@ -288,6 +288,30 @@ fn create_header(alg: Algorithm, kid: Option<&String>) -> Header {
 
 fn slurp_file(file_name: &str) -> Vec<u8> {
     fs::read(file_name).unwrap_or_else(|_| panic!("Unable to read file {}", file_name))
+}
+
+fn parse_duration_string(val: &str) -> Result<i64, String> {
+    let mut base_val = val.replace(" ago", "");
+
+    if val.starts_with("-") {
+        base_val = base_val.replacen("-", "", 1);
+    }
+
+    match parse_duration::parse(&base_val) {
+        Ok(parsed_duration) => {
+            let is_past = val.starts_with("-") || val.contains("ago");
+            let seconds = parsed_duration.as_secs() as i64;
+
+            if is_past {
+                Ok(-seconds)
+            } else {
+                Ok(seconds)
+            }
+        }
+        Err(_) => Err(String::from(
+            "must be a UNIX timestamp or systemd.time string",
+        )),
+    }
 }
 
 fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResult<EncodingKey> {

@@ -4,8 +4,8 @@ include!("../src/main.rs");
 mod tests {
     use super::{
         create_header, decode_token, decoding_key_from_secret, encode_token,
-        encoding_key_from_secret, is_payload_item, is_timestamp_or_duration, App, DecodeArgs,
-        EncodeArgs, OutputFormat, Payload, PayloadItem,
+        encoding_key_from_secret, is_payload_item, is_timestamp_or_duration, parse_duration_string,
+        App, DecodeArgs, EncodeArgs, OutputFormat, Payload, PayloadItem,
     };
     use base64::decode as base64_decode;
     use chrono::{Duration, TimeZone, Utc};
@@ -96,6 +96,17 @@ mod tests {
         expected.kid = kid.map(|k| k.to_string());
 
         assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn parses_systemd_time_string() {
+        assert_eq!(parse_duration_string("5s").unwrap(), 5);
+        assert_eq!(parse_duration_string("2 days").unwrap(), 60 * 60 * 24 * 2);
+        assert_eq!(parse_duration_string("-5s").unwrap(), -5);
+        assert_eq!(
+            parse_duration_string("2 days ago").unwrap(),
+            60 * 60 * 24 * -2
+        );
     }
 
     #[test]
