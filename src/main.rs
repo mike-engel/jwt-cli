@@ -294,7 +294,7 @@ fn parse_duration_string(val: &str) -> Result<i64, String> {
     let mut base_val = val.replace(" ago", "");
 
     if val.starts_with('-') {
-        base_val = base_val.replacen("-", "", 1);
+        base_val = base_val.replacen('-', "", 1);
     }
 
     match parse_duration::parse(&base_val) {
