@@ -1,7 +1,7 @@
 use atty::Stream;
 use base64::decode as base64_decode;
 use chrono::{TimeZone, Utc};
-use clap::{AppSettings, ArgEnum, Parser, Subcommand};
+use clap::{ArgEnum, Parser, Subcommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{
     dangerous_insecure_decode, decode, encode, Algorithm, DecodingKey, EncodingKey, Header,
@@ -121,8 +121,7 @@ impl TokenOutput {
 #[derive(Parser, Debug)]
 #[clap(name = "jwt")]
 #[clap(about, version, author)]
-#[clap(global_setting(AppSettings::PropagateVersion))]
-#[clap(global_setting(AppSettings::UseLongFormatForHelpSubcommand))]
+#[clap(propagate_version = true)]
 struct App {
     #[clap(subcommand)]
     command: Commands,
