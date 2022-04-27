@@ -1,5 +1,15 @@
 # Unreleased
 
+# 5.0.3
+
+> 2022-04-27
+
+#### Changes
+
+- Added instructions for installing on Arch linux #181
+- Added repository information for crates.io #184
+- Updates dependencies
+
 # 5.0.2
 
 > 2022-01-20
