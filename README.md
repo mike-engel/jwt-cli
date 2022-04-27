@@ -62,6 +62,14 @@ After installing GoFish, run `jwt-cli` with:
 gofish install jwt-cli
 ```
 
+## Arch Linux
+
+`jwt-cli` is available in the Arch Linux [community repository](https://archlinux.org/packages/community/x86_64/jwt-cli/) and can be installed via [pacman](https://wiki.archlinux.org/title/Pacman):
+
+```sh
+pacman -S jwt-cli
+```
+
 # Usage
 
 For usage info, use the `help` command.
