@@ -102,32 +102,25 @@ I welcome all issues and pull requests! This is my first project in rust, so thi
 
 To get started you'll need `rustc` and `cargo` on your system. If they aren't already installed, I recommend [rustup](https://rustup.rs) to get both!
 
-## Running and building the project
+## Building and running the project
 
-Once you have both installed you'll want to install the dependencies.
-
-```sh
-# install dependencies via cargo
-cargo update
-```
-
-After that, I recommend running the tests and doing a debug build to make sure all is well from the start.
+Once you have both installed, I recommend running the tests to make sure all is well from the start.
 
 ```sh
 # run the tests
 cargo test
-
-# run a debug build
-cargo build
-
-# or, if you want, a release build
-cargo build --release
 ```
 
 If it built without any errors, you should be able to run the command via `cargo`.
 
 ```sh
 cargo run -- help
+```
+
+Or, if you prefer a release build:
+
+```sh
+cargo run --release -- help
 ```
 
 # [Code of conduct](code_of_conduct.md)
