@@ -1,6 +1,7 @@
 use atty::Stream;
 use base64::decode as base64_decode;
 use chrono::{TimeZone, Utc};
+use clap::builder::ValueParser;
 use clap::{ArgEnum, Parser, Subcommand};
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{
@@ -142,60 +143,70 @@ struct EncodeArgs {
     #[clap(long = "alg", short = 'A')]
     #[clap(arg_enum)]
     #[clap(default_value = "HS256")]
+    #[clap(value_parser)]
     algorithm: SupportedAlgorithms,
 
     /// the kid to place in the header
     #[clap(long = "kid", short = 'k')]
+    #[clap(value_parser)]
     kid: Option<String>,
 
     /// the type of token being encoded
     #[clap(name = "type")]
     #[clap(long = "typ", short = 't')]
     #[clap(arg_enum)]
+    #[clap(value_parser)]
     typ: Option<SupportedTypes>,
 
     /// the json payload to encode
     #[clap(index = 1)]
+    #[clap(value_parser)]
     json: Option<String>,
 
     /// a key=value pair to add to the payload
     #[clap(long = "payload", short = 'P')]
-    #[clap(parse(try_from_str = is_payload_item), multiple_occurrences(true))]
+    #[clap(value_parser = ValueParser::new(is_payload_item))]
     payload: Option<Vec<Option<PayloadItem>>>,
 
     /// the time the token should expire, in seconds or a systemd.time string
     #[clap(long = "exp", short = 'e')]
-    #[clap(parse(try_from_str = is_timestamp_or_duration))]
+    #[clap(value_parser = ValueParser::new(is_timestamp_or_duration))]
     #[clap(default_missing_value = "+30m")]
     expires: Option<String>,
 
     /// the issuer of the token
     #[clap(long = "iss", short = 'i')]
+    #[clap(value_parser)]
     issuer: Option<String>,
 
     /// the subject of the token
     #[clap(long = "sub", short = 's')]
+    #[clap(value_parser)]
     subject: Option<String>,
 
     /// the audience of the token
     #[clap(long = "aud", short = 'a')]
+    #[clap(value_parser)]
     audience: Option<String>,
 
     /// the jwt id of the token
     #[clap(long = "jti")]
+    #[clap(value_parser)]
     jwt_id: Option<String>,
 
     /// the time the JWT should become valid, in seconds or a systemd.time string
     #[clap(long = "nbf", short = 'n')]
-    #[clap(parse(try_from_str = is_timestamp_or_duration))]
+    #[clap(value_parser = ValueParser::new(is_timestamp_or_duration))]
     not_before: Option<String>,
 
     /// prevent an iat claim from being automatically added
     #[clap(long)]
+    #[clap(value_parser)]
     no_iat: bool,
 
     /// the secret to sign the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes
     #[clap(long, short = 'S')]
+    #[clap(value_parser)]
     secret: String,
 }
 
@@ -203,29 +214,35 @@ struct EncodeArgs {
 struct DecodeArgs {
     /// the JWT to decode
     #[clap(index = 1)]
+    #[clap(value_parser)]
     jwt: String,
 
     /// the algorithm used to sign the JWT
     #[clap(long = "alg", short = 'A')]
     #[clap(arg_enum)]
     #[clap(default_value = "HS256")]
+    #[clap(value_parser)]
     algorithm: SupportedAlgorithms,
 
     /// display unix timestamps as ISO 8601 dates
     #[clap(long = "iso8601")]
+    #[clap(value_parser)]
     iso_dates: bool,
 
     /// the secret to validate the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes
     #[clap(long = "secret", short = 'S')]
     #[clap(default_value = "")]
+    #[clap(value_parser)]
     secret: String,
 
     /// render the decoded JWT as JSON
     #[clap(long = "json", short = 'j')]
+    #[clap(value_parser)]
     json: bool,
 
     /// ignore token expiration date (`exp` claim) during validation
     #[clap(long = "ignore-exp")]
+    #[clap(value_parser)]
     ignore_exp: bool,
 }
 
