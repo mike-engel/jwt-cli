@@ -2,112 +2,14 @@ include!("../src/main.rs");
 
 #[cfg(test)]
 mod tests {
-    use super::{
-        create_header, decode_token, decoding_key_from_secret, encode_token,
-        encoding_key_from_secret, is_payload_item, is_timestamp_or_duration, parse_duration_string,
-        App, DecodeArgs, EncodeArgs, OutputFormat, Payload, PayloadItem,
-    };
+    use super::cli_config::{App, DecodeArgs, EncodeArgs};
+    use super::translators::decode::{decode_token, decoding_key_from_secret, OutputFormat};
+    use super::translators::encode::{encode_token, encoding_key_from_secret};
     use base64::decode as base64_decode;
     use chrono::{Duration, TimeZone, Utc};
     use clap::{FromArgMatches, IntoApp};
-    use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, Header, TokenData};
-    use serde_json::{from_value, json};
-
-    #[test]
-    fn payload_item_from_string_with_name() {
-        let string = String::from("that");
-        let result = PayloadItem::from_string_with_name(Some(&string), "this");
-        let expected = Some(PayloadItem("this".to_string(), json!("that")));
-
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn payload_item_from_none_with_name() {
-        let result = PayloadItem::from_string_with_name(None, "this");
-
-        assert_eq!(result, None);
-    }
-
-    #[test]
-    fn payload_from_payload_items() {
-        let payload_item_one =
-            PayloadItem::from_string_with_name(Some(&String::from("that")), "this").unwrap();
-        let payload_item_two =
-            PayloadItem::from_string_with_name(Some(&String::from("yolo")), "full").unwrap();
-        let payloads = vec![payload_item_one, payload_item_two];
-        let result = Payload::from_payloads(payloads);
-        let payload = result.0;
-
-        println!("{:?}", payload.keys());
-        assert!(payload.contains_key("this"));
-        assert!(payload.contains_key("full"));
-        assert_eq!(payload["this"], json!("that"));
-        assert_eq!(payload["full"], json!("yolo"));
-    }
-
-    #[test]
-    fn is_valid_payload_item() {
-        assert!(is_payload_item("this=that").is_ok());
-    }
-
-    #[test]
-    fn is_invalid_payload_item() {
-        assert!(is_payload_item("this").is_err());
-        assert!(is_payload_item("this=that=yolo").is_err());
-        assert!(is_payload_item("this-that_yolo").is_err());
-    }
-
-    #[test]
-    fn is_valid_timestamp_or_duration() {
-        assert!(is_timestamp_or_duration("2").is_ok());
-        assert!(is_timestamp_or_duration("39874398").is_ok());
-        assert!(is_timestamp_or_duration("12h").is_ok());
-        assert!(is_timestamp_or_duration("1 day -1 hour").is_ok());
-        assert!(is_timestamp_or_duration("+30 min").is_ok());
-    }
-
-    #[test]
-    fn is_invalid_timestamp_or_duration() {
-        assert!(is_timestamp_or_duration("yolo").is_err());
-        assert!(is_timestamp_or_duration("2398ybdfiud93").is_err());
-        assert!(is_timestamp_or_duration("1 day -1 hourz").is_err());
-    }
-
-    #[test]
-    fn creates_jwt_header_with_kid() {
-        let algorithm = Algorithm::HS256;
-        let kid = String::from("yolo");
-        let result = create_header(algorithm, Some(&kid));
-        let mut expected = Header::new(algorithm);
-
-        expected.kid = Some(kid);
-
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn creates_jwt_header_without_kid() {
-        let algorithm = Algorithm::HS256;
-        let kid = None;
-        let result = create_header(algorithm, kid);
-        let mut expected = Header::new(algorithm);
-
-        expected.kid = kid.map(|k| k.to_string());
-
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn parses_systemd_time_string() {
-        assert_eq!(parse_duration_string("5s").unwrap(), 5);
-        assert_eq!(parse_duration_string("2 days").unwrap(), 60 * 60 * 24 * 2);
-        assert_eq!(parse_duration_string("-5s").unwrap(), -5);
-        assert_eq!(
-            parse_duration_string("2 days ago").unwrap(),
-            60 * 60 * 24 * -2
-        );
-    }
+    use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, TokenData};
+    use serde_json::from_value;
 
     #[test]
     fn encodes_a_token() {
