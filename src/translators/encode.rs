@@ -1,6 +1,6 @@
 use crate::cli_config::{translate_algorithm, EncodeArgs};
 use crate::translators::{Payload, PayloadItem};
-use crate::utils::slurp_file;
+use crate::utils::{slurp_file, print_json_colorful};
 use atty::Stream;
 use base64::decode as base64_decode;
 use chrono::Utc;
@@ -113,7 +113,7 @@ pub fn print_encoded_token(token: JWTResult<String>) {
     match token {
         Ok(jwt) => {
             if atty::is(Stream::Stdout) {
-                println!("{}", jwt);
+                print_json_colorful(jwt.as_bytes());
             } else {
                 print!("{}", jwt);
             }
