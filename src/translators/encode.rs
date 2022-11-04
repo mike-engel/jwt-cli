@@ -1,6 +1,6 @@
 use crate::cli_config::{translate_algorithm, EncodeArgs};
 use crate::translators::{Payload, PayloadItem};
-use crate::utils::{slurp_file, print_json_colorful};
+use crate::utils::{print_json_colorful, slurp_file};
 use atty::Stream;
 use base64::decode as base64_decode;
 use chrono::Utc;

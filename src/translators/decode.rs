@@ -1,6 +1,6 @@
 use crate::cli_config::{translate_algorithm, DecodeArgs};
 use crate::translators::Payload;
-use crate::utils::{slurp_file, print_json_colorful};
+use crate::utils::{print_json_colorful, slurp_file};
 use base64::decode as base64_decode;
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{
@@ -177,7 +177,11 @@ pub fn print_decoded_token(
 
     match (format, token_data) {
         (OutputFormat::Json, Ok(token)) => {
-            print_json_colorful(to_string_pretty(&TokenOutput::new(token)).unwrap().as_bytes());
+            print_json_colorful(
+                to_string_pretty(&TokenOutput::new(token))
+                    .unwrap()
+                    .as_bytes(),
+            );
         }
         (_, Ok(token)) => {
             bunt::println!("\n{$bold}Token header\n------------{/$}");
