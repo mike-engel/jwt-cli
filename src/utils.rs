@@ -1,5 +1,7 @@
 use std::fs;
 
+use bat::PrettyPrinter;
+
 pub fn slurp_file(file_name: &str) -> Vec<u8> {
     fs::read(file_name).unwrap_or_else(|_| panic!("Unable to read file {}", file_name))
 }
@@ -26,4 +28,13 @@ pub fn parse_duration_string(val: &str) -> Result<i64, String> {
             "must be a UNIX timestamp or systemd.time string",
         )),
     }
+}
+
+pub fn print_json_colorful(json: &[u8]) {
+    PrettyPrinter::new()
+        .input_from_bytes(json)
+        .language("json")
+        .print()
+        .unwrap();
+    println!("");
 }
