@@ -1,6 +1,6 @@
 use crate::utils::parse_duration_string;
 use chrono::{TimeZone, Utc};
-use clap::ArgEnum;
+use clap::ValueEnum;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{from_str, Value};
 use std::collections::BTreeMap;
@@ -15,7 +15,7 @@ pub struct PayloadItem(pub String, pub Value);
 pub struct Payload(pub BTreeMap<String, Value>);
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, Clone, ArgEnum)]
+#[derive(Debug, Clone, ValueEnum)]
 pub enum SupportedTypes {
     JWT,
 }
