@@ -7,7 +7,7 @@ mod tests {
     use super::translators::encode::{encode_token, encoding_key_from_secret};
     use base64::decode as base64_decode;
     use chrono::{Duration, TimeZone, Utc};
-    use clap::{FromArgMatches, IntoApp};
+    use clap::{CommandFactory, FromArgMatches};
     use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, TokenData};
     use serde_json::from_value;
 
@@ -25,8 +25,7 @@ mod tests {
                 "HS256",
                 "-a",
                 "yolo",
-                "-e",
-                &exp.to_string(),
+                &format!("-e={}", &exp.to_string()),
                 "-i",
                 "yolo-service",
                 "-k",
@@ -187,8 +186,7 @@ mod tests {
                 "encode",
                 "-S",
                 "1234567890",
-                "-e",
-                &exp.to_string(),
+                &format!("-e={}", &exp.to_string()),
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
@@ -261,8 +259,7 @@ mod tests {
                 "encode",
                 "-S",
                 "1234567890",
-                "-e",
-                "+10 min -30 sec",
+                "-e=+10 min -30 sec",
             ])
             .unwrap();
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
@@ -624,8 +621,7 @@ mod tests {
             .try_get_matches_from(vec![
                 "jwt",
                 "encode",
-                "--exp",
-                &exp.to_string(),
+                &format!("--exp={}", &exp.to_string()),
                 "--nbf",
                 &nbf.to_string(),
                 "-S",

@@ -1,7 +1,6 @@
 use crate::translators::{PayloadItem, SupportedTypes};
 use crate::utils::parse_duration_string;
-use clap::builder::ValueParser;
-use clap::{ArgEnum, Parser, Subcommand};
+use clap::{Parser, Subcommand, ValueEnum};
 use jsonwebtoken::Algorithm;
 
 #[derive(Parser, Debug)]
@@ -27,9 +26,8 @@ pub enum Commands {
 pub struct EncodeArgs {
     /// the algorithm to use for signing the JWT
     #[clap(long = "alg", short = 'A')]
-    #[clap(arg_enum)]
+    #[clap(value_enum)]
     #[clap(default_value = "HS256")]
-    #[clap(value_parser)]
     pub algorithm: SupportedAlgorithms,
 
     /// the kid to place in the header
@@ -40,8 +38,7 @@ pub struct EncodeArgs {
     /// the type of token being encoded
     #[clap(name = "type")]
     #[clap(long = "typ", short = 't')]
-    #[clap(arg_enum)]
-    #[clap(value_parser)]
+    #[clap(value_enum)]
     pub typ: Option<SupportedTypes>,
 
     /// the json payload to encode
@@ -51,12 +48,15 @@ pub struct EncodeArgs {
 
     /// a key=value pair to add to the payload
     #[clap(long = "payload", short = 'P')]
-    #[clap(value_parser = ValueParser::new(is_payload_item))]
+    #[clap(value_parser = is_payload_item)]
     pub payload: Option<Vec<Option<PayloadItem>>>,
 
     /// the time the token should expire, in seconds or a systemd.time string
     #[clap(long = "exp", short = 'e')]
-    #[clap(value_parser = ValueParser::new(is_timestamp_or_duration))]
+    #[clap(num_args = 0..=1)]
+    #[clap(require_equals = true)]
+    #[clap(value_parser = is_timestamp_or_duration)]
+    #[clap(default_value = None)]
     #[clap(default_missing_value = "+30m")]
     pub expires: Option<String>,
 
@@ -82,7 +82,7 @@ pub struct EncodeArgs {
 
     /// the time the JWT should become valid, in seconds or a systemd.time string
     #[clap(long = "nbf", short = 'n')]
-    #[clap(value_parser = ValueParser::new(is_timestamp_or_duration))]
+    #[clap(value_parser = is_timestamp_or_duration)]
     pub not_before: Option<String>,
 
     /// prevent an iat claim from being automatically added
@@ -105,7 +105,7 @@ pub struct DecodeArgs {
 
     /// the algorithm used to sign the JWT
     #[clap(long = "alg", short = 'A')]
-    #[clap(arg_enum)]
+    #[clap(value_enum)]
     #[clap(default_value = "HS256")]
     #[clap(value_parser)]
     pub algorithm: SupportedAlgorithms,
@@ -133,7 +133,7 @@ pub struct DecodeArgs {
 }
 
 #[allow(clippy::upper_case_acronyms)]
-#[derive(Debug, Clone, PartialEq, Eq, ArgEnum)]
+#[derive(Debug, Clone, PartialEq, Eq, ValueEnum)]
 #[clap(rename_all = "UPPERCASE")]
 pub enum SupportedAlgorithms {
     HS256,
