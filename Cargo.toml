@@ -14,7 +14,7 @@ test = true
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }
-jsonwebtoken = "7"
+jsonwebtoken = "8"
 bunt = "0.2"
 serde = "1"
 serde_derive = "1"
