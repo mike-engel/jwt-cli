@@ -98,35 +98,35 @@ pub struct EncodeArgs {
 
 #[derive(Debug, Clone, Parser)]
 pub struct DecodeArgs {
-    /// the JWT to decode
+    /// The JWT to decode. Provide '-' to read from STDIN.
     #[clap(index = 1)]
     #[clap(value_parser)]
     pub jwt: String,
 
-    /// the algorithm used to sign the JWT
+    /// The algorithm used to sign the JWT
     #[clap(long = "alg", short = 'A')]
     #[clap(value_enum)]
     #[clap(default_value = "HS256")]
     #[clap(value_parser)]
     pub algorithm: SupportedAlgorithms,
 
-    /// display unix timestamps as ISO 8601 dates
+    /// Display unix timestamps as ISO 8601 dates
     #[clap(long = "iso8601")]
     #[clap(value_parser)]
     pub iso_dates: bool,
 
-    /// the secret to validate the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes
+    /// The secret to validate the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes
     #[clap(long = "secret", short = 'S')]
     #[clap(default_value = "")]
     #[clap(value_parser)]
     pub secret: String,
 
-    /// render the decoded JWT as JSON
+    /// Render the decoded JWT as JSON
     #[clap(long = "json", short = 'j')]
     #[clap(value_parser)]
     pub json: bool,
 
-    /// ignore token expiration date (`exp` claim) during validation
+    /// Ignore token expiration date (`exp` claim) during validation
     #[clap(long = "ignore-exp")]
     #[clap(value_parser)]
     pub ignore_exp: bool,
