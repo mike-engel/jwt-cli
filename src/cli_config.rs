@@ -2,6 +2,7 @@ use crate::translators::{PayloadItem, SupportedTypes};
 use crate::utils::parse_duration_string;
 use clap::{Parser, Subcommand, ValueEnum};
 use jsonwebtoken::Algorithm;
+use std::path::PathBuf;
 
 #[derive(Parser, Debug)]
 #[clap(name = "jwt")]
@@ -94,6 +95,11 @@ pub struct EncodeArgs {
     #[clap(long, short = 'S')]
     #[clap(value_parser)]
     pub secret: String,
+
+    /// The path of the file to write the result to (suppresses default standard output)
+    #[clap(long = "out", short = 'o')]
+    #[clap(value_parser)]
+    pub output_path: Option<PathBuf>,
 }
 
 #[derive(Debug, Clone, Parser)]
@@ -130,6 +136,11 @@ pub struct DecodeArgs {
     #[clap(long = "ignore-exp")]
     #[clap(value_parser)]
     pub ignore_exp: bool,
+
+    /// The path of the file to write the result to (suppresses default standard output, implies JSON format)
+    #[clap(long = "out", short = 'o')]
+    #[clap(value_parser)]
+    pub output_path: Option<PathBuf>,
 }
 
 #[allow(clippy::upper_case_acronyms)]

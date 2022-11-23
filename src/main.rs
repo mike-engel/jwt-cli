@@ -22,13 +22,15 @@ fn main() {
             warn_unsupported(arguments);
 
             let token = encode_token(arguments);
+            let output_path = &arguments.output_path;
 
-            print_encoded_token(token);
+            print_encoded_token(token, output_path);
         }
         Commands::Decode(arguments) => {
             let (validated_token, token_data, format) = decode_token(arguments);
+            let output_path = &arguments.output_path;
 
-            print_decoded_token(validated_token, token_data, format);
+            print_decoded_token(validated_token, token_data, format, output_path);
         }
     }
 }

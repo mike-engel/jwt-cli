@@ -1,6 +1,7 @@
 use crate::cli_config::{translate_algorithm, DecodeArgs};
 use crate::translators::Payload;
-use crate::utils::slurp_file;
+use crate::utils::{slurp_file, write_file};
+use base64::decode as base64_decode;
 use base64::engine::general_purpose::STANDARD as base64_engine;
 use base64::Engine as _;
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
@@ -9,6 +10,7 @@ use serde_derive::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
 use std::collections::HashSet;
 use std::io;
+use std::path::PathBuf;
 use std::process::exit;
 
 #[derive(Debug, PartialEq, Eq)]
@@ -147,6 +149,7 @@ pub fn print_decoded_token(
     validated_token: JWTResult<TokenData<Payload>>,
     token_data: JWTResult<TokenData<Payload>>,
     format: OutputFormat,
+    output_path: &Option<PathBuf>,
 ) {
     if let Err(err) = &validated_token {
         match err.kind() {
@@ -195,17 +198,27 @@ pub fn print_decoded_token(
         };
     }
 
-    match (format, token_data) {
-        (OutputFormat::Json, Ok(token)) => {
-            println!("{}", to_string_pretty(&TokenOutput::new(token)).unwrap())
+    match (output_path.as_ref(), format, token_data) {
+        (Some(path), _, Ok(token)) => {
+            let json = to_string_pretty(&TokenOutput::new(token)).unwrap();
+            write_file(path, json.as_bytes());
+            println!("Wrote jwt to file {}", path.display());
         }
-        (_, Ok(token)) => {
-            bunt::println!("\n{$bold}Token header\n------------{/$}");
-            println!("{}\n", to_string_pretty(&token.header).unwrap());
-            bunt::println!("{$bold}Token claims\n------------{/$}");
-            println!("{}", to_string_pretty(&token.claims).unwrap());
+        (None, OutputFormat::Json, Ok(token)) => {
+            println!("{}", to_string_pretty(&TokenOutput::new(token)).unwrap());
         }
-        (_, Err(_)) => exit(1),
+        (None, _, Ok(token)) => {
+            let header_output = to_string_pretty(&token.header).unwrap();
+            let claims_output = to_string_pretty(&token.claims).unwrap();
+            if output_path.is_some() {
+            } else {
+                bunt::println!("\n{$bold}Token header\n------------{/$}");
+                println!("{}\n", header_output);
+                bunt::println!("{$bold}Token claims\n------------{/$}");
+                println!("{}", claims_output);
+            }
+        }
+        (_, _, Err(_)) => exit(1),
     }
 
     exit(match validated_token {
