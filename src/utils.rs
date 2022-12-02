@@ -6,7 +6,7 @@ pub fn slurp_file(file_name: &str) -> Vec<u8> {
 }
 
 pub fn write_file(path: &Path, content: &[u8]) {
-    fs::write(path, content).unwrap_or_else(|_| panic!("Unable to read file {}", path.display()))
+    fs::write(path, content).unwrap_or_else(|_| panic!("Unable to write file {}", path.display()))
 }
 
 pub fn parse_duration_string(val: &str) -> Result<i64, String> {
