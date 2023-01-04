@@ -71,7 +71,7 @@ impl Payload {
         for (key, value) in self.0.iter_mut() {
             if timestamp_claims.contains(key) && value.is_number() {
                 *value = match value.as_i64() {
-                    Some(timestamp) => Utc.timestamp(timestamp, 0).to_rfc3339().into(),
+                    Some(timestamp) => Utc.timestamp_opt(timestamp, 0).unwrap().to_rfc3339().into(),
                     None => value.clone(),
                 }
             }
