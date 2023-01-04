@@ -67,6 +67,12 @@ Big thanks to Sergey Osokin, the FreeBSD contributor who added `jwt-cli` to the 
 pacman -S jwt-cli
 ```
 
+## Alpine linux
+
+Unfortunately due to [static linking problems](https://github.com/mike-engel/jwt-cli/issues/194#issuecomment-1169211709) when compiling this project, `jwt-cli` can't run on alpine linux natively.
+
+A workaround is to run it inside a rust docker container rather than using `sh` within alpine.
+
 # Usage
 
 For usage info, use the `help` command.
