@@ -2,6 +2,8 @@
 
 - [BREAKING] Update from clap 3 to clap 4.
   This forces the use of `--exp`/`-e` to require an `=` sign, which was not required before. This means that when you used to be able to write `--exp +365d`, you must now write `--exp=+365d`. This is only required for this flag.
+- Add Macports installation info #231
+- Remove Gofish installation info. See #228
 
 # 5.0.3
 
