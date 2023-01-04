@@ -26,7 +26,7 @@ pub fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
                 Ok(EncodingKey::from_secret(&secret))
             } else if secret_string.starts_with("b64:") {
                 Ok(EncodingKey::from_secret(
-                    &base64_decode(&secret_string.chars().skip(4).collect::<String>()).unwrap(),
+                    &base64_decode(secret_string.chars().skip(4).collect::<String>()).unwrap(),
                 ))
             } else {
                 Ok(EncodingKey::from_secret(secret_string.as_bytes()))

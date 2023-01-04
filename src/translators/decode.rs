@@ -43,7 +43,7 @@ pub fn decoding_key_from_secret(
                 Ok(DecodingKey::from_secret(&secret).into_static())
             } else if secret_string.starts_with("b64:") {
                 Ok(DecodingKey::from_secret(
-                    &base64_decode(&secret_string.chars().skip(4).collect::<String>()).unwrap(),
+                    &base64_decode(secret_string.chars().skip(4).collect::<String>()).unwrap(),
                 )
                 .into_static())
             } else {

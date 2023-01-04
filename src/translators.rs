@@ -44,7 +44,7 @@ impl PayloadItem {
             if timestamp.parse::<u64>().is_err() {
                 let duration = parse_duration_string(timestamp);
                 if let Ok(parsed_duration) = duration {
-                    let seconds = parsed_duration + now as i64;
+                    let seconds = parsed_duration + now;
                     return PayloadItem::from_string_with_name(Some(&seconds.to_string()), name);
                 }
             }
