@@ -654,15 +654,15 @@ mod tests {
         assert!(claims.0.get("exp").is_some());
         assert_eq!(
             claims.0.get("iat"),
-            Some(&Utc.timestamp(nbf, 0).to_rfc3339().into())
+            Some(&Utc.timestamp_opt(nbf, 0).unwrap().to_rfc3339().into())
         );
         assert_eq!(
             claims.0.get("nbf"),
-            Some(&Utc.timestamp(nbf, 0).to_rfc3339().into())
+            Some(&Utc.timestamp_opt(nbf, 0).unwrap().to_rfc3339().into())
         );
         assert_eq!(
             claims.0.get("exp"),
-            Some(&Utc.timestamp(exp, 0).to_rfc3339().into())
+            Some(&Utc.timestamp_opt(exp, 0).unwrap().to_rfc3339().into())
         );
     }
 }
