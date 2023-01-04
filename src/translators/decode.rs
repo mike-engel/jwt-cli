@@ -4,9 +4,7 @@ use crate::utils::slurp_file;
 use base64::engine::general_purpose::STANDARD as base64_engine;
 use base64::Engine as _;
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
-use jsonwebtoken::{
-    dangerous_insecure_decode, decode, Algorithm, DecodingKey, Header, TokenData, Validation,
-};
+use jsonwebtoken::{decode, Algorithm, DecodingKey, Header, TokenData, Validation};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
 use std::io;
@@ -33,10 +31,7 @@ impl TokenOutput {
     }
 }
 
-pub fn decoding_key_from_secret(
-    alg: &Algorithm,
-    secret_string: &str,
-) -> JWTResult<DecodingKey<'static>> {
+pub fn decoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResult<DecodingKey> {
     match alg {
         Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
             if secret_string.starts_with('@') {
@@ -74,6 +69,9 @@ pub fn decoding_key_from_secret(
                 false => Ok(DecodingKey::from_ec_der(&secret).into_static()),
             }
         }
+        Algorithm::EdDSA => {
+            panic!("EdDSA is not implemented yet!");
+        }
     }
 }
 
@@ -110,19 +108,24 @@ pub fn decode_token(
         validate_exp: !arguments.ignore_exp,
         ..Default::default()
     };
+    let insecure_validator = secret_validator
+        .clone()
+        .insecure_disable_signature_validation();
+    let insecure_decoding_key = DecodingKey::from_secret("".as_ref());
 
-    let token_data = dangerous_insecure_decode::<Payload>(&jwt).map(|mut token| {
-        if arguments.iso_dates {
-            token.claims.convert_timestamps();
-        }
+    let token_data =
+        decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator).map(|mut token| {
+            if arguments.iso_dates {
+                token.claims.convert_timestamps();
+            }
 
-        token
-    });
+            token
+        });
 
     (
         match secret {
             Some(secret_key) => decode::<Payload>(&jwt, &secret_key.unwrap(), &secret_validator),
-            None => dangerous_insecure_decode::<Payload>(&jwt),
+            None => decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator),
         },
         token_data,
         if arguments.json {
