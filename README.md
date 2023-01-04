@@ -13,7 +13,7 @@ On top of all that, it's written in Rust so it's fast and portable (windows, mac
 
 # Installation
 
-Install `jwt-cli` via [Homebrew](https://brew.sh) (macOS), [Cargo](https://www.rust-lang.org/tools/install) (cross-platform), and [FreshPorts](https://www.freshports.org/www/jwt-cli) (FreeBSD). If you intend to use one of these methods, [skip ahead](#homebrew).
+Install `jwt-cli` via [Homebrew](https://brew.sh) or [MacPorts](https://www.macports.org) (macOS), [Cargo](https://www.rust-lang.org/tools/install) (cross-platform), and [FreshPorts](https://www.freshports.org/www/jwt-cli) (FreeBSD). If you intend to use one of these methods, [skip ahead](#homebrew).
 
 You may also install the binary from the [release](https://github.com/mike-engel/jwt-cli/releases) page, if you're unable to use Homebrew or Cargo install methods below.
 
@@ -30,6 +30,14 @@ brew install mike-engel/jwt-cli/jwt-cli
 # Ensure it worked ok by running the help command
 jwt help
 ```
+
+## MacPorts
+
+```sh
+sudo port install jwt-cli
+```
+
+More info [here](https://ports.macports.org/port/jwt-cli/).
 
 ## Cargo
 
