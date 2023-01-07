@@ -208,12 +208,10 @@ pub fn print_decoded_token(
             println!("{}", to_string_pretty(&TokenOutput::new(token)).unwrap());
         }
         (None, _, Ok(token)) => {
-            let header_output = to_string_pretty(&token.header).unwrap();
-            let claims_output = to_string_pretty(&token.claims).unwrap();
             bunt::println!("\n{$bold}Token header\n------------{/$}");
-            println!("{}\n", header_output);
+            println!("{}\n", to_string_pretty(&token.header).unwrap());
             bunt::println!("{$bold}Token claims\n------------{/$}");
-            println!("{}", claims_output);
+            println!("{}", to_string_pretty(&token.claims).unwrap());
         }
         (_, _, Err(_)) => exit(1),
     }
