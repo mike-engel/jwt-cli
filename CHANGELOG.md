@@ -2,8 +2,7 @@
 
 - [BREAKING] Update from clap 3 to clap 4.
   This forces the use of `--exp`/`-e` to require an `=` sign, which was not required before. This means that when you used to be able to write `--exp +365d`, you must now write `--exp=+365d`. This is only required for this flag.
-- [BREAKING] Update from jsonwebtoken 7 to 8
-  This will validate the presence of `exp` unless `--ignore-exp` is set. Previously, `exp` would only be validated if present, but now it is required unless explicitly ignored.
+- Update from jsonwebtoken 7 to 8
 - Add Macports installation info #231
 - Remove Gofish installation info. See #228
 
