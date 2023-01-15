@@ -7,6 +7,7 @@ use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Header, TokenData, Validation};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
+use std::collections::HashSet;
 use std::io;
 use std::process::exit;
 
@@ -104,12 +105,19 @@ pub fn decode_token(
     let mut secret_validator = Validation::new(algorithm);
 
     secret_validator.leeway = 1000;
-    secret_validator.validate_exp = !arguments.ignore_exp;
+
+    if arguments.ignore_exp {
+        secret_validator
+            .required_spec_claims
+            .retain(|claim| claim != "exp");
+        secret_validator.validate_exp = false;
+    }
 
     let mut insecure_validator = secret_validator.clone();
     let insecure_decoding_key = DecodingKey::from_secret("".as_ref());
 
     insecure_validator.insecure_disable_signature_validation();
+    insecure_validator.required_spec_claims = HashSet::new();
 
     let token_data =
         decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator).map(|mut token| {
@@ -152,6 +160,13 @@ pub fn print_decoded_token(
             }
             ErrorKind::InvalidEcdsaKey => {
                 bunt::eprintln!("{$red+bold}The secret provided isn't a valid ECDSA key{/$}")
+            }
+            ErrorKind::MissingRequiredClaim(missing) => {
+                if missing.as_str() == "exp" {
+                    bunt::eprintln!("{$red+bold}`exp` is missing, but is required. This error can be ignored via the `--ignore-exp` parameter.{/$}")
+                } else {
+                    bunt::eprintln!("{$red+bold}`{:?}` is missing, but is required{/$}", missing)
+                }
             }
             ErrorKind::ExpiredSignature => {
                 bunt::eprintln!("{$red+bold}The token has expired (or the `exp` claim is not set). This error can be ignored via the `--ignore-exp` parameter.{/$}")
