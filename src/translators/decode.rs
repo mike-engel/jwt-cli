@@ -4,11 +4,10 @@ use crate::utils::slurp_file;
 use base64::engine::general_purpose::STANDARD as base64_engine;
 use base64::Engine as _;
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
-use jsonwebtoken::{
-    dangerous_insecure_decode, decode, Algorithm, DecodingKey, Header, TokenData, Validation,
-};
+use jsonwebtoken::{decode, Algorithm, DecodingKey, Header, TokenData, Validation};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
+use std::collections::HashSet;
 use std::io;
 use std::process::exit;
 
@@ -33,24 +32,20 @@ impl TokenOutput {
     }
 }
 
-pub fn decoding_key_from_secret(
-    alg: &Algorithm,
-    secret_string: &str,
-) -> JWTResult<DecodingKey<'static>> {
+pub fn decoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResult<DecodingKey> {
     match alg {
         Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
             if secret_string.starts_with('@') {
                 let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
-                Ok(DecodingKey::from_secret(&secret).into_static())
+                Ok(DecodingKey::from_secret(&secret))
             } else if secret_string.starts_with("b64:") {
                 Ok(DecodingKey::from_secret(
                     &base64_engine
                         .decode(secret_string.chars().skip(4).collect::<String>())
                         .unwrap(),
-                )
-                .into_static())
+                ))
             } else {
-                Ok(DecodingKey::from_secret(secret_string.as_bytes()).into_static())
+                Ok(DecodingKey::from_secret(secret_string.as_bytes()))
             }
         }
         Algorithm::RS256
@@ -62,17 +57,20 @@ pub fn decoding_key_from_secret(
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
             match secret_string.ends_with(".pem") {
-                true => DecodingKey::from_rsa_pem(&secret).map(DecodingKey::into_static),
-                false => Ok(DecodingKey::from_rsa_der(&secret).into_static()),
+                true => DecodingKey::from_rsa_pem(&secret),
+                false => Ok(DecodingKey::from_rsa_der(&secret)),
             }
         }
         Algorithm::ES256 | Algorithm::ES384 => {
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
             match secret_string.ends_with(".pem") {
-                true => DecodingKey::from_ec_pem(&secret).map(DecodingKey::into_static),
-                false => Ok(DecodingKey::from_ec_der(&secret).into_static()),
+                true => DecodingKey::from_ec_pem(&secret),
+                false => Ok(DecodingKey::from_ec_der(&secret)),
             }
+        }
+        Algorithm::EdDSA => {
+            panic!("EdDSA is not implemented yet!");
         }
     }
 }
@@ -104,25 +102,37 @@ pub fn decode_token(
     .trim()
     .to_owned();
 
-    let secret_validator = Validation {
-        leeway: 1000,
-        algorithms: vec![algorithm],
-        validate_exp: !arguments.ignore_exp,
-        ..Default::default()
-    };
+    let mut secret_validator = Validation::new(algorithm);
 
-    let token_data = dangerous_insecure_decode::<Payload>(&jwt).map(|mut token| {
-        if arguments.iso_dates {
-            token.claims.convert_timestamps();
-        }
+    secret_validator.leeway = 1000;
 
-        token
-    });
+    if arguments.ignore_exp {
+        secret_validator
+            .required_spec_claims
+            .retain(|claim| claim != "exp");
+        secret_validator.validate_exp = false;
+    }
+
+    let mut insecure_validator = secret_validator.clone();
+    let insecure_decoding_key = DecodingKey::from_secret("".as_ref());
+
+    insecure_validator.insecure_disable_signature_validation();
+    insecure_validator.required_spec_claims = HashSet::new();
+    insecure_validator.validate_exp = false;
+
+    let token_data =
+        decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator).map(|mut token| {
+            if arguments.iso_dates {
+                token.claims.convert_timestamps();
+            }
+
+            token
+        });
 
     (
         match secret {
             Some(secret_key) => decode::<Payload>(&jwt, &secret_key.unwrap(), &secret_validator),
-            None => dangerous_insecure_decode::<Payload>(&jwt),
+            None => decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator),
         },
         token_data,
         if arguments.json {
@@ -146,11 +156,18 @@ pub fn print_decoded_token(
             ErrorKind::InvalidSignature => {
                 bunt::eprintln!("{$red+bold}The JWT provided has an invalid signature{/$}")
             }
-            ErrorKind::InvalidRsaKey => {
+            ErrorKind::InvalidRsaKey(_) => {
                 bunt::eprintln!("{$red+bold}The secret provided isn't a valid RSA key{/$}")
             }
             ErrorKind::InvalidEcdsaKey => {
                 bunt::eprintln!("{$red+bold}The secret provided isn't a valid ECDSA key{/$}")
+            }
+            ErrorKind::MissingRequiredClaim(missing) => {
+                if missing.as_str() == "exp" {
+                    bunt::eprintln!("{$red+bold}`exp` is missing, but is required. This error can be ignored via the `--ignore-exp` parameter.{/$}")
+                } else {
+                    bunt::eprintln!("{$red+bold}`{:?}` is missing, but is required{/$}", missing)
+                }
             }
             ErrorKind::ExpiredSignature => {
                 bunt::eprintln!("{$red+bold}The token has expired (or the `exp` claim is not set). This error can be ignored via the `--ignore-exp` parameter.{/$}")

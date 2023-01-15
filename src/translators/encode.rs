@@ -56,6 +56,7 @@ pub fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
                 false => Ok(EncodingKey::from_ec_der(&secret)),
             }
         }
+        Algorithm::EdDSA => panic!("EdDSA is not implemented yet"),
     }
 }
 
