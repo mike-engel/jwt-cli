@@ -118,6 +118,7 @@ pub fn decode_token(
 
     insecure_validator.insecure_disable_signature_validation();
     insecure_validator.required_spec_claims = HashSet::new();
+    insecure_validator.validate_exp = false;
 
     let token_data =
         decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator).map(|mut token| {

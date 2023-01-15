@@ -350,7 +350,6 @@ mod tests {
             .try_get_matches_from(vec![
                 "jwt",
                 "decode",
-                "--ignore-exp",
                 "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
                 "-j",
             ])
@@ -369,7 +368,6 @@ mod tests {
             .try_get_matches_from(vec![
                 "jwt",
                 "decode",
-                "--ignore-exp",
                 "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
                 "-S",
                 "yolo",
@@ -390,7 +388,6 @@ mod tests {
             .try_get_matches_from(vec![
                 "jwt",
                 "decode",
-                "--ignore-exp",
                 "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
                 "-A",
                 "HS256",
@@ -409,7 +406,6 @@ mod tests {
             .try_get_matches_from(vec![
                 "jwt",
                 "decode",
-                "--ignore-exp",
                 "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ0aGlzIjoidGhhdCJ9.AdAECLE_4iRa0uomMEdsMV2hDXv1vhLpym567-AzhrM",
             ])
             .unwrap();
@@ -426,7 +422,6 @@ mod tests {
             .try_get_matches_from(vec![
                 "jwt",
                 "decode",
-                "--ignore-exp",
                 "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.SEQijh6tEuOOAAKpHPuKxgFqEvlTNP1jj4FUNoBwXaM",
             ])
             .unwrap();
@@ -443,7 +438,6 @@ mod tests {
             .try_get_matches_from(vec![
                 "jwt",
                 "decode",
-                "--ignore-exp",
                 "    eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiYWRtaW4iOnRydWV9.SEQijh6tEuOOAAKpHPuKxgFqEvlTNP1jj4FUNoBwXaM ",
             ])
             .unwrap();
