@@ -36,16 +36,15 @@ pub fn decoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
         Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
             if secret_string.starts_with('@') {
                 let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
-                Ok(DecodingKey::from_secret(&secret).into_static())
+                Ok(DecodingKey::from_secret(&secret))
             } else if secret_string.starts_with("b64:") {
                 Ok(DecodingKey::from_secret(
                     &base64_engine
                         .decode(secret_string.chars().skip(4).collect::<String>())
                         .unwrap(),
-                )
-                .into_static())
+                ))
             } else {
-                Ok(DecodingKey::from_secret(secret_string.as_bytes()).into_static())
+                Ok(DecodingKey::from_secret(secret_string.as_bytes()))
             }
         }
         Algorithm::RS256
@@ -57,16 +56,16 @@ pub fn decoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
             match secret_string.ends_with(".pem") {
-                true => DecodingKey::from_rsa_pem(&secret).map(DecodingKey::into_static),
-                false => Ok(DecodingKey::from_rsa_der(&secret).into_static()),
+                true => DecodingKey::from_rsa_pem(&secret),
+                false => Ok(DecodingKey::from_rsa_der(&secret)),
             }
         }
         Algorithm::ES256 | Algorithm::ES384 => {
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
             match secret_string.ends_with(".pem") {
-                true => DecodingKey::from_ec_pem(&secret).map(DecodingKey::into_static),
-                false => Ok(DecodingKey::from_ec_der(&secret).into_static()),
+                true => DecodingKey::from_ec_pem(&secret),
+                false => Ok(DecodingKey::from_ec_der(&secret)),
             }
         }
         Algorithm::EdDSA => {
@@ -102,16 +101,15 @@ pub fn decode_token(
     .trim()
     .to_owned();
 
-    let secret_validator = Validation {
-        leeway: 1000,
-        algorithms: vec![algorithm],
-        validate_exp: !arguments.ignore_exp,
-        ..Default::default()
-    };
-    let insecure_validator = secret_validator
-        .clone()
-        .insecure_disable_signature_validation();
+    let mut secret_validator = Validation::new(algorithm);
+
+    secret_validator.leeway = 1000;
+    secret_validator.validate_exp = !arguments.ignore_exp;
+
+    let mut insecure_validator = secret_validator.clone();
     let insecure_decoding_key = DecodingKey::from_secret("".as_ref());
+
+    insecure_validator.insecure_disable_signature_validation();
 
     let token_data =
         decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator).map(|mut token| {
@@ -149,7 +147,7 @@ pub fn print_decoded_token(
             ErrorKind::InvalidSignature => {
                 bunt::eprintln!("{$red+bold}The JWT provided has an invalid signature{/$}")
             }
-            ErrorKind::InvalidRsaKey => {
+            ErrorKind::InvalidRsaKey(_) => {
                 bunt::eprintln!("{$red+bold}The secret provided isn't a valid RSA key{/$}")
             }
             ErrorKind::InvalidEcdsaKey => {
