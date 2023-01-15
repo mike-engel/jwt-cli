@@ -2,7 +2,8 @@ use crate::cli_config::{translate_algorithm, EncodeArgs};
 use crate::translators::{Payload, PayloadItem};
 use crate::utils::slurp_file;
 use atty::Stream;
-use base64::decode as base64_decode;
+use base64::engine::general_purpose::STANDARD as base64_engine;
+use base64::Engine as _;
 use chrono::Utc;
 use jsonwebtoken::errors::Result as JWTResult;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
@@ -26,7 +27,9 @@ pub fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
                 Ok(EncodingKey::from_secret(&secret))
             } else if secret_string.starts_with("b64:") {
                 Ok(EncodingKey::from_secret(
-                    &base64_decode(&secret_string.chars().skip(4).collect::<String>()).unwrap(),
+                    &base64_engine
+                        .decode(secret_string.chars().skip(4).collect::<String>())
+                        .unwrap(),
                 ))
             } else {
                 Ok(EncodingKey::from_secret(secret_string.as_bytes()))

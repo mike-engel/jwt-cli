@@ -13,7 +13,7 @@ On top of all that, it's written in Rust so it's fast and portable (windows, mac
 
 # Installation
 
-Install `jwt-cli` via [Homebrew](https://brew.sh) (macOS), [Cargo](https://www.rust-lang.org/tools/install) (cross-platform), and [FreshPorts](https://www.freshports.org/www/jwt-cli) (FreeBSD). If you intend to use one of these methods, [skip ahead](#homebrew).
+Install `jwt-cli` via [Homebrew](https://brew.sh) or [MacPorts](https://www.macports.org) (macOS), [Cargo](https://www.rust-lang.org/tools/install) (cross-platform), and [FreshPorts](https://www.freshports.org/www/jwt-cli) (FreeBSD). If you intend to use one of these methods, [skip ahead](#homebrew).
 
 You may also install the binary from the [release](https://github.com/mike-engel/jwt-cli/releases) page, if you're unable to use Homebrew or Cargo install methods below.
 
@@ -30,6 +30,14 @@ brew install mike-engel/jwt-cli/jwt-cli
 # Ensure it worked ok by running the help command
 jwt help
 ```
+
+## MacPorts
+
+```sh
+sudo port install jwt-cli
+```
+
+More info [here](https://ports.macports.org/port/jwt-cli/).
 
 ## Cargo
 
@@ -51,17 +59,6 @@ pkg install jwt-cli
 
 Big thanks to Sergey Osokin, the FreeBSD contributor who added `jwt-cli` to the FreeBSD ports tree!
 
-## GoFish
-
-`jwt-cli` is also available on Windows, macOS, and Linux using GoFish.
-See [gofi.sh](https://gofi.sh/index.html#install) for instructions for getting GoFish.
-
-After installing GoFish, run `jwt-cli` with:
-
-```sh
-gofish install jwt-cli
-```
-
 ## Arch Linux
 
 `jwt-cli` is available in the Arch Linux [community repository](https://archlinux.org/packages/community/x86_64/jwt-cli/) and can be installed via [pacman](https://wiki.archlinux.org/title/Pacman):
@@ -69,6 +66,12 @@ gofish install jwt-cli
 ```sh
 pacman -S jwt-cli
 ```
+
+## Alpine linux
+
+Unfortunately due to [static linking problems](https://github.com/mike-engel/jwt-cli/issues/194#issuecomment-1169211709) when compiling this project, `jwt-cli` can't run on alpine linux natively.
+
+A workaround is to run it inside a rust docker container rather than using `sh` within alpine.
 
 # Usage
 

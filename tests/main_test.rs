@@ -5,7 +5,8 @@ mod tests {
     use super::cli_config::{App, DecodeArgs, EncodeArgs};
     use super::translators::decode::{decode_token, decoding_key_from_secret, OutputFormat};
     use super::translators::encode::{encode_token, encoding_key_from_secret};
-    use base64::decode as base64_decode;
+    use base64::engine::general_purpose::STANDARD as base64_engine;
+    use base64::Engine as _;
     use chrono::{Duration, TimeZone, Utc};
     use clap::{CommandFactory, FromArgMatches};
     use jsonwebtoken::{Algorithm, DecodingKey, EncodingKey, TokenData};
@@ -496,7 +497,7 @@ mod tests {
     fn encoding_key_from_secret_handles_base64() {
         let b64 = "+t0vs/PPB0dvyYKIk1DYvz5WyCUds5DLy07ycOK5oHA=";
         let arg = format!("b64:{}", b64);
-        let expected = EncodingKey::from_secret(&base64_decode(b64).unwrap());
+        let expected = EncodingKey::from_secret(&base64_engine.decode(b64).unwrap());
         let key = encoding_key_from_secret(&Algorithm::HS256, &arg).unwrap();
         assert_eq!(expected, key);
     }
@@ -512,7 +513,7 @@ mod tests {
     fn decoding_key_from_secret_handles_base64() {
         let b64 = "+t0vs/PPB0dvyYKIk1DYvz5WyCUds5DLy07ycOK5oHA=";
         let arg = format!("b64:{}", b64);
-        let expected = DecodingKey::from_secret(&base64_decode(b64).unwrap()).into_static();
+        let expected = DecodingKey::from_secret(&base64_engine.decode(b64).unwrap()).into_static();
         let key = decoding_key_from_secret(&Algorithm::HS256, &arg).unwrap();
         assert_eq!(expected, key);
     }
@@ -654,15 +655,15 @@ mod tests {
         assert!(claims.0.get("exp").is_some());
         assert_eq!(
             claims.0.get("iat"),
-            Some(&Utc.timestamp(nbf, 0).to_rfc3339().into())
+            Some(&Utc.timestamp_opt(nbf, 0).unwrap().to_rfc3339().into())
         );
         assert_eq!(
             claims.0.get("nbf"),
-            Some(&Utc.timestamp(nbf, 0).to_rfc3339().into())
+            Some(&Utc.timestamp_opt(nbf, 0).unwrap().to_rfc3339().into())
         );
         assert_eq!(
             claims.0.get("exp"),
-            Some(&Utc.timestamp(exp, 0).to_rfc3339().into())
+            Some(&Utc.timestamp_opt(exp, 0).unwrap().to_rfc3339().into())
         );
     }
 }
