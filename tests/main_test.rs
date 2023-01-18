@@ -1,14 +1,18 @@
+extern crate tempdir;
+
 include!("../src/main.rs");
 
 #[cfg(test)]
 mod tests {
     use super::cli_config::{App, DecodeArgs, EncodeArgs};
     use super::translators::decode::{decode_token, OutputFormat};
-    use super::translators::encode::encode_token;
+    use super::translators::encode::{encode_token, print_encoded_token};
+    use super::utils::{slurp_file};
     use chrono::{Duration, TimeZone, Utc};
     use clap::{CommandFactory, FromArgMatches};
     use jsonwebtoken::{Algorithm, TokenData};
     use serde_json::from_value;
+    use tempdir::TempDir;
 
     #[test]
     fn encodes_a_token() {
@@ -664,5 +668,66 @@ mod tests {
             claims.0.get("exp"),
             Some(&Utc.timestamp_opt(exp, 0).unwrap().to_rfc3339().into())
         );
+    }
+
+    #[test]
+    fn writes_jwt_to_file() {
+        let tmp_dir_result = TempDir::new("jwtclitest");
+        assert!(tmp_dir_result.is_ok());
+
+        let tmp_dir = tmp_dir_result.unwrap();
+        let out_path = tmp_dir.path().join("jwt.out");
+        println!("Output path: {}", out_path.to_str().unwrap());
+
+        let secret = "1234567890";
+        let kid = "1234";
+        let exp = (Utc::now() + Duration::minutes(60)).timestamp();
+        let nbf = Utc::now().timestamp();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-S",
+                secret,
+                "-A",
+                "HS256",
+                &format!("-e={}", &exp.to_string()),
+                "-k",
+                kid,
+                "-n",
+                &nbf.to_string(),
+                "-o",
+                out_path.to_str().unwrap(),
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+
+        let out_path_from_args = &encode_arguments.output_path;
+        assert!(out_path_from_args.is_some());
+        assert_eq!(out_path, *out_path_from_args.as_ref().unwrap());
+
+        let encoded_token = encode_token(&encode_arguments);
+        print_encoded_token(encoded_token, out_path_from_args);
+
+        let out_content_buf = slurp_file(out_path.to_str().unwrap());
+        let out_content_str = std::str::from_utf8(&out_content_buf);
+        assert!(out_content_str.is_ok());
+        println!("jwt: {}", out_content_str.unwrap());
+
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec!["jwt", "decode", "-S", secret, &out_content_str.unwrap()])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_arguments);
+
+        assert!(decoded_token.is_ok());
+        let TokenData { claims, header } = decoded_token.unwrap();
+
+        assert_eq!(header.alg, Algorithm::HS256);
+        assert_eq!(header.kid, Some(kid.to_string()));
+        assert_eq!(claims.0["nbf"], nbf);
+        assert_eq!(claims.0["exp"], exp);
     }
 }

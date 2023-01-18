@@ -1,7 +1,6 @@
 use crate::cli_config::{translate_algorithm, DecodeArgs};
 use crate::translators::Payload;
 use crate::utils::{slurp_file, write_file};
-use base64::decode as base64_decode;
 use base64::engine::general_purpose::STANDARD as base64_engine;
 use base64::Engine as _;
 use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
