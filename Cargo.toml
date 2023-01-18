@@ -23,4 +23,6 @@ chrono = "0.4"
 parse_duration = "2.1.1"
 atty = "0.2"
 base64 = "0.21.0"
+
+[dev-dependencies]
 tempdir = "0.3.7"

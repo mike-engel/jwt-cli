@@ -10,7 +10,6 @@ use serde_json::to_string_pretty;
 use std::collections::HashSet;
 use std::io;
 use std::path::PathBuf;
-use std::process::exit;
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum OutputFormat {
@@ -19,9 +18,9 @@ pub enum OutputFormat {
 }
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
-struct TokenOutput {
-    header: Header,
-    payload: Payload,
+pub struct TokenOutput {
+    pub header: Header,
+    pub payload: Payload,
 }
 
 impl TokenOutput {
@@ -149,7 +148,7 @@ pub fn print_decoded_token(
     token_data: JWTResult<TokenData<Payload>>,
     format: OutputFormat,
     output_path: &Option<PathBuf>,
-) {
+) -> JWTResult<()> {
     if let Err(err) = &validated_token {
         match err.kind() {
             ErrorKind::InvalidToken => {
@@ -195,6 +194,7 @@ pub fn print_decoded_token(
                 err
             ),
         };
+        return Err(validated_token.err().unwrap());
     }
 
     match (output_path.as_ref(), format, token_data) {
@@ -212,11 +212,8 @@ pub fn print_decoded_token(
             bunt::println!("{$bold}Token claims\n------------{/$}");
             println!("{}", to_string_pretty(&token.claims).unwrap());
         }
-        (_, _, Err(_)) => exit(1),
+        (_, _, Err(err)) => return Err(err),
     }
 
-    exit(match validated_token {
-        Err(_) => 1,
-        Ok(_) => 0,
-    })
+    Ok(())
 }

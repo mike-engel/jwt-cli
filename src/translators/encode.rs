@@ -114,7 +114,10 @@ pub fn encode_token(arguments: &EncodeArgs) -> JWTResult<String> {
         .and_then(|secret| encode(&header, &claims, &secret))
 }
 
-pub fn print_encoded_token(token: JWTResult<String>, output_path: &Option<PathBuf>) {
+pub fn print_encoded_token(
+    token: JWTResult<String>,
+    output_path: &Option<PathBuf>,
+) -> JWTResult<()> {
     match (output_path.as_ref(), token) {
         (Some(path), Ok(jwt)) => {
             write_file(path, jwt.as_bytes());
@@ -131,7 +134,8 @@ pub fn print_encoded_token(token: JWTResult<String>, output_path: &Option<PathBu
         (_, Err(err)) => {
             bunt::eprintln!("{$red+bold}Something went awry creating the jwt{/$}\n");
             eprintln!("{}", err);
-            exit(1);
+            return Err(err);
         }
     }
+    Ok(())
 }
