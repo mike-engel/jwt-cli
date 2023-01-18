@@ -7,7 +7,7 @@ mod tests {
     use super::cli_config::{App, DecodeArgs, EncodeArgs};
     use super::translators::decode::{decode_token, OutputFormat};
     use super::translators::encode::{encode_token, print_encoded_token};
-    use super::utils::{slurp_file};
+    use super::utils::slurp_file;
     use chrono::{Duration, TimeZone, Utc};
     use clap::{CommandFactory, FromArgMatches};
     use jsonwebtoken::{Algorithm, TokenData};
@@ -716,7 +716,13 @@ mod tests {
         println!("jwt: {}", out_content_str.unwrap());
 
         let decode_matcher = App::command()
-            .try_get_matches_from(vec!["jwt", "decode", "-S", secret, &out_content_str.unwrap()])
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                secret,
+                &out_content_str.unwrap(),
+            ])
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
