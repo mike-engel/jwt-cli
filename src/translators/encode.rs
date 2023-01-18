@@ -10,7 +10,6 @@ use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde_json::{from_str, Value};
 use std::io;
 use std::path::PathBuf;
-use std::process::exit;
 
 fn create_header(alg: Algorithm, kid: Option<&String>) -> Header {
     let mut header = Header::new(alg);
@@ -129,7 +128,6 @@ pub fn print_encoded_token(
             } else {
                 print!("{}", jwt);
             };
-            exit(0);
         }
         (_, Err(err)) => {
             bunt::eprintln!("{$red+bold}Something went awry creating the jwt{/$}\n");
