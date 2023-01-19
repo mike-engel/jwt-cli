@@ -3,12 +3,16 @@ include!("../src/main.rs");
 #[cfg(test)]
 mod tests {
     use super::cli_config::{App, DecodeArgs, EncodeArgs};
-    use super::translators::decode::{decode_token, OutputFormat};
-    use super::translators::encode::encode_token;
+    use super::translators::decode::{
+        decode_token, print_decoded_token, OutputFormat, TokenOutput,
+    };
+    use super::translators::encode::{encode_token, print_encoded_token};
+    use super::utils::slurp_file;
     use chrono::{Duration, TimeZone, Utc};
     use clap::{CommandFactory, FromArgMatches};
     use jsonwebtoken::{Algorithm, TokenData};
-    use serde_json::from_value;
+    use serde_json::{from_value, Result as JsonResult};
+    use tempdir::TempDir;
 
     #[test]
     fn encodes_a_token() {
@@ -664,5 +668,99 @@ mod tests {
             claims.0.get("exp"),
             Some(&Utc.timestamp_opt(exp, 0).unwrap().to_rfc3339().into())
         );
+    }
+
+    #[test]
+    fn writes_output_to_file() {
+        let tmp_dir_result = TempDir::new("jwtclitest");
+        assert!(tmp_dir_result.is_ok());
+
+        let tmp_dir = tmp_dir_result.unwrap();
+        let out_path = tmp_dir.path().join("jwt.out");
+        println!("jwt output path: {}", out_path.to_str().unwrap());
+
+        let secret = "1234567890";
+        let kid = "1234";
+        let exp = (Utc::now() + Duration::minutes(60)).timestamp();
+        let nbf = Utc::now().timestamp();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-S",
+                secret,
+                "-A",
+                "HS256",
+                &format!("-e={}", &exp.to_string()),
+                "-k",
+                kid,
+                "-n",
+                &nbf.to_string(),
+                "-o",
+                out_path.to_str().unwrap(),
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+
+        let out_path_from_args = &encode_arguments.output_path;
+        assert!(out_path_from_args.is_some());
+        assert_eq!(out_path, *out_path_from_args.as_ref().unwrap());
+
+        let encoded_token = encode_token(&encode_arguments);
+        let print_encoded_result = print_encoded_token(encoded_token, out_path_from_args);
+        assert!(print_encoded_result.is_ok());
+
+        let out_content_buf = slurp_file(out_path.to_str().unwrap());
+        let out_content_str = std::str::from_utf8(&out_content_buf);
+        assert!(out_content_str.is_ok());
+        println!("jwt: {}", out_content_str.unwrap());
+
+        let json_path = tmp_dir.path().join("decoded.json");
+        println!("decoded json path: {}", json_path.to_str().unwrap());
+
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                secret,
+                &out_content_str.unwrap(),
+                "-o",
+                json_path.to_str().unwrap(),
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, decoded_token_data, decoded_output_format) =
+            decode_token(&decode_arguments);
+        assert!(decoded_token.is_ok());
+
+        let json_path_from_args = &decode_arguments.output_path;
+        assert!(json_path_from_args.is_some());
+        assert_eq!(json_path, *json_path_from_args.as_ref().unwrap());
+
+        let json_print_result = print_decoded_token(
+            decoded_token,
+            decoded_token_data,
+            decoded_output_format,
+            json_path_from_args,
+        );
+        assert!(json_print_result.is_ok());
+
+        let json_content_buf = slurp_file(json_path.to_str().unwrap());
+        let json_content_str = std::str::from_utf8(&json_content_buf);
+        assert!(json_content_str.is_ok());
+
+        let json_result: JsonResult<TokenOutput> = serde_json::from_str(json_content_str.unwrap());
+        assert!(json_result.is_ok());
+        let json = json_result.unwrap();
+        println!("json: {:#?}", json);
+
+        let TokenOutput { header, payload } = json;
+        assert_eq!(header.alg, Algorithm::HS256);
+        assert_eq!(header.kid, Some(kid.to_string()));
+        assert_eq!(payload.0["nbf"], nbf);
+        assert_eq!(payload.0["exp"], exp);
     }
 }

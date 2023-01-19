@@ -1,5 +1,6 @@
 use clap::Parser;
 use cli_config::{App, Commands, EncodeArgs};
+use std::process::exit;
 use translators::decode::{decode_token, print_decoded_token};
 use translators::encode::{encode_token, print_encoded_token};
 
@@ -22,13 +23,23 @@ fn main() {
             warn_unsupported(arguments);
 
             let token = encode_token(arguments);
+            let output_path = &arguments.output_path;
 
-            print_encoded_token(token);
+            exit(match print_encoded_token(token, output_path) {
+                Ok(_) => 0,
+                _ => 1,
+            });
         }
         Commands::Decode(arguments) => {
             let (validated_token, token_data, format) = decode_token(arguments);
+            let output_path = &arguments.output_path;
 
-            print_decoded_token(validated_token, token_data, format);
+            exit(
+                match print_decoded_token(validated_token, token_data, format, output_path) {
+                    Ok(_) => 0,
+                    _ => 1,
+                },
+            );
         }
-    }
+    };
 }

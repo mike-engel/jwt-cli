@@ -1,6 +1,6 @@
 use crate::cli_config::{translate_algorithm, EncodeArgs};
 use crate::translators::{Payload, PayloadItem};
-use crate::utils::slurp_file;
+use crate::utils::{slurp_file, write_file};
 use atty::Stream;
 use base64::engine::general_purpose::STANDARD as base64_engine;
 use base64::Engine as _;
@@ -9,7 +9,7 @@ use jsonwebtoken::errors::Result as JWTResult;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde_json::{from_str, Value};
 use std::io;
-use std::process::exit;
+use std::path::PathBuf;
 
 fn create_header(alg: Algorithm, kid: Option<&String>) -> Header {
     let mut header = Header::new(alg);
@@ -113,20 +113,27 @@ pub fn encode_token(arguments: &EncodeArgs) -> JWTResult<String> {
         .and_then(|secret| encode(&header, &claims, &secret))
 }
 
-pub fn print_encoded_token(token: JWTResult<String>) {
-    match token {
-        Ok(jwt) => {
+pub fn print_encoded_token(
+    token: JWTResult<String>,
+    output_path: &Option<PathBuf>,
+) -> JWTResult<()> {
+    match (output_path.as_ref(), token) {
+        (Some(path), Ok(jwt)) => {
+            write_file(path, jwt.as_bytes());
+            println!("Wrote jwt to file {}", path.display());
+        }
+        (None, Ok(jwt)) => {
             if atty::is(Stream::Stdout) {
                 println!("{}", jwt);
             } else {
                 print!("{}", jwt);
-            }
-            exit(0);
+            };
         }
-        Err(err) => {
+        (_, Err(err)) => {
             bunt::eprintln!("{$red+bold}Something went awry creating the jwt{/$}\n");
             eprintln!("{}", err);
-            exit(1);
+            return Err(err);
         }
     }
+    Ok(())
 }
