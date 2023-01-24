@@ -1,5 +1,6 @@
-use crate::translators::{PayloadItem, SupportedTypes};
+use crate::translators::{PayloadItem, SupportedTypes, TimeFormat};
 use crate::utils::parse_duration_string;
+use chrono::format::{parse, Parsed, StrftimeItems};
 use clap::{Parser, Subcommand, ValueEnum};
 use jsonwebtoken::Algorithm;
 use std::path::PathBuf;
@@ -116,7 +117,18 @@ pub struct DecodeArgs {
     #[clap(value_parser)]
     pub algorithm: SupportedAlgorithms,
 
-    /// Display unix timestamps as ISO 8601 dates
+    /// Display unix timestamps as ISO 8601 dates [default: UTC] [possible values: UTC, Local, Offset (e.g. -02:00)]
+    #[clap(long = "date")]
+    #[clap(aliases = &["dates", "time"])]
+    #[clap(num_args = 0..=1)]
+    #[clap(require_equals = true)]
+    #[clap(value_parser = time_format)]
+    #[clap(default_value = None)]
+    #[clap(default_missing_value = "UTC")]
+    pub time_format: Option<TimeFormat>,
+
+    /// Display unix timestamps as ISO 8601 dates in UTC.
+    /// Use --date for finer control
     #[clap(long = "iso8601")]
     #[clap(value_parser)]
     pub iso_dates: bool,
@@ -187,6 +199,25 @@ fn is_timestamp_or_duration(val: &str) -> Result<String, String> {
     }
 }
 
+fn time_format(arg: &str) -> Result<TimeFormat, String> {
+    match arg.to_uppercase().as_str() {
+        "UTC" => Ok(TimeFormat::UTC),
+        "LOCAL" => Ok(TimeFormat::Local),
+        _ => {
+            let mut parsed = Parsed::new();
+            match parse(&mut parsed, arg, StrftimeItems::new("%#z")) {
+                Ok(_) => match parsed.offset {
+                    Some(offset) => Ok(TimeFormat::Fixed(offset)),
+                    None => panic!("Should have been able to parse the offset"),
+                },
+                Err(_) => Err(String::from(
+                    "must be one of `Local`, `UTC` or an offset (-02:00)",
+                )),
+            }
+        }
+    }
+}
+
 pub fn translate_algorithm(alg: &SupportedAlgorithms) -> Algorithm {
     match alg {
         SupportedAlgorithms::HS256 => Algorithm::HS256,
@@ -234,5 +265,21 @@ mod tests {
         assert!(is_timestamp_or_duration("yolo").is_err());
         assert!(is_timestamp_or_duration("2398ybdfiud93").is_err());
         assert!(is_timestamp_or_duration("1 day -1 hourz").is_err());
+    }
+
+    #[test]
+    fn is_valid_time_format() {
+        assert_eq!(time_format("local"), Ok(TimeFormat::Local));
+        assert_eq!(time_format("LoCaL"), Ok(TimeFormat::Local));
+        assert_eq!(time_format("utc"), Ok(TimeFormat::UTC));
+        assert_eq!(time_format("+03:00"), Ok(TimeFormat::Fixed(10800)));
+        assert_eq!(time_format("+03:30"), Ok(TimeFormat::Fixed(12600)));
+    }
+
+    #[test]
+    fn is_invalid_time_format() {
+        assert!(time_format("yolo").is_err());
+        assert!(time_format("2398ybdfiud93").is_err());
+        assert!(time_format("+3").is_err());
     }
 }

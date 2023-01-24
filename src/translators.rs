@@ -1,5 +1,5 @@
 use crate::utils::parse_duration_string;
-use chrono::{TimeZone, Utc};
+use chrono::{FixedOffset, Local, TimeZone, Utc};
 use clap::ValueEnum;
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{from_str, Value};
@@ -18,6 +18,16 @@ pub struct Payload(pub BTreeMap<String, Value>);
 #[derive(Debug, Clone, ValueEnum)]
 pub enum SupportedTypes {
     JWT,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum TimeFormat {
+    /// Displays UTC (+00:00)
+    UTC,
+    /// Displays your local timezone
+    Local,
+    /// Displays a fixed timezone
+    Fixed(i32),
 }
 
 impl PayloadItem {
@@ -65,13 +75,24 @@ impl Payload {
         Payload(payload)
     }
 
-    pub fn convert_timestamps(&mut self) {
+    pub fn convert_timestamps(&mut self, offset: TimeFormat) {
         let timestamp_claims: Vec<String> = vec!["iat".into(), "nbf".into(), "exp".into()];
 
         for (key, value) in self.0.iter_mut() {
             if timestamp_claims.contains(key) && value.is_number() {
                 *value = match value.as_i64() {
-                    Some(timestamp) => Utc.timestamp_opt(timestamp, 0).unwrap().to_rfc3339().into(),
+                    Some(timestamp) => match offset {
+                        TimeFormat::UTC => Utc.timestamp_opt(timestamp, 0).unwrap().to_rfc3339(),
+                        TimeFormat::Local => {
+                            Local.timestamp_opt(timestamp, 0).unwrap().to_rfc3339()
+                        }
+                        TimeFormat::Fixed(secs) => FixedOffset::east_opt(secs)
+                            .unwrap()
+                            .timestamp_opt(timestamp, 0)
+                            .unwrap()
+                            .to_rfc3339(),
+                    }
+                    .into(),
                     None => value.clone(),
                 }
             }

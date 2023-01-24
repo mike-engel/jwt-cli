@@ -7,12 +7,15 @@ mod tests {
         decode_token, print_decoded_token, OutputFormat, TokenOutput,
     };
     use super::translators::encode::{encode_token, print_encoded_token};
+    use super::translators::TimeFormat;
     use super::utils::slurp_file;
-    use chrono::{Duration, TimeZone, Utc};
+    use chrono::{Duration, FixedOffset, Local, TimeZone, Utc};
     use clap::{CommandFactory, FromArgMatches};
     use jsonwebtoken::{Algorithm, TokenData};
     use serde_json::{from_value, Result as JsonResult};
     use tempdir::TempDir;
+
+    const HOUR: i32 = 3600;
 
     #[test]
     fn encodes_a_token() {
@@ -798,5 +801,143 @@ mod tests {
         assert_eq!(header.kid, Some(kid.to_string()));
         assert_eq!(payload.0["nbf"], nbf);
         assert_eq!(payload.0["exp"], exp);
+    }
+
+    #[test]
+    fn shows_timestamps_as_iso_dates_with_local_offset() {
+        let exp = (Utc::now() + Duration::minutes(60)).timestamp();
+        let nbf = Utc::now().timestamp();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                &format!("--exp={}", &exp.to_string()),
+                "--nbf",
+                &nbf.to_string(),
+                "-S",
+                "1234567890",
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "--date=local",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, token_data, _) = decode_token(&decode_arguments);
+
+        assert!(decoded_token.is_ok());
+
+        let TokenData { claims, header: _ } = token_data.unwrap();
+
+        assert!(claims.0.get("iat").is_some());
+        assert!(claims.0.get("nbf").is_some());
+        assert!(claims.0.get("exp").is_some());
+        assert_eq!(
+            claims.0.get("iat"),
+            Some(&Local.timestamp_opt(nbf, 0).unwrap().to_rfc3339().into())
+        );
+        assert_eq!(
+            claims.0.get("nbf"),
+            Some(&Local.timestamp_opt(nbf, 0).unwrap().to_rfc3339().into())
+        );
+        assert_eq!(
+            claims.0.get("exp"),
+            Some(&Local.timestamp_opt(exp, 0).unwrap().to_rfc3339().into())
+        );
+    }
+
+    #[test]
+    fn shows_timestamps_as_iso_dates_with_fixed_offset() {
+        let exp = (Utc::now() + Duration::minutes(60)).timestamp();
+        let nbf = Utc::now().timestamp();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                &format!("--exp={}", &exp.to_string()),
+                "--nbf",
+                &nbf.to_string(),
+                "-S",
+                "1234567890",
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "1234567890",
+                "--dates=+03:00",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, token_data, _) = decode_token(&decode_arguments);
+
+        assert!(decoded_token.is_ok());
+
+        let TokenData { claims, header: _ } = token_data.unwrap();
+
+        assert!(claims.0.get("iat").is_some());
+        assert!(claims.0.get("nbf").is_some());
+        assert!(claims.0.get("exp").is_some());
+        assert_eq!(
+            claims.0.get("iat"),
+            Some(
+                &FixedOffset::east_opt(3 * HOUR)
+                    .unwrap()
+                    .timestamp_opt(nbf, 0)
+                    .unwrap()
+                    .to_rfc3339()
+                    .into()
+            )
+        );
+        assert_eq!(
+            claims.0.get("nbf"),
+            Some(
+                &FixedOffset::east_opt(3 * HOUR)
+                    .unwrap()
+                    .timestamp_opt(nbf, 0)
+                    .unwrap()
+                    .to_rfc3339()
+                    .into()
+            )
+        );
+        assert_eq!(
+            claims.0.get("exp"),
+            Some(
+                &FixedOffset::east_opt(3 * HOUR)
+                    .unwrap()
+                    .timestamp_opt(exp, 0)
+                    .unwrap()
+                    .to_rfc3339()
+                    .into()
+            )
+        );
+    }
+
+    #[test]
+    fn parses_date_format_with_no_equals() {
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec!["jwt", "decode", "--date", "some token"])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+
+        assert_eq!(decode_arguments.time_format, Some(TimeFormat::UTC));
     }
 }
