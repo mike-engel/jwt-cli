@@ -158,6 +158,7 @@ pub enum SupportedAlgorithms {
     PS512,
     ES256,
     ES384,
+    EdDSA,
 }
 
 fn is_payload_item(val: &str) -> Result<Option<PayloadItem>, String> {
@@ -199,5 +200,6 @@ pub fn translate_algorithm(alg: &SupportedAlgorithms) -> Algorithm {
         SupportedAlgorithms::PS512 => Algorithm::PS512,
         SupportedAlgorithms::ES256 => Algorithm::ES256,
         SupportedAlgorithms::ES384 => Algorithm::ES384,
+        SupportedAlgorithms::EdDSA => Algorithm::EdDSA,
     }
 }

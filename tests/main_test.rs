@@ -618,6 +618,44 @@ mod tests {
     }
 
     #[test]
+    fn encodes_and_decodes_an_eddsa_token_using_key_from_file() {
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "EDDSA",
+                "--exp",
+                "-S",
+                "@./tests/private_eddsa_key.pem",
+                &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "@./tests/public_eddsa_key.pem",
+                "-A",
+                "EDDSA",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        dbg!(&result);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn shows_timestamps_as_iso_dates() {
         let exp = (Utc::now() + Duration::minutes(60)).timestamp();
         let nbf = Utc::now().timestamp();
