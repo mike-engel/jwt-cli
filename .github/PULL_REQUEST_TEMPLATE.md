@@ -8,6 +8,7 @@ Here's a list of things to check before getting a review. I look forward to revi
 
 
 ### Preflight checklist
-- [ ] Code formatted with rustfmt
+- [ ] Code formatted rustfmt (`$ cargo fmt`)
+- [ ] Code linter check with clippy (`$ cargo clippy`)
 - [ ] Relevant tests added
 - [ ] Any new documentation added
