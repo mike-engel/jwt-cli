@@ -539,7 +539,7 @@ mod tests {
         let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
         let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
         let encoded_token = encode_token(&encode_arguments).unwrap();
-        println!("enc {}", encoded_token);
+        println!("enc {encoded_token}");
         let decode_matcher = App::command()
             .try_get_matches_from(vec![
                 "jwt",
@@ -725,7 +725,7 @@ mod tests {
                 "decode",
                 "-S",
                 secret,
-                &out_content_str.unwrap(),
+                out_content_str.unwrap(),
                 "-o",
                 json_path.to_str().unwrap(),
             ])
@@ -755,7 +755,7 @@ mod tests {
         let json_result: JsonResult<TokenOutput> = serde_json::from_str(json_content_str.unwrap());
         assert!(json_result.is_ok());
         let json = json_result.unwrap();
-        println!("json: {:#?}", json);
+        println!("json: {json:#?}");
 
         let TokenOutput { header, payload } = json;
         assert_eq!(header.alg, Algorithm::HS256);

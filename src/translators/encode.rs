@@ -124,14 +124,14 @@ pub fn print_encoded_token(
         }
         (None, Ok(jwt)) => {
             if atty::is(Stream::Stdout) {
-                println!("{}", jwt);
+                println!("{jwt}");
             } else {
-                print!("{}", jwt);
+                print!("{jwt}");
             };
         }
         (_, Err(err)) => {
             bunt::eprintln!("{$red+bold}Something went awry creating the jwt{/$}\n");
-            eprintln!("{}", err);
+            eprintln!("{err}");
             return Err(err);
         }
     }
