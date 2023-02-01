@@ -25,7 +25,7 @@ impl PayloadItem {
         match val {
             Some(value) => match from_str(value) {
                 Ok(json_value) => Some(PayloadItem(name.to_string(), json_value)),
-                Err(_) => match from_str(format!("\"{}\"", value).as_str()) {
+                Err(_) => match from_str(format!("\"{value}\"").as_str()) {
                     Ok(json_value) => Some(PayloadItem(name.to_string(), json_value)),
                     Err(_) => None,
                 },
