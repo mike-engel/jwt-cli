@@ -56,7 +56,14 @@ pub fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
                 false => Ok(EncodingKey::from_ec_der(&secret)),
             }
         }
-        Algorithm::EdDSA => panic!("EdDSA is not implemented yet"),
+        Algorithm::EdDSA => {
+            let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
+
+            match secret_string.ends_with(".pem") {
+                true => EncodingKey::from_ed_pem(&secret),
+                false => Ok(EncodingKey::from_ed_der(&secret)),
+            }
+        }
     }
 }
 

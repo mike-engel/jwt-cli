@@ -5,6 +5,7 @@
 - Update from jsonwebtoken 7 to 8
 - Add Macports installation info #231
 - Remove Gofish installation info. See #228
+- Adds support for EdDSA algo
 
 # 5.0.3
 

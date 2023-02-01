@@ -70,7 +70,12 @@ pub fn decoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
             }
         }
         Algorithm::EdDSA => {
-            panic!("EdDSA is not implemented yet!");
+            let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
+
+            match secret_string.ends_with(".pem") {
+                true => DecodingKey::from_ed_pem(&secret),
+                false => Ok(DecodingKey::from_ed_der(&secret)),
+            }
         }
     }
 }
