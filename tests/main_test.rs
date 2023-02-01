@@ -650,8 +650,6 @@ mod tests {
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
         let (result, _, _) = decode_token(&decode_arguments);
 
-        dbg!(&result);
-
         assert!(result.is_ok());
     }
 
