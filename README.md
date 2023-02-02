@@ -59,6 +59,14 @@ pkg install jwt-cli
 
 Big thanks to Sergey Osokin, the FreeBSD contributor who added `jwt-cli` to the FreeBSD ports tree!
 
+## Scoop
+
+`jwt-cli` is available on the Scoop main [repository](https://github.com/ScoopInstaller/Main/blob/master/bucket/jwt-cli.json) for Windows.
+
+```sh
+scoop install jwt-cli
+```
+
 ## Arch Linux
 
 `jwt-cli` is available in the Arch Linux [community repository](https://archlinux.org/packages/community/x86_64/jwt-cli/) and can be installed via [pacman](https://wiki.archlinux.org/title/Pacman):
