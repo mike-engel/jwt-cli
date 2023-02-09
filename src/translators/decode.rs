@@ -1,9 +1,9 @@
 use crate::cli_config::{translate_algorithm, DecodeArgs};
 use crate::translators::Payload;
-use crate::utils::{slurp_file, write_file};
+use crate::utils::{slurp_file, write_file, JWTError, JWTResult};
 use base64::engine::general_purpose::STANDARD as base64_engine;
 use base64::Engine as _;
-use jsonwebtoken::errors::{ErrorKind, Result as JWTResult};
+use jsonwebtoken::errors::ErrorKind;
 use jsonwebtoken::{decode, Algorithm, DecodingKey, Header, TokenData, Validation};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
@@ -54,26 +54,50 @@ pub fn decoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
         | Algorithm::PS256
         | Algorithm::PS384
         | Algorithm::PS512 => {
+            if !&secret_string.starts_with('@') {
+                return Err(JWTError::Internal(format!(
+                    "Secret for {alg:?} must be a file path starting with @",
+                )));
+            }
+
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
             match secret_string.ends_with(".pem") {
-                true => DecodingKey::from_rsa_pem(&secret),
+                true => {
+                    DecodingKey::from_rsa_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
+                }
                 false => Ok(DecodingKey::from_rsa_der(&secret)),
             }
         }
         Algorithm::ES256 | Algorithm::ES384 => {
+            if !&secret_string.starts_with('@') {
+                return Err(JWTError::Internal(format!(
+                    "Secret for {alg:?} must be a file path starting with @",
+                )));
+            }
+
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
             match secret_string.ends_with(".pem") {
-                true => DecodingKey::from_ec_pem(&secret),
+                true => {
+                    DecodingKey::from_ec_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
+                }
                 false => Ok(DecodingKey::from_ec_der(&secret)),
             }
         }
         Algorithm::EdDSA => {
+            if !&secret_string.starts_with('@') {
+                return Err(JWTError::Internal(format!(
+                    "Secret for {alg:?} must be a file path starting with @",
+                )));
+            }
+
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
             match secret_string.ends_with(".pem") {
-                true => DecodingKey::from_ed_pem(&secret),
+                true => {
+                    DecodingKey::from_ed_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
+                }
                 false => Ok(DecodingKey::from_ed_der(&secret)),
             }
         }
@@ -125,8 +149,9 @@ pub fn decode_token(
     insecure_validator.required_spec_claims = HashSet::new();
     insecure_validator.validate_exp = false;
 
-    let token_data =
-        decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator).map(|mut token| {
+    let token_data = decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator)
+        .map_err(jsonwebtoken::errors::Error::into)
+        .map(|mut token| {
             if arguments.iso_dates {
                 token.claims.convert_timestamps();
             }
@@ -136,8 +161,11 @@ pub fn decode_token(
 
     (
         match secret {
-            Some(secret_key) => decode::<Payload>(&jwt, &secret_key.unwrap(), &secret_validator),
-            None => decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator),
+            Some(Ok(secret_key)) => decode::<Payload>(&jwt, &secret_key, &secret_validator)
+                .map_err(jsonwebtoken::errors::Error::into),
+            Some(Err(err)) => Err(err),
+            None => decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator)
+                .map_err(jsonwebtoken::errors::Error::into),
         },
         token_data,
         if arguments.json {
@@ -155,49 +183,54 @@ pub fn print_decoded_token(
     output_path: &Option<PathBuf>,
 ) -> JWTResult<()> {
     if let Err(err) = &validated_token {
-        match err.kind() {
-            ErrorKind::InvalidToken => {
-                bunt::println!("{$red+bold}The JWT provided is invalid{/$}")
+        match err {
+            JWTError::External(ext_err) => {
+                match ext_err.kind() {
+                    ErrorKind::InvalidToken => {
+                        bunt::println!("{$red+bold}The JWT provided is invalid{/$}")
+                    }
+                    ErrorKind::InvalidSignature => {
+                        bunt::eprintln!("{$red+bold}The JWT provided has an invalid signature{/$}")
+                    }
+                    ErrorKind::InvalidRsaKey(_) => {
+                        bunt::eprintln!("{$red+bold}The secret provided isn't a valid RSA key{/$}")
+                    }
+                    ErrorKind::InvalidEcdsaKey => {
+                        bunt::eprintln!("{$red+bold}The secret provided isn't a valid ECDSA key{/$}")
+                    }
+                    ErrorKind::MissingRequiredClaim(missing) => {
+                        if missing.as_str() == "exp" {
+                            bunt::eprintln!("{$red+bold}`exp` is missing, but is required. This error can be ignored via the `--ignore-exp` parameter.{/$}")
+                        } else {
+                            bunt::eprintln!("{$red+bold}`{:?}` is missing, but is required{/$}", missing)
+                        }
+                    }
+                    ErrorKind::ExpiredSignature => {
+                        bunt::eprintln!("{$red+bold}The token has expired (or the `exp` claim is not set). This error can be ignored via the `--ignore-exp` parameter.{/$}")
+                    }
+                    ErrorKind::InvalidIssuer => {
+                        bunt::println!("{$red+bold}The token issuer is invalid{/$}")
+                    }
+                    ErrorKind::InvalidAudience => {
+                        bunt::eprintln!("{$red+bold}The token audience doesn't match the subject{/$}")
+                    }
+                    ErrorKind::InvalidSubject => {
+                        bunt::eprintln!("{$red+bold}The token subject doesn't match the audience{/$}")
+                    }
+                    ErrorKind::ImmatureSignature => bunt::eprintln!(
+                        "{$red+bold}The `nbf` claim is in the future which isn't allowed{/$}"
+                    ),
+                    ErrorKind::InvalidAlgorithm => bunt::eprintln!(
+                        "{$red+bold}The JWT provided has a different signing algorithm than the one you \
+                                             provided{/$}",
+                    ),
+                    _ => bunt::eprintln!(
+                        "{$red+bold}The JWT provided is invalid because{/$} {:?}",
+                        err
+                    ),
+                };
             }
-            ErrorKind::InvalidSignature => {
-                bunt::eprintln!("{$red+bold}The JWT provided has an invalid signature{/$}")
-            }
-            ErrorKind::InvalidRsaKey(_) => {
-                bunt::eprintln!("{$red+bold}The secret provided isn't a valid RSA key{/$}")
-            }
-            ErrorKind::InvalidEcdsaKey => {
-                bunt::eprintln!("{$red+bold}The secret provided isn't a valid ECDSA key{/$}")
-            }
-            ErrorKind::MissingRequiredClaim(missing) => {
-                if missing.as_str() == "exp" {
-                    bunt::eprintln!("{$red+bold}`exp` is missing, but is required. This error can be ignored via the `--ignore-exp` parameter.{/$}")
-                } else {
-                    bunt::eprintln!("{$red+bold}`{:?}` is missing, but is required{/$}", missing)
-                }
-            }
-            ErrorKind::ExpiredSignature => {
-                bunt::eprintln!("{$red+bold}The token has expired (or the `exp` claim is not set). This error can be ignored via the `--ignore-exp` parameter.{/$}")
-            }
-            ErrorKind::InvalidIssuer => {
-                bunt::println!("{$red+bold}The token issuer is invalid{/$}")
-            }
-            ErrorKind::InvalidAudience => {
-                bunt::eprintln!("{$red+bold}The token audience doesn't match the subject{/$}")
-            }
-            ErrorKind::InvalidSubject => {
-                bunt::eprintln!("{$red+bold}The token subject doesn't match the audience{/$}")
-            }
-            ErrorKind::ImmatureSignature => bunt::eprintln!(
-                "{$red+bold}The `nbf` claim is in the future which isn't allowed{/$}"
-            ),
-            ErrorKind::InvalidAlgorithm => bunt::eprintln!(
-                "{$red+bold}The JWT provided has a different signing algorithm than the one you \
-									 provided{/$}",
-            ),
-            _ => bunt::eprintln!(
-                "{$red+bold}The JWT provided is invalid because{/$} {:?}",
-                err
-            ),
+            JWTError::Internal(int_err) => bunt::eprintln!("{$red+bold}{:?}{/$}", int_err),
         };
         return Err(validated_token.err().unwrap());
     }

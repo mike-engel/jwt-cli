@@ -580,6 +580,49 @@ mod tests {
     }
 
     #[test]
+    fn returns_error_when_file_format_is_wrong_during_encode() {
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "PS256",
+                "--exp",
+                "-S",
+                "./tests/private_rsa_key.der",
+                &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments);
+
+        assert!(encoded_token.is_err());
+    }
+
+    #[test]
+    fn returns_error_when_file_format_is_wrong_during_decode() {
+        let token: String = "eyJ0eXAiOiJKV1QiLCJhbGciOiJQUzUxMiJ9.eyJmaWVsZCI6InZhbHVlIiwiaWF0IjoxNjI1OTMxNjAwLCJleHAiOjkwMDAwMDAwMDB9.Tt1siDczvVAi89dH8QqTZ_n5Ejz4gAIzVLqucWN5tEqdAVRdWgP8psuRFdC8RKIn1Lp4OsUkAA7NJ79cZt32Eewy84hTYrCgZZ9mcWg5IfXPHcZmTUm6qSyKqANdsnRWThbG3IJSX1D6obI5Y91NhVI5PTRg8sFlDAXaNN9ZVTmAtZXj0b5-MgsjiRqWMW3xi9xQqTxvb5VN37Oot-KDWZXjkO022ixshzFWu8Jt582uMD4qYRp1d0VldgyGO_viDqqk8qTqNA7soUKWyDds0emuecE_bDMeELMfxMR-A1pQeu3FgEhliazIAdXJMNlwRuJG8znLNqCK1nB2Nd8sUQ".to_string();
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "./tests/public_rsa_key.der",
+                "-A",
+                "PS512",
+                &token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn encodes_and_decodes_an_ecdsa_token_using_key_from_file() {
         let body: String = "{\"field\":\"value\"}".to_string();
         let encode_matcher = App::command()

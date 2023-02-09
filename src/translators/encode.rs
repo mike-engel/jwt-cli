@@ -1,11 +1,10 @@
 use crate::cli_config::{translate_algorithm, EncodeArgs};
 use crate::translators::{Payload, PayloadItem};
-use crate::utils::{slurp_file, write_file};
+use crate::utils::{slurp_file, write_file, JWTError, JWTResult};
 use atty::Stream;
 use base64::engine::general_purpose::STANDARD as base64_engine;
 use base64::Engine as _;
 use chrono::Utc;
-use jsonwebtoken::errors::Result as JWTResult;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde_json::{from_str, Value};
 use std::io;
@@ -41,26 +40,50 @@ pub fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
         | Algorithm::PS256
         | Algorithm::PS384
         | Algorithm::PS512 => {
+            if !&secret_string.starts_with('@') {
+                return Err(JWTError::Internal(format!(
+                    "Secret for {alg:?} must be a file path starting with @",
+                )));
+            }
+
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
             match secret_string.ends_with(".pem") {
-                true => EncodingKey::from_rsa_pem(&secret),
+                true => {
+                    EncodingKey::from_rsa_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
+                }
                 false => Ok(EncodingKey::from_rsa_der(&secret)),
             }
         }
         Algorithm::ES256 | Algorithm::ES384 => {
+            if !&secret_string.starts_with('@') {
+                return Err(JWTError::Internal(format!(
+                    "Secret for {alg:?} must be a file path starting with @"
+                )));
+            }
+
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
             match secret_string.ends_with(".pem") {
-                true => EncodingKey::from_ec_pem(&secret),
+                true => {
+                    EncodingKey::from_ec_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
+                }
                 false => Ok(EncodingKey::from_ec_der(&secret)),
             }
         }
         Algorithm::EdDSA => {
+            if !&secret_string.starts_with('@') {
+                return Err(JWTError::Internal(format!(
+                    "Secret for {alg:?} must be a file path starting with @",
+                )));
+            }
+
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
             match secret_string.ends_with(".pem") {
-                true => EncodingKey::from_ed_pem(&secret),
+                true => {
+                    EncodingKey::from_ed_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
+                }
                 false => Ok(EncodingKey::from_ed_der(&secret)),
             }
         }
@@ -116,8 +139,9 @@ pub fn encode_token(arguments: &EncodeArgs) -> JWTResult<String> {
     let payloads = maybe_payloads.into_iter().flatten().collect();
     let Payload(claims) = Payload::from_payloads(payloads);
 
-    encoding_key_from_secret(&algorithm, &arguments.secret)
-        .and_then(|secret| encode(&header, &claims, &secret))
+    encoding_key_from_secret(&algorithm, &arguments.secret).and_then(|secret| {
+        encode(&header, &claims, &secret).map_err(jsonwebtoken::errors::Error::into)
+    })
 }
 
 pub fn print_encoded_token(
