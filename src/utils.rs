@@ -1,5 +1,29 @@
+use std::fmt;
 use std::fs;
 use std::path::Path;
+
+#[derive(Debug, Clone, Eq, PartialEq)]
+pub enum JWTError {
+    Internal(String),
+    External(jsonwebtoken::errors::Error),
+}
+
+pub type JWTResult<T> = Result<T, JWTError>;
+
+impl From<jsonwebtoken::errors::Error> for JWTError {
+    fn from(value: jsonwebtoken::errors::Error) -> Self {
+        JWTError::External(value)
+    }
+}
+
+impl fmt::Display for JWTError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            JWTError::Internal(err) => write!(f, "{err}"),
+            JWTError::External(err) => write!(f, "{err}"),
+        }
+    }
+}
 
 pub fn slurp_file(file_name: &str) -> Vec<u8> {
     fs::read(file_name).unwrap_or_else(|_| panic!("Unable to read file {file_name}"))
