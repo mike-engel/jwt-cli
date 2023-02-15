@@ -657,7 +657,7 @@ mod tests {
     }
 
     #[test]
-    fn shows_timestamps_as_iso_dates() {
+    fn shows_timestamps_as_dates() {
         let exp = (Utc::now() + Duration::minutes(60)).timestamp();
         let nbf = Utc::now().timestamp();
         let encode_matcher = App::command()
@@ -680,7 +680,7 @@ mod tests {
                 "decode",
                 "-S",
                 "1234567890",
-                "--iso8601",
+                "--date",
                 &encoded_token,
             ])
             .unwrap();
@@ -804,7 +804,7 @@ mod tests {
     }
 
     #[test]
-    fn shows_timestamps_as_iso_dates_with_local_offset() {
+    fn shows_timestamps_as_dates_with_local_offset() {
         let exp = (Utc::now() + Duration::minutes(60)).timestamp();
         let nbf = Utc::now().timestamp();
         let encode_matcher = App::command()
@@ -857,7 +857,7 @@ mod tests {
     }
 
     #[test]
-    fn shows_timestamps_as_iso_dates_with_fixed_offset() {
+    fn shows_timestamps_as_dates_with_fixed_offset() {
         let exp = (Utc::now() + Duration::minutes(60)).timestamp();
         let nbf = Utc::now().timestamp();
         let encode_matcher = App::command()

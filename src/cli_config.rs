@@ -127,12 +127,6 @@ pub struct DecodeArgs {
     #[clap(default_missing_value = "UTC")]
     pub time_format: Option<TimeFormat>,
 
-    /// Display unix timestamps as ISO 8601 dates in UTC.
-    /// Use --date for finer control
-    #[clap(long = "iso8601")]
-    #[clap(value_parser)]
-    pub iso_dates: bool,
-
     /// The secret to validate the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes
     #[clap(long = "secret", short = 'S')]
     #[clap(default_value = "")]
