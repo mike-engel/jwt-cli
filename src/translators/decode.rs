@@ -152,8 +152,10 @@ pub fn decode_token(
     let token_data = decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator)
         .map_err(jsonwebtoken::errors::Error::into)
         .map(|mut token| {
-            if arguments.iso_dates {
-                token.claims.convert_timestamps();
+            if arguments.time_format.is_some() {
+                token
+                    .claims
+                    .convert_timestamps(arguments.time_format.unwrap_or(super::TimeFormat::UTC));
             }
 
             token

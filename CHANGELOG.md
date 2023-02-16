@@ -6,6 +6,7 @@
 - Add Macports installation info #231
 - Remove Gofish installation info. See #228
 - Adds support for EdDSA algo
+- Added `--date` argument to change the display format of the timestamps
 
 # 5.0.3
 
