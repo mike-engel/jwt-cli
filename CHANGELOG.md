@@ -1,12 +1,32 @@
 # Unreleased
 
+# 6.0.0
+
+> 2023-06-22
+
+#### BREAKING
+
 - [BREAKING] Update from clap 3 to clap 4.
   This forces the use of `--exp`/`-e` to require an `=` sign, which was not required before. This means that when you used to be able to write `--exp +365d`, you must now write `--exp=+365d`. This is only required for this flag.
-- Update from jsonwebtoken 7 to 8
+
+#### New features
+
+- Added `--out` argument to save output to a file #221
+- Added support for EdDSA #238
+- Added `--date` argument to change the display format of the timestamps #235
+- Added `--no-typ` argument to prevent `typ` from being added to the header
+- Add Scoop installation info #241
 - Add Macports installation info #231
+
+#### Changes
+
+- Dependency updates
 - Remove Gofish installation info. See #228
-- Adds support for EdDSA algo
-- Added `--date` argument to change the display format of the timestamps
+- Update from jsonwebtoken 7 to 8
+
+#### Fixes
+
+- Added better error handling for improper secret and algorithm combinations
 
 # 5.0.3
 
