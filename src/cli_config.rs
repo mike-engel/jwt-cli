@@ -92,6 +92,11 @@ pub struct EncodeArgs {
     #[clap(value_parser)]
     pub no_iat: bool,
 
+    /// prevent typ from being added to the header
+    #[clap(long)]
+    #[clap(value_parser)]
+    pub no_typ: bool,
+
     /// the secret to sign the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes
     #[clap(long, short = 'S')]
     #[clap(value_parser)]

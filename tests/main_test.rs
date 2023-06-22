@@ -215,6 +215,36 @@ mod tests {
     }
 
     #[test]
+    fn allows_for_a_no_typ() {
+        let exp = (Utc::now() + Duration::minutes(60)).timestamp();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "--no-typ",
+                "-S",
+                "1234567890",
+                &format!("-e={}", &exp.to_string()),
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec!["jwt", "decode", "-S", "1234567890", &encoded_token])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (decoded_token, _, _) = decode_token(&decode_arguments);
+
+        assert!(decoded_token.is_ok());
+
+        let TokenData { claims: _, header } = decoded_token.unwrap();
+
+        assert!(header.typ.is_none());
+    }
+
+    #[test]
     fn returns_error_when_exp_is_not_set() {
         let encode_matcher = App::command()
             .try_get_matches_from(vec!["jwt", "encode", "-S", "1234567890"])

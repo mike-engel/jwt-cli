@@ -10,10 +10,14 @@ use serde_json::{from_str, Value};
 use std::io;
 use std::path::PathBuf;
 
-fn create_header(alg: Algorithm, kid: Option<&String>) -> Header {
+fn create_header(alg: Algorithm, kid: Option<&String>, no_typ: bool) -> Header {
     let mut header = Header::new(alg);
 
     header.kid = kid.map(|k| k.to_owned());
+
+    if no_typ {
+        header.typ = None;
+    }
 
     header
 }
@@ -92,7 +96,7 @@ pub fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
 
 pub fn encode_token(arguments: &EncodeArgs) -> JWTResult<String> {
     let algorithm = translate_algorithm(&arguments.algorithm);
-    let header = create_header(algorithm, arguments.kid.as_ref());
+    let header = create_header(algorithm, arguments.kid.as_ref(), arguments.no_typ);
     let custom_payloads = arguments.payload.clone();
     let custom_payload = arguments
         .json
@@ -177,7 +181,7 @@ mod tests {
     fn creates_jwt_header_with_kid() {
         let algorithm = Algorithm::HS256;
         let kid = String::from("yolo");
-        let result = create_header(algorithm, Some(&kid));
+        let result = create_header(algorithm, Some(&kid), false);
         let mut expected = Header::new(algorithm);
 
         expected.kid = Some(kid);
@@ -189,10 +193,23 @@ mod tests {
     fn creates_jwt_header_without_kid() {
         let algorithm = Algorithm::HS256;
         let kid = None;
-        let result = create_header(algorithm, kid);
+        let result = create_header(algorithm, kid, false);
         let mut expected = Header::new(algorithm);
 
         expected.kid = kid.map(|k| k.to_string());
+
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn creates_jwt_header_without_typ() {
+        let algorithm = Algorithm::HS256;
+        let kid = None;
+        let result = create_header(algorithm, kid, true);
+        let mut expected = Header::new(algorithm);
+
+        expected.kid = kid.map(|k| k.to_string());
+        expected.typ = None;
 
         assert_eq!(result, expected);
     }
