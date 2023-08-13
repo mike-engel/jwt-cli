@@ -107,6 +107,10 @@ It's useful when you're dealing with a chain of shell commands that produce a JW
 curl <auth API> | jq -r .access_token | jwt decode -
 ```
 
+## Using elliptic curve keys
+
+Currently the underlying token encoding and decoding library, [`jsonwebtoken`](https://github.com/Keats/jsonwebtoken), doesn't support the SEC1 private key format and requires a conversion to the PKCS8 type. You can read more from [their own README](https://github.com/Keats/jsonwebtoken/blob/8fba79b25459eacc33a80e1ee37ff8eba64079ca/README.md#convert-sec1-private-key-to-pkcs8).
+
 # Contributing
 
 I welcome all issues and pull requests! This is my first project in rust, so this project almost certainly could be better written. All I ask is that you follow the [code of conduct](code_of_conduct.md) and use [rustfmt](https://github.com/rust-lang-nursery/rustfmt) to have a consistent project code style.
