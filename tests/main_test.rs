@@ -1013,4 +1013,26 @@ mod tests {
 
         assert_eq!(decode_arguments.time_format, Some(TimeFormat::UTC));
     }
+
+    #[test]
+    fn keeps_payload_order() {
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "--no-iat",
+                "--keep-payload-order",
+                "-S",
+                "1234567890",
+                "--payload",
+                "z=123",
+                "--payload",
+                "a=123",
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        assert_eq!(encoded_token.as_str(), "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ6IjoxMjMsImEiOjEyM30.kvofE3KpCVQWpvrgx87u9LxjV-AK9bsVmS-Oddbz1Qg")
+    }
 }
