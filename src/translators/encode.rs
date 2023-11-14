@@ -141,14 +141,11 @@ pub fn encode_token(arguments: &EncodeArgs) -> JWTResult<String> {
     maybe_payloads.append(&mut custom_payload.unwrap_or_default());
 
     let payloads = maybe_payloads.into_iter().flatten().collect();
-    let claims: Claims;
-    match arguments.keep_payload_order {
-        true => {
-            claims = Claims::OrderKept(payloads);
-        }
+    let claims = match arguments.keep_payload_order {
+        true => Claims::OrderKept(payloads),
         false => {
             let Payload(_claims) = Payload::from_payloads(payloads);
-            claims = Claims::Reordered(_claims);
+            Claims::Reordered(_claims)
         }
     };
 
