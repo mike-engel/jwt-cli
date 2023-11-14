@@ -1,6 +1,8 @@
 use crate::utils::parse_duration_string;
 use chrono::{FixedOffset, Local, TimeZone, Utc};
 use clap::ValueEnum;
+use serde::ser::SerializeMap;
+use serde::{Serialize as CustomSerialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::{from_str, Value};
 use std::collections::BTreeMap;
@@ -13,6 +15,30 @@ pub struct PayloadItem(pub String, pub Value);
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
 pub struct Payload(pub BTreeMap<String, Value>);
+
+#[derive(Debug, Deserialize, PartialEq, Eq)]
+pub enum Claims {
+    Reordered(BTreeMap<String, Value>),
+    OrderKept(Vec<PayloadItem>),
+}
+
+impl CustomSerialize for Claims {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match self {
+            Claims::Reordered(claims) => claims.serialize(serializer),
+            Claims::OrderKept(claims) => {
+                let mut map = serializer.serialize_map(Some(claims.len()))?;
+                for e in claims {
+                    map.serialize_entry(&e.0, &e.1)?;
+                }
+                map.end()
+            }
+        }
+    }
+}
 
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug, Clone, ValueEnum)]

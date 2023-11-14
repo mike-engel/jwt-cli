@@ -106,6 +106,11 @@ pub struct EncodeArgs {
     #[clap(long = "out", short = 'o')]
     #[clap(value_parser)]
     pub output_path: Option<PathBuf>,
+
+    /// prevent re-ordering of payload keys
+    #[clap(long)]
+    #[clap(value_parser)]
+    pub keep_payload_order: bool,
 }
 
 #[derive(Debug, Clone, Parser)]

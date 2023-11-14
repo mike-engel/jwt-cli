@@ -1,5 +1,5 @@
 use crate::cli_config::{translate_algorithm, EncodeArgs};
-use crate::translators::{Payload, PayloadItem};
+use crate::translators::{Claims, Payload, PayloadItem};
 use crate::utils::{slurp_file, write_file, JWTError, JWTResult};
 use atty::Stream;
 use base64::engine::general_purpose::STANDARD as base64_engine;
@@ -141,7 +141,16 @@ pub fn encode_token(arguments: &EncodeArgs) -> JWTResult<String> {
     maybe_payloads.append(&mut custom_payload.unwrap_or_default());
 
     let payloads = maybe_payloads.into_iter().flatten().collect();
-    let Payload(claims) = Payload::from_payloads(payloads);
+    let claims: Claims;
+    match arguments.keep_payload_order {
+        true => {
+            claims = Claims::OrderKept(payloads);
+        }
+        false => {
+            let Payload(_claims) = Payload::from_payloads(payloads);
+            claims = Claims::Reordered(_claims);
+        }
+    };
 
     encoding_key_from_secret(&algorithm, &arguments.secret).and_then(|secret| {
         encode(&header, &claims, &secret).map_err(jsonwebtoken::errors::Error::into)
