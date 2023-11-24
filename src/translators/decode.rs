@@ -4,7 +4,9 @@ use crate::utils::{slurp_file, write_file, JWTError, JWTResult};
 use base64::engine::general_purpose::STANDARD as base64_engine;
 use base64::Engine as _;
 use jsonwebtoken::errors::ErrorKind;
-use jsonwebtoken::{decode, Algorithm, DecodingKey, Header, TokenData, Validation};
+use jsonwebtoken::{
+    decode, decode_header, jwk, Algorithm, DecodingKey, Header, TokenData, Validation,
+};
 use serde_derive::{Deserialize, Serialize};
 use serde_json::to_string_pretty;
 use std::collections::HashSet;
@@ -32,7 +34,11 @@ impl TokenOutput {
     }
 }
 
-pub fn decoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResult<DecodingKey> {
+pub fn decoding_key_from_secret(
+    alg: &Algorithm,
+    secret_string: &str,
+    header: Option<Header>,
+) -> JWTResult<DecodingKey> {
     match alg {
         Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
             if secret_string.starts_with('@') {
@@ -55,18 +61,19 @@ pub fn decoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
         | Algorithm::PS384
         | Algorithm::PS512 => {
             if !&secret_string.starts_with('@') {
-                return Err(JWTError::Internal(format!(
-                    "Secret for {alg:?} must be a file path starting with @",
-                )));
+                // allows to read JWKS from argument (e.g. output of 'curl https://auth.domain.com/jwks.json')
+                let secret = secret_string.as_bytes().to_vec();
+                return decoding_key_from_jwks_secret(&secret, header);
             }
 
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
-            match secret_string.ends_with(".pem") {
-                true => {
-                    DecodingKey::from_rsa_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
-                }
-                false => Ok(DecodingKey::from_rsa_der(&secret)),
+            if secret_string.ends_with(".pem") {
+                DecodingKey::from_rsa_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
+            } else if secret_string.ends_with(".json") {
+                return decoding_key_from_jwks_secret(&secret, header);
+            } else {
+                Ok(DecodingKey::from_rsa_der(&secret))
             }
         }
         Algorithm::ES256 | Algorithm::ES384 => {
@@ -78,29 +85,82 @@ pub fn decoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
 
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
-            match secret_string.ends_with(".pem") {
-                true => {
-                    DecodingKey::from_ec_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
-                }
-                false => Ok(DecodingKey::from_ec_der(&secret)),
+            if secret_string.ends_with(".pem") {
+                DecodingKey::from_ec_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
+            } else if secret_string.ends_with(".json") {
+                return decoding_key_from_jwks_secret(&secret, header);
+            } else {
+                Ok(DecodingKey::from_ec_der(&secret))
             }
         }
         Algorithm::EdDSA => {
             if !&secret_string.starts_with('@') {
-                return Err(JWTError::Internal(format!(
-                    "Secret for {alg:?} must be a file path starting with @",
-                )));
+                // allows to read JWKS from argument (e.g. output of 'curl https://auth.domain.com/jwks.json')
+                let secret = secret_string.as_bytes().to_vec();
+                return decoding_key_from_jwks_secret(&secret, header);
             }
 
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
 
-            match secret_string.ends_with(".pem") {
-                true => {
-                    DecodingKey::from_ed_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
-                }
-                false => Ok(DecodingKey::from_ed_der(&secret)),
+            if secret_string.ends_with(".pem") {
+                DecodingKey::from_ed_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
+            } else if secret_string.ends_with(".json") {
+                return Err(JWTError::Internal(format!(
+                    "JWKS secret not supported for {alg:?}"
+                )));
+            } else {
+                Ok(DecodingKey::from_ed_der(&secret))
             }
         }
+    }
+}
+
+pub fn decoding_key_from_jwks_secret(
+    secret: &[u8],
+    header: Option<Header>,
+) -> JWTResult<DecodingKey> {
+    if let Some(h) = header {
+        return match parse_jwks(secret) {
+            Some(jwks) => decoding_key_from_jwks(jwks, &h),
+            None => Err(JWTError::Internal("Invalid jwks format".to_string())),
+        };
+    }
+    Err(JWTError::Internal("Invalid jwt header".to_string()))
+}
+
+pub fn decoding_key_from_jwks(jwks: jwk::JwkSet, header: &Header) -> JWTResult<DecodingKey> {
+    let kid = match &header.kid {
+        Some(k) => k.to_owned(),
+        None => {
+            return Err(JWTError::Internal(
+                "Missing 'kid' from jwt header".to_string(),
+            ));
+        }
+    };
+
+    let j = match jwks.find(&kid) {
+        Some(j) => j,
+        None => {
+            return Err(JWTError::Internal(format!(
+                "No jwk found for 'kid' {kid:?}",
+            )));
+        }
+    };
+
+    match &j.algorithm {
+        jwk::AlgorithmParameters::RSA(rsa) => DecodingKey::from_rsa_components(&rsa.n, &rsa.e)
+            .map_err(jsonwebtoken::errors::Error::into),
+        jwk::AlgorithmParameters::EllipticCurve(ec) => {
+            DecodingKey::from_ec_components(&ec.x, &ec.y).map_err(jsonwebtoken::errors::Error::into)
+        }
+        _ => Err(JWTError::Internal("Unsupported alg".to_string())),
+    }
+}
+
+pub fn parse_jwks(secret: &[u8]) -> Option<jwk::JwkSet> {
+    match serde_json::from_slice(secret) {
+        Ok(jwks) => Some(jwks),
+        Err(_) => None,
     }
 }
 
@@ -112,10 +172,6 @@ pub fn decode_token(
     OutputFormat,
 ) {
     let algorithm = translate_algorithm(&arguments.algorithm);
-    let secret = match arguments.secret.len() {
-        0 => None,
-        _ => Some(decoding_key_from_secret(&algorithm, &arguments.secret)),
-    };
     let jwt = match arguments.jwt.as_str() {
         "-" => {
             let mut buffer = String::new();
@@ -130,6 +186,20 @@ pub fn decode_token(
     }
     .trim()
     .to_owned();
+
+    let header = match decode_header(&jwt) {
+        Ok(header) => Some(header),
+        Err(_) => None,
+    };
+
+    let secret = match arguments.secret.len() {
+        0 => None,
+        _ => Some(decoding_key_from_secret(
+            &algorithm,
+            &arguments.secret,
+            header,
+        )),
+    };
 
     let mut secret_validator = Validation::new(algorithm);
 

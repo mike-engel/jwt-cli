@@ -613,6 +613,67 @@ mod tests {
     }
 
     #[test]
+    fn encode_and_decodes_an_rsa_token_using_jwks_file() {
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "RS256",
+                "--kid",
+                "2caFcPx-aXaC6SevhV79UDIrs8LgUok2xo0A6DJPqJo",
+                "--exp",
+                "-S",
+                "@./tests/private_rsa_key.der",
+                &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "@./tests/pub_rsa_jwks.json",
+                "-A",
+                "RS256",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn decodes_an_rsa_ssa_pss_token_using_jwks_secret() {
+        let jwks = r#"{"keys":[{"use":"sig","kty":"RSA","kid":"2caFcPx-aXaC6SevhV79UDIrs8LgUok2xo0A6DJPqJo","n":"589r2P-JpeFPkH2T8-SBw7ttzHPPlVzqJwb_fcXJl8MGZ_7Jkt8k58Ukgp3cgRdChDNlnrFeXu1wSwU47Mf_o9bBLVQbNCJ7uL-vQYdFwzEipqHusywJ-Qm5qpJyWO5f2hXMHnomZ1KZW4isg7g1kvynUznlSwU25wNUvRurRImxigT2ohmZzHf37n51zyzci5JZxneOojcyfXdhDWtRGuSbREW3XZqKnJbUOK9HqosrgidbFZil3j2uf4br7DLtdlZMJ4JzTE_ZX273el_uv_XFg-OuHvgdBHtgzN9rkKapkPyUT0BsWfOPyjEtrjzdAAiFQfuwhwIWQPidzBUKtw","e":"AQAB"},{"use":"enc","kty":"RSA","kid":"2caFcPx-aXaC6SevhV79UDIrs8LgUok2xo0A6DJPqJo","n":"589r2P-JpeFPkH2T8-SBw7ttzHPPlVzqJwb_fcXJl8MGZ_7Jkt8k58Ukgp3cgRdChDNlnrFeXu1wSwU47Mf_o9bBLVQbNCJ7uL-vQYdFwzEipqHusywJ-Qm5qpJyWO5f2hXMHnomZ1KZW4isg7g1kvynUznlSwU25wNUvRurRImxigT2ohmZzHf37n51zyzci5JZxneOojcyfXdhDWtRGuSbREW3XZqKnJbUOK9HqosrgidbFZil3j2uf4br7DLtdlZMJ4JzTE_ZX273el_uv_XFg-OuHvgdBHtgzN9rkKapkPyUT0BsWfOPyjEtrjzdAAiFQfuwhwIWQPidzBUKtw","e":"AQAB"}]}"#;
+        let token: String = "eyJ0eXAiOiJKV1QiLCJraWQiOiIyY2FGY1B4LWFYYUM2U2V2aFY3OVVESXJzOExnVW9rMnhvMEE2REpQcUpvIiwiYWxnIjoiUFM1MTIifQ.eyJmaWVsZCI6InZhbHVlIiwiZm9vIjoiYmFyIn0.O6r-pK6rDw0BAadqJmBivtjk7ELU2pYpKIOU7qD8rah9mzwm29A0KoCoOabtQCkKNcmlcIKoC812UrP_nDZrAsC1msHPfjvkKlbkX63_zEcRCv-6VC1FMuek8yY6mhKiFaTISPDBfHCg_Fru2BDar_qBJn8rtct9y6cgDA5vLvL81jLmJrCXW8C5wP9xrkG5CUXdW9A8fqtxcEDoNZoYUoxCnLkh3Pz5IfAluepqDYjj6kvMWuAC88K1B_a1Z8QTqCuJZNIj_5g6UExmK7pqKvB5RZo62KGTw8wWqkmaPTf4TnD4n3Rb1K-MN1LTWMySqgPaw5YlSxT2eFwDvhRBnA".to_string();
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                jwks,
+                "-A",
+                "PS512",
+                "--ignore-exp",
+                &token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn returns_error_when_file_format_is_wrong_during_encode() {
         let body: String = "{\"field\":\"value\"}".to_string();
         let encode_matcher = App::command()
@@ -679,6 +740,46 @@ mod tests {
                 "decode",
                 "-S",
                 "@./tests/public_ecdsa_key.pk8",
+                "-A",
+                "ES256",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        dbg!(&result);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn encodes_and_decodes_an_ecdsa_token_using_jwks_from_file() {
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "ES256",
+                "--kid",
+                "4h7wt2IHHu_RLR6OtlZjCe_mIt8xAReS0cDEwwWAeKU",
+                "--exp",
+                "-S",
+                "@./tests/private_ecdsa_key.pk8",
+                &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "@./tests/pub_ecdsa_jwks.json",
                 "-A",
                 "ES256",
                 &encoded_token,

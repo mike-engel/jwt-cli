@@ -1,0 +1,20 @@
+{
+  "keys": [
+    {
+      "use": "sig",
+      "kty": "EC",
+      "kid": "4h7wt2IHHu_RLR6OtlZjCe_mIt8xAReS0cDEwwWAeKU",
+      "crv": "P-256",
+      "x": "w7JAoU_gJbZJvV-zCOvU9yFJq0FNC_edCMRM78P8eQQ",
+      "y": "wQg1EytcsEmGrM70Gb53oluoDbVhCZ3Uq3hHMslHVb4"
+    },
+    {
+      "use": "enc",
+      "kty": "EC",
+      "kid": "4h7wt2IHHu_RLR6OtlZjCe_mIt8xAReS0cDEwwWAeKU",
+      "crv": "P-256",
+      "x": "w7JAoU_gJbZJvV-zCOvU9yFJq0FNC_edCMRM78P8eQQ",
+      "y": "wQg1EytcsEmGrM70Gb53oluoDbVhCZ3Uq3hHMslHVb4"
+    }
+  ]
+}
