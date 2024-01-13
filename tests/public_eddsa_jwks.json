@@ -1,0 +1,20 @@
+{
+  "keys": [
+    {
+      "kty": "OKP",
+      "use": "sig",
+      "alg": "EdDSA",
+      "kid": "4h7wt2IHHu_RLR6OtlZjCe_mIt8xAReS0cDEwwWAeKU",
+      "crv": "Ed25519",
+      "x": "BzKf6VPTrsj8oqur2gHMkpRCl2DHxe04q0A8lV_QP-A"
+    },
+    {
+      "kty": "OKP",
+      "use": "enc",
+      "alg": "EdDSA",
+      "kid": "4h7wt2IHHu_RLR6OtlZjCe_mIt8xAReS0cDEwwWAeKU",
+      "crv": "Ed25519",
+      "x": "BzKf6VPTrsj8oqur2gHMkpRCl2DHxe04q0A8lV_QP-A"
+    }
+  ]
+}
