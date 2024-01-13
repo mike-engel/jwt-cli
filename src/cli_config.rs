@@ -135,9 +135,8 @@ pub struct DecodeArgs {
     /// The algorithm used to sign the JWT
     #[clap(long = "alg", short = 'A')]
     #[clap(value_enum)]
-    #[clap(default_value = "HS256")]
     #[clap(value_parser)]
-    pub algorithm: SupportedAlgorithms,
+    pub algorithm: Option<SupportedAlgorithms>,
 
     /// Display unix timestamps as ISO 8601 dates [default: UTC] [possible values: UTC, Local, Offset (e.g. -02:00)]
     #[clap(long = "date")]
