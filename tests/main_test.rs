@@ -382,26 +382,6 @@ mod tests {
     }
 
     #[test]
-    fn decodes_a_token_2() {
-        let matches = App::command()
-            .try_get_matches_from(vec![
-                "jwt",
-                "decode",
-                "eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCIsImtpZCI6IkRGbzcxemxOdV9vLTkxOFJIN0lIVyJ9.eyJodHRwczovL3d3dy5qaGlwc3Rlci50ZWNoL3JvbGVzIjpbIkFkbWluaXN0cmF0b3IiLCJST0xFX0FETUlOIiwiUk9MRV9VU0VSIl0sImlzcyI6Imh0dHBzOi8vZGV2LTA2YnpzMWN1LnVzLmF1dGgwLmNvbS8iLCJzdWIiOiJhdXRoMHw2MWJjYmM3NmY2NGQ0YTAwNzJhZjhhMWQiLCJhdWQiOlsiaHR0cHM6Ly9kZXYtMDZienMxY3UudXMuYXV0aDAuY29tL2FwaS92Mi8iLCJodHRwczovL2Rldi0wNmJ6czFjdS51cy5hdXRoMC5jb20vdXNlcmluZm8iXSwiaWF0IjoxNzA1MDAyMDQxLCJleHAiOjE3MDUwODg0NDEsImF6cCI6IjFmbTdJMUdHRXRNZlRabW5vdFV1azVVT3gyWm10NnR0Iiwic2NvcGUiOiJvcGVuaWQifQ.eWdbVEolnmqqyx_Z5rR-09H3kg06EaokYoAAdrqLmB6FHwZbbyZrPaHImmEnY8BSRM42FpE9NZehqVAeQ5VQhOVdMMklCQSA5h13oQbKn6ciuc9Etyq2jg4sk2lOEkSmw4e_hWUGjkXnzP_J84o9-2qpN7VKNTGEvtk3mdQYXxwoeD8RvQjYJq6LsKIKA0biEyGWZxIpK1LCAFH1dmo5ZMpTeNGIwnUBdOxkL4jbKe26e9t7TDO0EtFjXmq-C218bbr1AgFN2eyj6n-3kNy9XfRcnfIlyXWJ0ZvcDVa9UoaTGP9Wdo0Ze3q2IrcgYrP7zTeZia5O2tejkaNknKNnwA",
-                // "-S",
-                // "1234567890",
-                // "-A",
-                // "HS256",
-            ])
-            .unwrap();
-        let decode_matches = matches.subcommand_matches("decode").unwrap();
-        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
-
-        assert!(result.is_ok());
-    }
-
-    #[test]
     fn decodes_a_token_as_json() {
         let matches = App::command()
             .try_get_matches_from(vec![
@@ -499,6 +479,37 @@ mod tests {
             ])
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn encodes_and_decodes_an_hmac_token_using_jwks() {
+        let jwks = r#"{"kty":"oct","k":"Fdh9u8rINxfivbrianbbVT1u232VQBZYKx1HGAGPt2I"}"#;
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt", "encode", "-A", "HS256", "--exp", "-S", jwks, &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                jwks,
+                "-A",
+                "HS256",
+                "--ignore-exp",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
         let (result, _, _) = decode_token(&decode_arguments);
 
@@ -657,7 +668,7 @@ mod tests {
                 "jwt",
                 "decode",
                 "-S",
-                "@./tests/pub_rsa_jwks.json",
+                "@./tests/public_rsa_jwks.json",
                 "-A",
                 "RS256",
                 &encoded_token,
@@ -799,7 +810,7 @@ mod tests {
                 "jwt",
                 "decode",
                 "-S",
-                "@./tests/pub_ecdsa_jwks.json",
+                "@./tests/public_ecdsa_jwks.json",
                 "-A",
                 "ES256",
                 &encoded_token,
@@ -891,6 +902,44 @@ mod tests {
         let (result, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
+    }
+
+    #[test]
+    fn encodes_and_decodes_an_eddsa_token_using_jwks_from_file() {
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "EDDSA",
+                "--kid",
+                "4h7wt2IHHu_RLR6OtlZjCe_mIt8xAReS0cDEwwWAeKU",
+                "--exp",
+                "-S",
+                "@./tests/private_eddsa_key.pem",
+                &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "@./tests/public_eddsa_jwks.json",
+                "-A",
+                "EDDSA",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        assert_eq!(result.err(), None);
     }
 
     #[test]
