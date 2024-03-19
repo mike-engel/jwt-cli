@@ -78,9 +78,9 @@ pub fn decoding_key_from_secret(
         }
         Algorithm::ES256 | Algorithm::ES384 => {
             if !&secret_string.starts_with('@') {
-                return Err(JWTError::Internal(format!(
-                    "Secret for {alg:?} must be a file path starting with @",
-                )));
+                // allows to read JWKS from argument (e.g. output of 'curl https://auth.domain.com/jwks.json')
+                let secret = secret_string.as_bytes().to_vec();
+                return decoding_key_from_jwks_secret(&secret, header);
             }
 
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
@@ -95,9 +95,9 @@ pub fn decoding_key_from_secret(
         }
         Algorithm::EdDSA => {
             if !&secret_string.starts_with('@') {
-                // allows to read JWKS from argument (e.g. output of 'curl https://auth.domain.com/jwks.json')
-                let secret = secret_string.as_bytes().to_vec();
-                return decoding_key_from_jwks_secret(&secret, header);
+                return Err(JWTError::Internal(format!(
+                    "Secret for {alg:?} must be a file path starting with @",
+                )));
             }
 
             let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
