@@ -116,7 +116,7 @@ Currently the underlying token encoding and decoding library, [`jsonwebtoken`](h
 `jwt-cli` supports shell completion for `bash`, `elvish`, `fish`, `powershell`, and `zsh`. To enable it, run the following command:
 
 ```sh
-source <(./jwt completion bash)
+source <(jwt completion bash)
 ```
 
 You may want to add this to your shell profile to have it available every time you open a new shell:
