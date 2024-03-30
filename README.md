@@ -111,6 +111,22 @@ curl <auth API> | jq -r .access_token | jwt decode -
 
 Currently the underlying token encoding and decoding library, [`jsonwebtoken`](https://github.com/Keats/jsonwebtoken), doesn't support the SEC1 private key format and requires a conversion to the PKCS8 type. You can read more from [their own README](https://github.com/Keats/jsonwebtoken/blob/8fba79b25459eacc33a80e1ee37ff8eba64079ca/README.md#convert-sec1-private-key-to-pkcs8).
 
+## Shell completion
+
+`jwt-cli` supports shell completion for `bash`, `elvish`, `fish`, `powershell`, and `zsh`. To enable it, run the following command:
+
+```sh
+source <(./jwt completion bash)
+```
+
+You may want to add this to your shell profile to have it available every time you open a new shell:
+
+```sh
+if hash jwt > /dev/null; then
+  source <(jwt completion bash)
+fi
+```
+
 # Contributing
 
 I welcome all issues and pull requests! This is my first project in rust, so this project almost certainly could be better written. All I ask is that you follow the [code of conduct](code_of_conduct.md) and use [rustfmt](https://github.com/rust-lang-nursery/rustfmt) to have a consistent project code style.
