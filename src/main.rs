@@ -50,6 +50,7 @@ fn main() {
         Commands::Completion(arguments) => {
             let mut cmd = App::command();
             print_completions(arguments.shell, &mut cmd);
+            exit(0)
         }
     };
 }
