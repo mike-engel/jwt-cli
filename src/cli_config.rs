@@ -2,6 +2,7 @@ use crate::translators::{PayloadItem, SupportedTypes, TimeFormat};
 use crate::utils::parse_duration_string;
 use chrono::format::{parse, Parsed, StrftimeItems};
 use clap::{Parser, Subcommand, ValueEnum};
+use clap_complete::Shell;
 use jsonwebtoken::Algorithm;
 use std::path::PathBuf;
 
@@ -22,6 +23,17 @@ pub enum Commands {
 
     /// Decode a JWT
     Decode(DecodeArgs),
+
+    /// Print completion
+    Completion(CompletionArgs),
+}
+
+#[derive(Debug, Clone, Parser)]
+pub struct CompletionArgs {
+    /// the shell to generate completions for
+    #[clap(value_enum)]
+    #[clap(index = 1)]
+    pub shell: Shell,
 }
 
 #[derive(Debug, Clone, Parser)]

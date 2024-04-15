@@ -1,5 +1,7 @@
-use clap::Parser;
+use clap::{Command, CommandFactory, Parser};
+use clap_complete::{generate, Generator};
 use cli_config::{App, Commands, EncodeArgs};
+use std::io;
 use std::process::exit;
 use translators::decode::{decode_token, print_decoded_token};
 use translators::encode::{encode_token, print_encoded_token};
@@ -12,6 +14,10 @@ fn warn_unsupported(arguments: &EncodeArgs) {
     if arguments.typ.is_some() {
         println!("Sorry, `typ` isn't supported quite yet!");
     };
+}
+
+fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
+    generate(gen, cmd, cmd.get_name().to_string(), &mut io::stdout());
 }
 
 fn main() {
@@ -40,6 +46,11 @@ fn main() {
                     _ => 1,
                 },
             );
+        }
+        Commands::Completion(arguments) => {
+            let mut cmd = App::command();
+            print_completions(arguments.shell, &mut cmd);
+            exit(0)
         }
     };
 }
