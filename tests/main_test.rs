@@ -795,6 +795,49 @@ mod tests {
     }
 
     #[test]
+    fn encodes_and_decodes_an_ec_token_using_jwks_secret() {
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "ES256",
+                "--kid",
+                "4h7wt2IHHu_RLR6OtlZjCe_mIt8xAReS0cDEwwWAeKU",
+                "--exp",
+                "-S",
+                "@./tests/private_ecdsa_key.pk8",
+                &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+        // "$(cat ./tests/pub_ecdsa_jwks.json)"
+        let jwks = r#"{"keys":[{"use":"sig","kty":"EC","kid":"4h7wt2IHHu_RLR6OtlZjCe_mIt8xAReS0cDEwwWAeKU","crv":"P-256","x":"w7JAoU_gJbZJvV-zCOvU9yFJq0FNC_edCMRM78P8eQQ","y":"wQg1EytcsEmGrM70Gb53oluoDbVhCZ3Uq3hHMslHVb4"},{"use":"enc","kty":"EC","kid":"4h7wt2IHHu_RLR6OtlZjCe_mIt8xAReS0cDEwwWAeKU","crv":"P-256","x":"w7JAoU_gJbZJvV-zCOvU9yFJq0FNC_edCMRM78P8eQQ","y":"wQg1EytcsEmGrM70Gb53oluoDbVhCZ3Uq3hHMslHVb4"}]}
+"#;
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                jwks,
+                "-A",
+                "ES256",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        dbg!(&result);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
     fn encodes_and_decodes_an_eddsa_token_using_key_from_file() {
         let body: String = "{\"field\":\"value\"}".to_string();
         let encode_matcher = App::command()
