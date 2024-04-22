@@ -24,7 +24,7 @@ parse_duration = "2.1.1"
 atty = "0.2"
 base64 = "0.22.0"
 clap_generate = "3.0.3"
-clap_complete = "4.5.1"
+clap_complete = "4.5.2"
 
 [dev-dependencies]
 tempdir = "0.3.7"
