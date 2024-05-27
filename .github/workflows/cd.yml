@@ -3,7 +3,7 @@ name: Continuous Deployment
 on:
   push:
     tags:
-      - '[0-9]+.[0-9]+.[0-9]+'
+      - "[0-9]+.[0-9]+.[0-9]+"
 
 jobs:
   publish:
@@ -32,6 +32,8 @@ jobs:
         uses: actions-rs/toolchain@v1
         with:
           toolchain: ${{ matrix.rust }}
+          target: ${{ matrix.target }}
+          profile: minimal
           override: true
       - name: Checkout repository
         uses: actions/checkout@v2
