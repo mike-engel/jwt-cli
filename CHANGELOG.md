@@ -1,5 +1,21 @@
 # Unreleased
 
+# 6.1.0
+
+> 2024-05-27
+
+#### New features
+- Add JWKS support for all supported algorithms #311
+- Add shell completion #325
+- Add `--keep-payload-order` option to keep the payload order the same #301
+- Add support for inline JWKS secrets for JWT decoding #299
+
+#### Changes
+- Update `jsonwebtoken` to version 9 #311
+
+#### Fixes
+- Fix inline JWKS secrets for ES256/384 algorithms #310
+
 # 6.0.0
 
 > 2023-06-22
