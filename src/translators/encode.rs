@@ -1,9 +1,7 @@
 use crate::cli_config::{translate_algorithm, EncodeArgs};
 use crate::translators::{Claims, Payload, PayloadItem};
-use crate::utils::{slurp_file, write_file, JWTError, JWTResult};
+use crate::utils::{get_secret_from_file_or_input, write_file, JWTError, JWTResult, SecretType};
 use atty::Stream;
-use base64::engine::general_purpose::STANDARD as base64_engine;
-use base64::Engine as _;
 use chrono::Utc;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde_json::{from_str, Value};
@@ -23,74 +21,49 @@ fn create_header(alg: Algorithm, kid: Option<&String>, no_typ: bool) -> Header {
 }
 
 pub fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResult<EncodingKey> {
+    let (secret, file_type) = get_secret_from_file_or_input(alg, secret_string);
+
     match alg {
-        Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
-            if secret_string.starts_with('@') {
-                let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
-                Ok(EncodingKey::from_secret(&secret))
-            } else if secret_string.starts_with("b64:") {
-                Ok(EncodingKey::from_secret(
-                    &base64_engine
-                        .decode(secret_string.chars().skip(4).collect::<String>())
-                        .unwrap(),
-                ))
-            } else {
-                Ok(EncodingKey::from_secret(secret_string.as_bytes()))
-            }
-        }
+        Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => match file_type {
+            SecretType::Plain => Ok(EncodingKey::from_secret(&secret)),
+            SecretType::B64 => EncodingKey::from_base64_secret(std::str::from_utf8(&secret)?)
+                .map_err(jsonwebtoken::errors::Error::into),
+            _ => Err(JWTError::Internal(format!(
+                "Invalid secret file type for {alg:?}"
+            ))),
+        },
         Algorithm::RS256
         | Algorithm::RS384
         | Algorithm::RS512
         | Algorithm::PS256
         | Algorithm::PS384
-        | Algorithm::PS512 => {
-            if !&secret_string.starts_with('@') {
-                return Err(JWTError::Internal(format!(
-                    "Secret for {alg:?} must be a file path starting with @",
-                )));
+        | Algorithm::PS512 => match file_type {
+            SecretType::Pem => {
+                EncodingKey::from_rsa_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
             }
-
-            let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
-
-            match secret_string.ends_with(".pem") {
-                true => {
-                    EncodingKey::from_rsa_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
-                }
-                false => Ok(EncodingKey::from_rsa_der(&secret)),
+            SecretType::Der => Ok(EncodingKey::from_rsa_der(&secret)),
+            _ => Err(JWTError::Internal(format!(
+                "Invalid secret file type for {alg:?}"
+            ))),
+        },
+        Algorithm::ES256 | Algorithm::ES384 => match file_type {
+            SecretType::Pem => {
+                EncodingKey::from_ec_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
             }
-        }
-        Algorithm::ES256 | Algorithm::ES384 => {
-            if !&secret_string.starts_with('@') {
-                return Err(JWTError::Internal(format!(
-                    "Secret for {alg:?} must be a file path starting with @"
-                )));
+            SecretType::Der => Ok(EncodingKey::from_ec_der(&secret)),
+            _ => Err(JWTError::Internal(format!(
+                "Invalid secret file type for {alg:?}"
+            ))),
+        },
+        Algorithm::EdDSA => match file_type {
+            SecretType::Pem => {
+                EncodingKey::from_ed_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
             }
-
-            let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
-
-            match secret_string.ends_with(".pem") {
-                true => {
-                    EncodingKey::from_ec_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
-                }
-                false => Ok(EncodingKey::from_ec_der(&secret)),
-            }
-        }
-        Algorithm::EdDSA => {
-            if !&secret_string.starts_with('@') {
-                return Err(JWTError::Internal(format!(
-                    "Secret for {alg:?} must be a file path starting with @",
-                )));
-            }
-
-            let secret = slurp_file(&secret_string.chars().skip(1).collect::<String>());
-
-            match secret_string.ends_with(".pem") {
-                true => {
-                    EncodingKey::from_ed_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
-                }
-                false => Ok(EncodingKey::from_ed_der(&secret)),
-            }
-        }
+            SecretType::Der => Ok(EncodingKey::from_ed_der(&secret)),
+            _ => Err(JWTError::Internal(format!(
+                "Invalid secret file type for {alg:?}"
+            ))),
+        },
     }
 }
 
