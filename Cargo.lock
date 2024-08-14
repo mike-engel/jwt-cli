@@ -205,9 +205,9 @@ dependencies = [
 
 [[package]]
 name = "clap_complete"
-version = "4.5.12"
+version = "4.5.14"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a8670053e87c316345e384ca1f3eba3006fc6355ed8b8a1140d104e109e3df34"
+checksum = "1d11bff0290e9a266fc9b4ce6fa96c2bf2ca3f9724c41c10202ac1daf7a087f8"
 dependencies = [
  "clap 4.5.15",
 ]
@@ -427,7 +427,7 @@ dependencies = [
  "bunt",
  "chrono",
  "clap 4.5.15",
- "clap_complete 4.5.12",
+ "clap_complete 4.5.14",
  "clap_generate",
  "jsonwebtoken",
  "parse_duration",
