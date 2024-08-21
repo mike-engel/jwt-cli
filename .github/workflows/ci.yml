@@ -7,25 +7,23 @@ concurrency:
 
 jobs:
   test:
-    name: Test Suite on ${{ matrix.os }}
+    name: Test on ${{ matrix.os }}::${{ matrix.label }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        rust: [stable]
         include:
           - os: macos-latest
-            artifact_prefix: macOS
             target: x86_64-apple-darwin
-            binary_postfix: ""
+            label: x86_64
           - os: ubuntu-latest
-            artifact_prefix: linux
+            target: x86_64-unknown-linux-gnu
+            label: x86_64 gnu
+          - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
-            binary_postfix: ""
+            label: x86_64 musl
           - os: windows-latest
-            artifact_prefix: windows
             target: x86_64-pc-windows-msvc
-            binary_postfix: ".exe"
+            label: x86_64
 
     steps:
       - name: Checkout repository
