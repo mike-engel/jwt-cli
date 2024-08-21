@@ -57,7 +57,7 @@ jobs:
         run: cargo build --target=aarch64-apple-darwin --release
       - name: Build universal binary for macOS
         if: ${{ runner.os == 'macOS' }}
-        run: lipo -create -output jwt target/release/jwt target/aarch64-apple-darwin/release/jwt
+        run: lipo -create -output jwt target/${{ matrix.target }}/release/jwt target/aarch64-apple-darwin/release/jwt
       - name: Packaging final binary
         shell: bash
         run: |
