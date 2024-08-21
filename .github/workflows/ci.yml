@@ -31,7 +31,7 @@ jobs:
       - name: Install target
         run: rustup target add ${{ matrix.target }}
       - name: Test
-        run: cargo test
+        run: cargo test --target=${{ matrix.target }}
 
   rustfmt:
     name: Rustfmt
