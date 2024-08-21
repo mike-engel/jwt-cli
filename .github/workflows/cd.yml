@@ -8,43 +8,47 @@ on:
 
 jobs:
   publish:
-    name: Publishing for ${{ matrix.os }}
+    name: Publishing for ${{ matrix.os }}::${{ matrix.label }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        rust: [stable]
         include:
           - os: macos-latest
             artifact_prefix: macOS
             target: x86_64-apple-darwin
             binary_postfix: ""
+            label: x86_64
           - os: ubuntu-latest
             artifact_prefix: linux
             target: x86_64-unknown-linux-gnu
             binary_postfix: ""
+            label: x86_64 gnu
+          - os: ubuntu-latest
+            artifact_prefix: linux-musl
+            target: x86_64-unknown-linux-musl
+            binary_postfix: ""
+            label: x86_64 musl
           - os: windows-latest
             artifact_prefix: windows
             target: x86_64-pc-windows-msvc
             binary_postfix: ".exe"
+            label: x86_64
 
     steps:
-      - name: Installing Rust toolchain
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: ${{ matrix.rust }}
-          target: ${{ matrix.target }}
-          profile: minimal
-          override: true
       - name: Checkout repository
-        uses: actions/checkout@v2
-      - name: Cargo build
-        uses: actions-rs/cargo@v1
+        uses: actions/checkout@v4
+      - name: Install Rust
+        run: rustup update --no-self-update
+      - name: Install target
+        run: rustup target add ${{ matrix.target }}
+      - name: Install musl-tools
+        if: ${{ runner.os == 'Linux' }}
+        uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          command: build
-          toolchain: ${{ matrix.rust }}
-          args: --release --target ${{ matrix.target }}
-
+          packages: musl-tools # provides musl-gcc
+          version: 1.0
+      - name: Cargo build
+        run: cargo build --target=${{ matrix.target }} --release
       - name: Packaging final binary
         shell: bash
         run: |
@@ -69,12 +73,6 @@ jobs:
     name: Publishing to Cargo
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@master
-      - uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: publish
-          args: --token ${{ secrets.CARGO_API_KEY }} --allow-dirty
+      - uses: actions/checkout@v4
+      - run: rustup update --no-self-update
+      - run: cargo publish --token=${{ secrets.CARGO_API_KEY }} --allow-dirty
