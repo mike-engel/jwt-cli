@@ -71,6 +71,10 @@ jobs:
           else
             shasum -a 256 jwt-${{ matrix.artifact_prefix }}.tar.gz > jwt-${{ matrix.artifact_prefix }}.sha256
           fi
+          if [ "$RUNNER_OS" == "macOS" ]; then
+            mv jwt-${{ matrix.artifact_prefix }}.tar.gz target/${{ matrix.target }}/release/jwt-${{ matrix.artifact_prefix }}.tar.gz
+            mv jwt-${{ matrix.artifact_prefix }}.sha256 target/${{ matrix.target }}/release/jwt-${{ matrix.artifact_prefix }}.sha256
+          fi
       - name: Releasing assets
         uses: softprops/action-gh-release@v1
         if: ${{ github.event_name == 'push' }}
