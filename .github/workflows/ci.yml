@@ -16,10 +16,6 @@ jobs:
             binary_postfix: ""
           - os: ubuntu-latest
             artifact_prefix: linux
-            target: x86_64-unknown-linux-gnu
-            binary_postfix: ""
-          - os: ubuntu-latest
-            artifact_prefix: linux-musl
             target: x86_64-unknown-linux-musl
             binary_postfix: ""
           - os: windows-latest
