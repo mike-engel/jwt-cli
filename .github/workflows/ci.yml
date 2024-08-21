@@ -34,6 +34,12 @@ jobs:
         run: rustup update --no-self-update
       - name: Install target
         run: rustup target add ${{ matrix.target }}
+      - name: Install musl-tools
+        if: ${{ runner.os == 'Linux' }}
+        uses: awalsh128/cache-apt-pkgs-action@v1
+        with:
+          packages: musl-tools # provides musl-gcc
+          version: 1.0
       - name: Test
         run: cargo test --target=${{ matrix.target }}
 
