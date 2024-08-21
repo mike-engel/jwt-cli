@@ -1,5 +1,16 @@
 # Unreleased
 
+# 6.2.0
+
+> 2024-08-24
+
+#### New features
+- Add musl linux builds #350
+- Add universal binaries for macOS #351
+
+#### Changes
+- Dependency updates via dependabot
+
 # 6.1.0
 
 > 2024-05-27

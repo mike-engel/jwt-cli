@@ -421,7 +421,7 @@ dependencies = [
 
 [[package]]
 name = "jwt-cli"
-version = "6.1.0"
+version = "6.1.1"
 dependencies = [
  "atty",
  "bunt",
