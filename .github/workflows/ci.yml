@@ -1,75 +1,64 @@
 on: [push, pull_request]
 name: Continuous Integration
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   test:
-    name: Test Suite on ${{ matrix.os }}
+    name: Test on ${{ matrix.os }}::${{ matrix.label }}
     runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        os: [macos-latest, ubuntu-latest, windows-latest]
-        rust: [stable]
         include:
           - os: macos-latest
-            artifact_prefix: macOS
             target: x86_64-apple-darwin
-            binary_postfix: ""
+            label: x86_64
           - os: ubuntu-latest
-            artifact_prefix: linux
             target: x86_64-unknown-linux-gnu
-            binary_postfix: ""
+            label: x86_64 gnu
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-musl
+            label: x86_64 musl
           - os: windows-latest
-            artifact_prefix: windows
             target: x86_64-pc-windows-msvc
-            binary_postfix: ".exe"
+            label: x86_64
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
+        run: rustup update --no-self-update
+      - name: Install target
+        run: rustup target add ${{ matrix.target }}
+      - name: Install musl-tools
+        if: ${{ runner.os == 'Linux' }}
+        uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          toolchain: stable
-          profile: minimal
-          override: true
-      - uses: actions-rs/cargo@v1
-        with:
-          command: test
+          packages: musl-tools # provides musl-gcc
+          version: 1.0
+      - name: Test
+        run: cargo test --target=${{ matrix.target }}
 
   rustfmt:
     name: Rustfmt
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-          components: rustfmt
+        run: rustup update --no-self-update
       - name: Check formatting
-        uses: actions-rs/cargo@v1
-        with:
-          command: fmt
-          args: --all -- --check
+        run: cargo fmt --all -- --check
 
   clippy:
     name: Clippy
     runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
       - name: Install Rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          override: true
-          components: clippy
+        run: rustup update --no-self-update
       - name: Clippy Check
-        uses: actions-rs/cargo@v1
-        with:
-          command: clippy
-          args: -- -D warnings
+        run: cargo clippy -- -D warnings
