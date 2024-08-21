@@ -47,12 +47,23 @@ jobs:
         with:
           packages: musl-tools # provides musl-gcc
           version: 1.0
+      - name: Install ARM target for macOS
+        if: ${{ runner.os == 'macOS' }}
+        run: rustup target add aarch64-apple-darwin
       - name: Cargo build
         run: cargo build --target=${{ matrix.target }} --release
+      - name: Cargo build macOS ARM
+        if: ${{ runner.os == 'macOS' }}
+        run: cargo build --target=aarch64-apple-darwin --release
+      - name: Build universal binary for macOS
+        if: ${{ runner.os == 'macOS' }}
+        run: lipo -create -output jwt target/release/jwt target/aarch64-apple-darwin/release/jwt
       - name: Packaging final binary
         shell: bash
         run: |
-          cd target/${{ matrix.target }}/release
+          if [ "$RUNNER_OS" != "macOS" ]; then
+            cd target/${{ matrix.target }}/release
+          fi
           strip jwt${{ matrix.binary_postfix }}
           tar czvf jwt-${{ matrix.artifact_prefix }}.tar.gz jwt${{ matrix.binary_postfix }}
           if [[ ${{ runner.os }} == 'Windows' ]]; then
@@ -62,6 +73,7 @@ jobs:
           fi
       - name: Releasing assets
         uses: softprops/action-gh-release@v1
+        if: ${{ github.event_name == 'push' }}
         with:
           files: |
             target/${{ matrix.target }}/release/jwt-${{ matrix.artifact_prefix }}.tar.gz
@@ -70,6 +82,7 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   publish-cargo:
+    if: ${{ github.event_name == 'push' }}
     name: Publishing to Cargo
     runs-on: ubuntu-latest
     steps:
