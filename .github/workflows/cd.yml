@@ -28,6 +28,11 @@ jobs:
             target: x86_64-unknown-linux-musl
             binary_postfix: ""
             label: x86_64 musl
+          - os: ubuntu-latest
+            artifact_prefix: linux-arm64
+            target: aarch64-unknown-linux-gnu
+            binary_postfix: ""
+            label: ARM64
           - os: windows-latest
             artifact_prefix: windows
             target: x86_64-pc-windows-msvc
