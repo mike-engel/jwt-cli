@@ -188,18 +188,10 @@ pub fn print_decoded_token(
         match err {
             JWTError::External(ext_err) => {
                 match ext_err.kind() {
-                    ErrorKind::InvalidToken => {
-                        bunt::println!("{$red+bold}The JWT provided is invalid{/$}")
-                    }
-                    ErrorKind::InvalidSignature => {
-                        bunt::eprintln!("{$red+bold}The JWT provided has an invalid signature{/$}")
-                    }
-                    ErrorKind::InvalidRsaKey(_) => {
-                        bunt::eprintln!("{$red+bold}The secret provided isn't a valid RSA key{/$}")
-                    }
-                    ErrorKind::InvalidEcdsaKey => {
-                        bunt::eprintln!("{$red+bold}The secret provided isn't a valid ECDSA key{/$}")
-                    }
+                    ErrorKind::InvalidToken => bunt::println!("{$red+bold}The JWT provided is invalid{/$}"),
+                    ErrorKind::InvalidSignature => bunt::eprintln!("{$red+bold}The JWT provided has an invalid signature{/$}"),
+                    ErrorKind::InvalidEcdsaKey => bunt::eprintln!("{$red+bold}The secret provided isn't a valid ECDSA key{/$}"),
+                    ErrorKind::InvalidRsaKey(_) => bunt::eprintln!("{$red+bold}The secret provided isn't a valid RSA key{/$}"),
                     ErrorKind::MissingRequiredClaim(missing) => {
                         if missing.as_str() == "exp" {
                             bunt::eprintln!("{$red+bold}`exp` is missing, but is required. This error can be ignored via the `--ignore-exp` parameter.{/$}")
@@ -207,18 +199,10 @@ pub fn print_decoded_token(
                             bunt::eprintln!("{$red+bold}`{:?}` is missing, but is required{/$}", missing)
                         }
                     }
-                    ErrorKind::ExpiredSignature => {
-                        bunt::eprintln!("{$red+bold}The token has expired (or the `exp` claim is not set). This error can be ignored via the `--ignore-exp` parameter.{/$}")
-                    }
-                    ErrorKind::InvalidIssuer => {
-                        bunt::println!("{$red+bold}The token issuer is invalid{/$}")
-                    }
-                    ErrorKind::InvalidAudience => {
-                        bunt::eprintln!("{$red+bold}The token audience doesn't match the subject{/$}")
-                    }
-                    ErrorKind::InvalidSubject => {
-                        bunt::eprintln!("{$red+bold}The token subject doesn't match the audience{/$}")
-                    }
+                    ErrorKind::ExpiredSignature => bunt::eprintln!("{$red+bold}The token has expired (or the `exp` claim is not set). This error can be ignored via the `--ignore-exp` parameter.{/$}"),
+                    ErrorKind::InvalidIssuer => bunt::println!("{$red+bold}The token issuer is invalid{/$}"),
+                    ErrorKind::InvalidAudience => bunt::eprintln!("{$red+bold}The token audience doesn't match the subject{/$}"),
+                    ErrorKind::InvalidSubject => bunt::eprintln!("{$red+bold}The token subject doesn't match the audience{/$}"),
                     ErrorKind::ImmatureSignature => bunt::eprintln!(
                         "{$red+bold}The `nbf` claim is in the future which isn't allowed{/$}"
                     ),
@@ -226,8 +210,13 @@ pub fn print_decoded_token(
                         "{$red+bold}The JWT provided has a different signing algorithm than the one you \
                                              provided{/$}",
                     ),
+                    ErrorKind::InvalidAlgorithmName => bunt::eprintln!(
+                        "{$red+bold}The JWT provided has a different signing algorithm than the one you \
+                                             provided{/$}",
+                    ),
+                    ErrorKind::InvalidKeyFormat => bunt::eprintln!("{$red+bold}The key provided is an invalid format{/$}"),
                     _ => bunt::eprintln!(
-                        "{$red+bold}The JWT provided is invalid because{/$} {:?}",
+                        "{$red+bold}The JWT provided is invalid because{/$} {}",
                         err
                     ),
                 };

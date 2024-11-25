@@ -1,6 +1,7 @@
 # Unreleased
 
 - Add completions for nushell
+- Use Display trait to print external errors
 
 # 6.2.0
 
