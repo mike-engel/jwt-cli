@@ -1,5 +1,7 @@
 # Unreleased
 
+- Add completions for nushell
+
 # 6.2.0
 
 > 2024-08-24
