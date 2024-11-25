@@ -1,6 +1,8 @@
-use clap::{Command, CommandFactory, Parser};
+use clap::{CommandFactory, Parser};
+use clap_complete::Shell;
 use clap_complete::{generate, Generator};
-use cli_config::{App, Commands, EncodeArgs};
+use clap_complete_nushell::Nushell;
+use cli_config::{App, Commands, EncodeArgs, ShellCompletion};
 use std::io;
 use std::process::exit;
 use translators::decode::{decode_token, print_decoded_token};
@@ -16,8 +18,22 @@ fn warn_unsupported(arguments: &EncodeArgs) {
     };
 }
 
-fn print_completions<G: Generator>(gen: G, cmd: &mut Command) {
-    generate(gen, cmd, cmd.get_name().to_string(), &mut io::stdout());
+fn print_completions(shell: &ShellCompletion) {
+    fn generate_completions(gen: impl Generator) {
+        let mut cmd = App::command();
+        let name = cmd.get_name().to_string();
+
+        generate(gen, &mut cmd, name, &mut io::stdout());
+    }
+
+    match shell {
+        ShellCompletion::Nushell => generate_completions(Nushell),
+        ShellCompletion::Bash => generate_completions(Shell::Bash),
+        ShellCompletion::Elvish => generate_completions(Shell::Elvish),
+        ShellCompletion::Fish => generate_completions(Shell::Fish),
+        ShellCompletion::Powershell => generate_completions(Shell::PowerShell),
+        ShellCompletion::Zsh => generate_completions(Shell::Zsh),
+    }
 }
 
 fn main() {
@@ -48,8 +64,7 @@ fn main() {
             );
         }
         Commands::Completion(arguments) => {
-            let mut cmd = App::command();
-            print_completions(arguments.shell, &mut cmd);
+            print_completions(&arguments.shell);
             exit(0)
         }
     };
