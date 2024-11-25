@@ -2,6 +2,7 @@
 
 - Add completions for nushell
 - Use Display trait to print external errors
+- Support ARM64 for linux #370
 
 # 6.2.0
 
