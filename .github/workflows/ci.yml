@@ -21,6 +21,12 @@ jobs:
           - os: ubuntu-latest
             target: x86_64-unknown-linux-musl
             label: x86_64 musl
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-gnu
+            label: arm64 gnu
+          - os: ubuntu-latest
+            target: aarch64-unknown-linux-musl
+            label: arm64 musl
           - os: windows-latest
             target: x86_64-pc-windows-msvc
             label: x86_64
@@ -36,8 +42,17 @@ jobs:
         if: ${{ runner.os == 'Linux' }}
         uses: awalsh128/cache-apt-pkgs-action@v1
         with:
-          packages: musl-tools # provides musl-gcc
+          packages: musl-tools crossbuild-essential-arm64 crossbuild-essential-armhf # provides musl-gcc and arm64 linker
           version: 1.0
+      - name: Configure linker
+        if: ${{ runner.os == 'Linux' }}
+        run: |
+          cat >>~/.cargo/config <<EOF
+          [target.aarch64-unknown-linux-gnu]
+          linker = "aarch64-linux-gnu-gcc"
+          [target.aarch64-unknown-linux-musl]
+          linker = "aarch64-linux-gnu-gcc"
+          EOF
       - name: Test
         run: cargo test --target=${{ matrix.target }}
 
