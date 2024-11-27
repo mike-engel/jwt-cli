@@ -1,10 +1,19 @@
 # Unreleased
 
+# 6.2.0
+
+> 2024-11-27
+
+#### New features
+
 - Add completions for nushell
-- Use Display trait to print external errors
 - Support ARM64 for linux #370
 
-# 6.2.0
+#### Fixes
+
+- Use Display trait to print external errors
+
+# 6.1.1
 
 > 2024-08-24
 
