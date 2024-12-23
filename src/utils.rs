@@ -82,7 +82,7 @@ pub fn get_secret_from_file_or_input(
     alg: &Algorithm,
     secret_string: &str,
 ) -> (Vec<u8>, SecretType) {
-    return match alg {
+    match alg {
         Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
             if secret_string.starts_with('@') {
                 (
@@ -118,7 +118,7 @@ pub fn get_secret_from_file_or_input(
                 (secret_string.as_bytes().to_vec(), SecretType::Jwks)
             }
         }
-    };
+    }
 }
 
 fn strip_leading_symbol(secret_string: &str) -> String {
