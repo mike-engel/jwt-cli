@@ -147,7 +147,7 @@ pub fn decode_token(
 
     insecure_validator.insecure_disable_signature_validation();
     insecure_validator.required_spec_claims = HashSet::new();
-    insecure_validator.validate_exp = false;
+    insecure_validator.validate_exp = !arguments.ignore_exp;
 
     let token_data = decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator)
         .map_err(jsonwebtoken::errors::Error::into)
