@@ -110,10 +110,7 @@ pub fn decode_token(
     .trim()
     .to_owned();
 
-    let header = match decode_header(&jwt) {
-        Ok(header) => Some(header),
-        Err(_) => None,
-    };
+    let header = decode_header(&jwt).ok();
 
     let algorithm = if arguments.algorithm.is_some() {
         translate_algorithm(arguments.algorithm.as_ref().unwrap())
