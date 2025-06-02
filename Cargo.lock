@@ -211,21 +211,21 @@ dependencies = [
 
 [[package]]
 name = "clap_complete"
-version = "4.5.50"
+version = "4.5.52"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c91d3baa3bcd889d60e6ef28874126a0b384fd225ab83aa6d8a801c519194ce1"
+checksum = "1a554639e42d0c838336fc4fbedb9e2df3ad1fa4acda149f9126b4ccfcd7900f"
 dependencies = [
  "clap 4.5.39",
 ]
 
 [[package]]
 name = "clap_complete_nushell"
-version = "4.5.5"
+version = "4.5.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "c6a8b1593457dfc2fe539002b795710d022dc62a65bf15023f039f9760c7b18a"
+checksum = "9801fe85d7986742027c6d365728a6a4ecb6d2b09866de18be836fef7ebf7df1"
 dependencies = [
  "clap 4.5.39",
- "clap_complete 4.5.50",
+ "clap_complete 4.5.52",
 ]
 
 [[package]]
@@ -443,7 +443,7 @@ dependencies = [
  "bunt",
  "chrono",
  "clap 4.5.39",
- "clap_complete 4.5.50",
+ "clap_complete 4.5.52",
  "clap_complete_nushell",
  "clap_generate",
  "jsonwebtoken",
