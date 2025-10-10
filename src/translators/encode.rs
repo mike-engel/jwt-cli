@@ -3,6 +3,7 @@ use crate::translators::{Claims, Payload, PayloadItem};
 use crate::utils::{get_secret_from_file_or_input, write_file, JWTError, JWTResult, SecretType};
 use atty::Stream;
 use chrono::Utc;
+use ed25519_dalek::pkcs8::EncodePrivateKey;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde_json::{from_str, Value};
 use std::io;
@@ -60,6 +61,22 @@ pub fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
                 EncodingKey::from_ed_pem(&secret).map_err(jsonwebtoken::errors::Error::into)
             }
             SecretType::Der => Ok(EncodingKey::from_ed_der(&secret)),
+            SecretType::Nkey => {
+                let secret_str = std::str::from_utf8(&secret)?;
+                let seed_bytes = crate::utils::nkey_to_ed25519_seed(secret_str.trim())?;
+
+                use ed25519_dalek::SigningKey;
+                let signing_key = SigningKey::from_bytes(&seed_bytes.try_into().map_err(|_| {
+                    JWTError::Internal("Invalid seed length for Ed25519".to_string())
+                })?);
+
+                let pkcs8_pem = signing_key.to_pkcs8_pem(Default::default()).map_err(|e| {
+                    JWTError::Internal(format!("Failed to convert to PKCS#8 PEM: {}", e))
+                })?;
+
+                EncodingKey::from_ed_pem(pkcs8_pem.as_bytes())
+                    .map_err(jsonwebtoken::errors::Error::into)
+            }
             _ => Err(JWTError::Internal(format!(
                 "Invalid secret file type for {alg:?}"
             ))),
