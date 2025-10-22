@@ -105,6 +105,26 @@ curl <auth API> | jq -r .access_token | jwt decode -
 
 Currently the underlying token encoding and decoding library, [`jsonwebtoken`](https://github.com/Keats/jsonwebtoken), doesn't support the SEC1 private key format and requires a conversion to the PKCS8 type. You can read more from [their own README](https://github.com/Keats/jsonwebtoken/blob/8fba79b25459eacc33a80e1ee37ff8eba64079ca/README.md#convert-sec1-private-key-to-pkcs8).
 
+## Using NATS nkeys
+
+`jwt-cli` supports NATS nkeys (Ed25519 keys in NATS-specific format) for EdDSA JWTs. Nkeys can be provided as strings or files:
+
+```sh
+# Encode with nkey seed (starts with S for user/account seeds, P for private keys)
+jwt encode --alg EdDSA --secret SUAJUNSMQK7AHNZ5HRGV5UI2A24O2DDSWVWIOWP6CVBVBW652GDCM54JNY '{"sub":"user123"}'
+
+# Encode using nkey from file
+jwt encode --alg EdDSA --secret @./user.nk '{"sub":"user123"}'
+
+# Decode and verify with nkey seed
+jwt decode --alg EdDSA --secret SUAJUNSMQK7AHNZ5HRGV5UI2A24O2DDSWVWIOWP6CVBVBW652GDCM54JNY <token>
+
+# Decode and verify with nkey public key (starts with A, U, O, N, C, M, V, X)
+jwt decode --alg EdDSA --secret UBXGBSBR3U4IK6NCKOTND74FYER3BCVCXIB7IYUBDEPYOD6UGRTIBJAV <token>
+```
+
+The tool automatically detects nkey format based on the prefix character and handles the conversion to Ed25519 keys internally. NATS JWTs that use the non-standard `ed25519-nkey` algorithm are automatically normalized to the standard `EdDSA` algorithm during decoding.
+
 ## Shell completion
 
 `jwt-cli` supports shell completion for `bash`, `elvish`, `fish`, `powershell`, and `zsh`. To enable it, run the following command:
