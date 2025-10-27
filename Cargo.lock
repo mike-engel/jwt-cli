@@ -173,9 +173,9 @@ dependencies = [
 
 [[package]]
 name = "clap"
-version = "4.5.49"
+version = "4.5.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "f4512b90fa68d3a9932cea5184017c5d200f5921df706d45e853537dea51508f"
+checksum = "0c2cfd7bf8a6017ddaa4e32ffe7403d547790db06bd171c1c53926faab501623"
 dependencies = [
  "clap_builder",
  "clap_derive",
@@ -183,9 +183,9 @@ dependencies = [
 
 [[package]]
 name = "clap_builder"
-version = "4.5.49"
+version = "4.5.50"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0025e98baa12e766c67ba13ff4695a887a1eba19569aad00a472546795bd6730"
+checksum = "0a4c05b9e80c5ccd3a7ef080ad7b6ba7d6fc00a985b8b157197075677c82c7a0"
 dependencies = [
  "anstream",
  "anstyle",
@@ -208,7 +208,7 @@ version = "4.5.59"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2348487adcd4631696ced64ccdb40d38ac4d31cae7f2eec8817fcea1b9d1c43c"
 dependencies = [
- "clap 4.5.49",
+ "clap 4.5.50",
 ]
 
 [[package]]
@@ -217,7 +217,7 @@ version = "4.5.9"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "811159f339691baacdf7d534df2946b9d217014081099e23d31d887d99521e70"
 dependencies = [
- "clap 4.5.49",
+ "clap 4.5.50",
  "clap_complete 4.5.59",
 ]
 
@@ -435,7 +435,7 @@ dependencies = [
  "atty",
  "bunt",
  "chrono",
- "clap 4.5.49",
+ "clap 4.5.50",
  "clap_complete 4.5.59",
  "clap_complete_nushell",
  "clap_generate",
