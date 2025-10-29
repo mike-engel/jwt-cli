@@ -4,10 +4,12 @@ use crate::utils::{
     decoding_key_from_jwks_secret, get_secret_from_file_or_input, write_file, JWTError, JWTResult,
     SecretType,
 };
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
+use ed25519_dalek::pkcs8::EncodePublicKey;
 use jsonwebtoken::errors::ErrorKind;
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Header, TokenData, Validation};
 use serde_derive::{Deserialize, Serialize};
-use serde_json::to_string_pretty;
+use serde_json::{to_string_pretty, Value};
 use std::collections::HashSet;
 use std::io;
 use std::path::PathBuf;
@@ -32,6 +34,35 @@ impl TokenOutput {
             payload: data.claims,
         }
     }
+}
+
+/// Normalize NATS JWTs that use "ed25519-nkey" algorithm to "EdDSA"
+fn normalize_nats_jwt(jwt: &str) -> String {
+    let parts: Vec<&str> = jwt.split('.').collect();
+    if parts.len() != 3 {
+        return jwt.to_string();
+    }
+
+    let Ok(header_bytes) = URL_SAFE_NO_PAD.decode(parts[0]) else {
+        return jwt.to_string();
+    };
+
+    let Ok(mut header_json) = serde_json::from_slice::<Value>(&header_bytes) else {
+        return jwt.to_string();
+    };
+
+    if header_json.get("alg").and_then(|v| v.as_str()) != Some("ed25519-nkey") {
+        return jwt.to_string();
+    }
+
+    header_json["alg"] = Value::String("EdDSA".to_string());
+
+    let Ok(new_header_json) = serde_json::to_vec(&header_json) else {
+        return jwt.to_string();
+    };
+
+    let new_header_b64 = URL_SAFE_NO_PAD.encode(&new_header_json);
+    format!("{}.{}.{}", new_header_b64, parts[1], parts[2])
 }
 
 pub fn decoding_key_from_secret(
@@ -81,6 +112,36 @@ pub fn decoding_key_from_secret(
             }
             SecretType::Der => Ok(DecodingKey::from_ed_der(&secret)),
             SecretType::Jwks => decoding_key_from_jwks_secret(&secret, header),
+            SecretType::Nkey => {
+                let secret_str = from_utf8(&secret)?;
+                let trimmed = secret_str.trim();
+
+                use ed25519_dalek::{SigningKey, VerifyingKey};
+
+                let verifying_key = if trimmed.starts_with('S') || trimmed.starts_with('P') {
+                    let seed_bytes = crate::utils::nkey_to_ed25519_seed(trimmed)?;
+                    let signing_key =
+                        SigningKey::from_bytes(&seed_bytes.try_into().map_err(|_| {
+                            JWTError::Internal("Invalid seed length for Ed25519".to_string())
+                        })?);
+                    signing_key.verifying_key()
+                } else {
+                    let public_bytes = crate::utils::nkey_to_ed25519_public(trimmed)?;
+                    VerifyingKey::from_bytes(&public_bytes.try_into().map_err(|_| {
+                        JWTError::Internal("Invalid public key length for Ed25519".to_string())
+                    })?)
+                    .map_err(|e| JWTError::Internal(format!("Invalid Ed25519 public key: {}", e)))?
+                };
+
+                let spki_pem = verifying_key
+                    .to_public_key_pem(Default::default())
+                    .map_err(|e| {
+                        JWTError::Internal(format!("Failed to convert to SPKI PEM: {}", e))
+                    })?;
+
+                DecodingKey::from_ed_pem(spki_pem.as_bytes())
+                    .map_err(jsonwebtoken::errors::Error::into)
+            }
             _ => Err(JWTError::Internal(format!(
                 "Invalid secret file type for {alg:?}"
             ))),
@@ -110,6 +171,7 @@ pub fn decode_token(
     .trim()
     .to_owned();
 
+    let jwt = normalize_nats_jwt(&jwt);
     let header = decode_header(&jwt).ok();
 
     let algorithm = if arguments.algorithm.is_some() {
