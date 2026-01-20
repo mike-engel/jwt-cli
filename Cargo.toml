@@ -30,6 +30,9 @@ atty = "0.2"
 clap_generate = "3.0.3"
 clap_complete = "4.5.65"
 clap_complete_nushell = "4.5"
+nkeys = "0.4"
+ed25519-dalek = { version = "2.2", features = ["pkcs8"] }
+base64 = "0.21"
 
 [dev-dependencies]
 tempdir = "0.3.7"

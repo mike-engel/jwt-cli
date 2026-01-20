@@ -1248,4 +1248,210 @@ mod tests {
         let encoded_token = encode_token(&encode_arguments).unwrap();
         assert_eq!(encoded_token.as_str(), "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ6IjoxMjMsImEiOjEyM30.kvofE3KpCVQWpvrgx87u9LxjV-AK9bsVmS-Oddbz1Qg")
     }
+
+    #[test]
+    fn encodes_and_decodes_an_eddsa_token_using_nkey_seed_string() {
+        let seed = "SUAJUNSMQK7AHNZ5HRGV5UI2A24O2DDSWVWIOWP6CVBVBW652GDCM54JNY";
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt", "encode", "-A", "EDDSA", "--exp", "-S", seed, &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                seed,
+                "-A",
+                "EDDSA",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn encodes_and_decodes_an_eddsa_token_using_nkey_seed_from_file() {
+        let body: String = "{\"field\":\"value\"}".to_string();
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "EDDSA",
+                "--exp",
+                "-S",
+                "@./tests/user_seed.nk",
+                &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "@./tests/user_seed.nk",
+                "-A",
+                "EDDSA",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn encodes_with_nkey_seed_decodes_with_nkey_public_key() {
+        let seed = "SUAJUNSMQK7AHNZ5HRGV5UI2A24O2DDSWVWIOWP6CVBVBW652GDCM54JNY";
+        let public_key = "UBXGBSBR3U4IK6NCKOTND74FYER3BCVCXIB7IYUBDEPYOD6UGRTIBJAV";
+        let body: String = "{\"field\":\"value\"}".to_string();
+
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt", "encode", "-A", "EDDSA", "--exp", "-S", seed, &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                public_key,
+                "-A",
+                "EDDSA",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn encodes_and_decodes_with_nkey_account_seed() {
+        let seed = "SAAEPHF7MDRHVD2XWAHRRII766ZTLVCSX7CAX4DLXFDMKPJAOGFPYJNVLM";
+        let body: String = "{\"field\":\"value\"}".to_string();
+
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt", "encode", "-A", "EDDSA", "--exp", "-S", seed, &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                seed,
+                "-A",
+                "EDDSA",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn decodes_with_nkey_public_key_from_file() {
+        let seed = "SUAJUNSMQK7AHNZ5HRGV5UI2A24O2DDSWVWIOWP6CVBVBW652GDCM54JNY";
+        let body: String = "{\"field\":\"value\"}".to_string();
+
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt", "encode", "-A", "EDDSA", "--exp", "-S", seed, &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "decode",
+                "-S",
+                "@./tests/user_public.nk",
+                "-A",
+                "EDDSA",
+                &encoded_token,
+            ])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        assert!(result.is_ok());
+    }
+
+    #[test]
+    fn returns_error_for_invalid_nkey_format() {
+        let invalid_seed = "INVALID_NKEY_STRING_FORMAT";
+        let body: String = "{\"field\":\"value\"}".to_string();
+
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "EDDSA",
+                "--exp",
+                "-S",
+                invalid_seed,
+                &body,
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments);
+
+        assert!(encoded_token.is_err());
+    }
+
+    #[test]
+    fn decodes_nats_jwt_with_ed25519_nkey_algorithm() {
+        // This is a JWT with "ed25519-nkey" as the algorithm (NATS format)
+        // It uses the same payload and signature as our standard EdDSA test
+        let nats_jwt = "eyJhbGciOiJlZDI1NTE5LW5rZXkiLCJ0eXAiOiJKV1QifQ.eyJleHAiOjE3NjAwNjY2MDQsImZpZWxkIjoidmFsdWUiLCJpYXQiOjE3NjAwNjQ4MDR9.z5aTExIuCzNDigCX8rXD1LPNGWsVTjoBWYwpvzQ7sx3jIMBVxXJC-WO5y9BYU9mk-Mhp7l2QjLcFxjaKTvsGCQ";
+
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec!["jwt", "decode", nats_jwt])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        // Should decode successfully even though algorithm is "ed25519-nkey"
+        assert!(result.is_ok());
+    }
 }

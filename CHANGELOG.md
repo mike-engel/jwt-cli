@@ -1,5 +1,9 @@
 # Unreleased
 
+#### New features
+
+- Add support for NATS nkeys (Ed25519) for EdDSA JWT encoding and decoding
+
 # 6.2.0
 
 > 2024-11-27
