@@ -28,7 +28,7 @@ chrono = "0.4"
 parse_duration = "2.1.1"
 atty = "0.2"
 clap_generate = "3.0.3"
-clap_complete = "4.5.65"
+clap_complete = "4.5.66"
 clap_complete_nushell = "4.5"
 
 [dev-dependencies]
