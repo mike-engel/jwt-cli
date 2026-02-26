@@ -30,6 +30,7 @@ atty = "0.2"
 clap_generate = "3.0.3"
 clap_complete = "4.5.66"
 clap_complete_nushell = "4.5"
+libc = "0.2.180" # version with loongarch64 compatibility
 
 [dev-dependencies]
 tempdir = "0.3.7"
