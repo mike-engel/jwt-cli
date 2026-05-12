@@ -22,15 +22,22 @@ pub enum OutputFormat {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct TokenOutput {
-    pub header: Header,
+    pub header: serde_json::Value,
     pub payload: Payload,
 }
 
 impl TokenOutput {
     fn new(data: TokenData<Payload>) -> Self {
         TokenOutput {
-            header: data.header,
+            header: serde_json::to_value(&data.header).unwrap(),
             payload: data.claims,
+        }
+    }
+
+    fn new_unsecured(header_json: serde_json::Value, claims: Payload) -> Self {
+        TokenOutput {
+            header: header_json,
+            payload: claims,
         }
     }
 }
@@ -145,13 +152,26 @@ fn is_unsecured_jwt(jwt: &str) -> bool {
     false
 }
 
-pub fn decode_token(
-    arguments: &DecodeArgs,
-) -> (
+/// Extract the raw header JSON from an unsecured JWT for display purposes.
+/// The jsonwebtoken::Header struct cannot represent alg: "none", so we
+/// preserve the original header as a serde_json::Value.
+fn unsecured_header_json(jwt: &str) -> Option<serde_json::Value> {
+    let header_part = jwt.split('.').next()?;
+    let bytes = URL_SAFE_NO_PAD.decode(header_part).ok()?;
+    serde_json::from_slice(&bytes).ok()
+}
+
+/// Result of decoding a JWT: (validated, display, format, raw_header_override).
+/// The raw_header_override is `Some` for unsecured JWTs (alg: "none") because
+/// jsonwebtoken::Header cannot represent that algorithm.
+pub type DecodeResult = (
     JWTResult<TokenData<Payload>>,
     JWTResult<TokenData<Payload>>,
     OutputFormat,
-) {
+    Option<serde_json::Value>,
+);
+
+pub fn decode_token(arguments: &DecodeArgs) -> DecodeResult {
     let jwt = match arguments.jwt.as_str() {
         "-" => {
             let mut buffer = String::new();
@@ -169,6 +189,7 @@ pub fn decode_token(
 
     // Handle unsecured JWTs (alg: "none")
     if is_unsecured_jwt(&jwt) {
+        let raw_header = unsecured_header_json(&jwt);
         let validated = decode_unsecured_token(&jwt);
         let display = decode_unsecured_token(&jwt).map(|mut token| {
             if arguments.time_format.is_some() {
@@ -183,7 +204,7 @@ pub fn decode_token(
         } else {
             OutputFormat::Text
         };
-        return (validated, display, format);
+        return (validated, display, format, raw_header);
     }
 
     let header = decode_header(&jwt).ok();
@@ -248,6 +269,7 @@ pub fn decode_token(
         } else {
             OutputFormat::Text
         },
+        None,
     )
 }
 
@@ -256,6 +278,7 @@ pub fn print_decoded_token(
     token_data: JWTResult<TokenData<Payload>>,
     format: OutputFormat,
     output_path: &Option<PathBuf>,
+    raw_header: Option<serde_json::Value>,
 ) -> JWTResult<()> {
     if let Err(err) = &validated_token {
         match err {
@@ -301,16 +324,25 @@ pub fn print_decoded_token(
 
     match (output_path.as_ref(), format, token_data) {
         (Some(path), _, Ok(token)) => {
-            let json = to_string_pretty(&TokenOutput::new(token)).unwrap();
+            let output = match raw_header {
+                Some(h) => TokenOutput::new_unsecured(h, token.claims),
+                None => TokenOutput::new(token),
+            };
+            let json = to_string_pretty(&output).unwrap();
             write_file(path, json.as_bytes());
             println!("Wrote jwt to file {}", path.display());
         }
         (None, OutputFormat::Json, Ok(token)) => {
-            println!("{}", to_string_pretty(&TokenOutput::new(token)).unwrap());
+            let output = match raw_header {
+                Some(h) => TokenOutput::new_unsecured(h, token.claims),
+                None => TokenOutput::new(token),
+            };
+            println!("{}", to_string_pretty(&output).unwrap());
         }
         (None, _, Ok(token)) => {
+            let header_json = raw_header.unwrap_or_else(|| serde_json::to_value(&token.header).unwrap());
             bunt::println!("\n{$bold}Token header\n------------{/$}");
-            println!("{}\n", to_string_pretty(&token.header).unwrap());
+            println!("{}\n", to_string_pretty(&header_json).unwrap());
             bunt::println!("{$bold}Token claims\n------------{/$}");
             println!("{}", to_string_pretty(&token.claims).unwrap());
         }
