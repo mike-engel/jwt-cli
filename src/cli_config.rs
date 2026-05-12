@@ -117,10 +117,11 @@ pub struct EncodeArgs {
     #[clap(value_parser)]
     pub no_typ: bool,
 
-    /// the secret to sign the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes
+    /// the secret to sign the JWT with. Prefix with @ to read from a file or b64: to use base-64 encoded bytes.
+    /// Not required when using --alg none.
     #[clap(long, short = 'S')]
     #[clap(value_parser)]
-    pub secret: String,
+    pub secret: Option<String>,
 
     /// The path of the file to write the result to (suppresses default standard output)
     #[clap(long = "out", short = 'o')]
@@ -194,6 +195,9 @@ pub enum SupportedAlgorithms {
     ES256,
     ES384,
     EdDSA,
+    /// Unsecured JWT (RFC 7519 Section 6.1) with no signature
+    #[clap(name = "none")]
+    None,
 }
 
 fn is_payload_item(val: &str) -> Result<Option<PayloadItem>, String> {
@@ -241,20 +245,21 @@ fn time_format(arg: &str) -> Result<TimeFormat, String> {
     }
 }
 
-pub fn translate_algorithm(alg: &SupportedAlgorithms) -> Algorithm {
+pub fn translate_algorithm(alg: &SupportedAlgorithms) -> Option<Algorithm> {
     match alg {
-        SupportedAlgorithms::HS256 => Algorithm::HS256,
-        SupportedAlgorithms::HS384 => Algorithm::HS384,
-        SupportedAlgorithms::HS512 => Algorithm::HS512,
-        SupportedAlgorithms::RS256 => Algorithm::RS256,
-        SupportedAlgorithms::RS384 => Algorithm::RS384,
-        SupportedAlgorithms::RS512 => Algorithm::RS512,
-        SupportedAlgorithms::PS256 => Algorithm::PS256,
-        SupportedAlgorithms::PS384 => Algorithm::PS384,
-        SupportedAlgorithms::PS512 => Algorithm::PS512,
-        SupportedAlgorithms::ES256 => Algorithm::ES256,
-        SupportedAlgorithms::ES384 => Algorithm::ES384,
-        SupportedAlgorithms::EdDSA => Algorithm::EdDSA,
+        SupportedAlgorithms::HS256 => Some(Algorithm::HS256),
+        SupportedAlgorithms::HS384 => Some(Algorithm::HS384),
+        SupportedAlgorithms::HS512 => Some(Algorithm::HS512),
+        SupportedAlgorithms::RS256 => Some(Algorithm::RS256),
+        SupportedAlgorithms::RS384 => Some(Algorithm::RS384),
+        SupportedAlgorithms::RS512 => Some(Algorithm::RS512),
+        SupportedAlgorithms::PS256 => Some(Algorithm::PS256),
+        SupportedAlgorithms::PS384 => Some(Algorithm::PS384),
+        SupportedAlgorithms::PS512 => Some(Algorithm::PS512),
+        SupportedAlgorithms::ES256 => Some(Algorithm::ES256),
+        SupportedAlgorithms::ES384 => Some(Algorithm::ES384),
+        SupportedAlgorithms::EdDSA => Some(Algorithm::EdDSA),
+        SupportedAlgorithms::None => None,
     }
 }
 

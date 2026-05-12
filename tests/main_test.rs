@@ -1248,4 +1248,79 @@ mod tests {
         let encoded_token = encode_token(&encode_arguments).unwrap();
         assert_eq!(encoded_token.as_str(), "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ6IjoxMjMsImEiOjEyM30.kvofE3KpCVQWpvrgx87u9LxjV-AK9bsVmS-Oddbz1Qg")
     }
+
+    #[test]
+    fn encodes_unsecured_jwt() {
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "none",
+                "--no-iat",
+                "-P",
+                "role=my-role",
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+
+        // Unsecured JWTs must end with a trailing dot (empty signature)
+        assert!(encoded_token.ends_with('.'));
+        let parts: Vec<&str> = encoded_token.split('.').collect();
+        assert_eq!(parts.len(), 3);
+        assert!(parts[2].is_empty(), "Signature must be empty for alg: none");
+    }
+
+    #[test]
+    fn decodes_unsecured_jwt() {
+        // This is the unsecured JWT from RFC 7519 Section 6.1
+        let rfc_jwt = "eyJhbGciOiJub25lIn0.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.";
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec!["jwt", "decode", "--ignore-exp", rfc_jwt])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        assert!(result.is_ok(), "Should decode unsecured JWT from RFC 7519: {:?}", result.err());
+        let token = result.unwrap();
+        assert_eq!(
+            token.claims.0.get("iss").and_then(|v| v.as_str()),
+            Some("joe")
+        );
+    }
+
+    #[test]
+    fn roundtrips_unsecured_jwt() {
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "none",
+                "--no-iat",
+                "-P",
+                "test=roundtrip",
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec!["jwt", "decode", &encoded_token])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _) = decode_token(&decode_arguments);
+
+        assert!(result.is_ok(), "Should roundtrip unsecured JWT: {:?}", result.err());
+        let token = result.unwrap();
+        assert_eq!(
+            token.claims.0.get("test").and_then(|v| v.as_str()),
+            Some("roundtrip")
+        );
+    }
 }
