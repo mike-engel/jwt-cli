@@ -2,6 +2,7 @@ use crate::cli_config::{translate_algorithm, EncodeArgs};
 use crate::translators::{Claims, Payload, PayloadItem};
 use crate::utils::{get_secret_from_file_or_input, write_file, JWTError, JWTResult, SecretType};
 use atty::Stream;
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use chrono::Utc;
 use jsonwebtoken::{encode, Algorithm, EncodingKey, Header};
 use serde_json::{from_str, Value};
@@ -67,9 +68,33 @@ pub fn encoding_key_from_secret(alg: &Algorithm, secret_string: &str) -> JWTResu
     }
 }
 
-pub fn encode_token(arguments: &EncodeArgs) -> JWTResult<String> {
-    let algorithm = translate_algorithm(&arguments.algorithm);
-    let header = create_header(algorithm, arguments.kid.as_ref(), arguments.no_typ);
+/// Encode an unsecured JWT (alg: "none") per RFC 7519 Section 6.1.
+/// The token has no signature: header.payload. (trailing dot, empty signature).
+fn encode_unsecured_token(arguments: &EncodeArgs) -> JWTResult<String> {
+    let claims = build_claims(arguments);
+    let claims_json = serde_json::to_string(&claims).map_err(|e| {
+        JWTError::Internal(format!("Failed to serialize claims: {e}"))
+    })?;
+
+    let mut header_map = serde_json::Map::new();
+    header_map.insert("alg".into(), Value::String("none".into()));
+    if !arguments.no_typ {
+        header_map.insert("typ".into(), Value::String("JWT".into()));
+    }
+    if let Some(kid) = &arguments.kid {
+        header_map.insert("kid".into(), Value::String(kid.clone()));
+    }
+    let header_json = serde_json::to_string(&header_map).map_err(|e| {
+        JWTError::Internal(format!("Failed to serialize header: {e}"))
+    })?;
+
+    let header_b64 = URL_SAFE_NO_PAD.encode(header_json.as_bytes());
+    let claims_b64 = URL_SAFE_NO_PAD.encode(claims_json.as_bytes());
+
+    Ok(format!("{header_b64}.{claims_b64}."))
+}
+
+fn build_claims(arguments: &EncodeArgs) -> Claims {
     let custom_payloads = arguments.payload.clone();
     let custom_payload = arguments
         .json
@@ -114,17 +139,38 @@ pub fn encode_token(arguments: &EncodeArgs) -> JWTResult<String> {
     maybe_payloads.append(&mut custom_payload.unwrap_or_default());
 
     let payloads = maybe_payloads.into_iter().flatten().collect();
-    let claims = match arguments.keep_payload_order {
+    match arguments.keep_payload_order {
         true => Claims::OrderKept(payloads),
         false => {
             let Payload(_claims) = Payload::from_payloads(payloads);
             Claims::Reordered(_claims)
         }
-    };
+    }
+}
 
-    encoding_key_from_secret(&algorithm, &arguments.secret).and_then(|secret| {
-        encode(&header, &claims, &secret).map_err(jsonwebtoken::errors::Error::into)
-    })
+pub fn encode_token(arguments: &EncodeArgs) -> JWTResult<String> {
+    let algorithm = translate_algorithm(&arguments.algorithm);
+
+    match algorithm {
+        None => {
+            // Unsecured JWT (alg: "none")
+            encode_unsecured_token(arguments)
+        }
+        Some(alg) => {
+            let secret_string = arguments.secret.as_deref().ok_or_else(|| {
+                JWTError::Internal(
+                    "A secret is required when using a signing algorithm. Use -S to provide one."
+                        .to_string(),
+                )
+            })?;
+            let header = create_header(alg, arguments.kid.as_ref(), arguments.no_typ);
+            let claims = build_claims(arguments);
+
+            encoding_key_from_secret(&alg, secret_string).and_then(|secret| {
+                encode(&header, &claims, &secret).map_err(jsonwebtoken::errors::Error::into)
+            })
+        }
+    }
 }
 
 pub fn print_encoded_token(

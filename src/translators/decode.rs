@@ -4,6 +4,7 @@ use crate::utils::{
     decoding_key_from_jwks_secret, get_secret_from_file_or_input, write_file, JWTError, JWTResult,
     SecretType,
 };
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine};
 use jsonwebtoken::errors::ErrorKind;
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Header, TokenData, Validation};
 use serde_derive::{Deserialize, Serialize};
@@ -21,15 +22,22 @@ pub enum OutputFormat {
 
 #[derive(Debug, Serialize, Deserialize, PartialEq)]
 pub struct TokenOutput {
-    pub header: Header,
+    pub header: serde_json::Value,
     pub payload: Payload,
 }
 
 impl TokenOutput {
     fn new(data: TokenData<Payload>) -> Self {
         TokenOutput {
-            header: data.header,
+            header: serde_json::to_value(&data.header).unwrap(),
             payload: data.claims,
+        }
+    }
+
+    fn new_unsecured(header_json: serde_json::Value, claims: Payload) -> Self {
+        TokenOutput {
+            header: header_json,
+            payload: claims,
         }
     }
 }
@@ -88,13 +96,82 @@ pub fn decoding_key_from_secret(
     }
 }
 
-pub fn decode_token(
-    arguments: &DecodeArgs,
-) -> (
+/// Decode an unsecured JWT (alg: "none") by manually parsing the base64url parts.
+/// Returns TokenData with the parsed header and claims.
+fn decode_unsecured_token(jwt: &str) -> JWTResult<TokenData<Payload>> {
+    let parts: Vec<&str> = jwt.split('.').collect();
+    if parts.len() != 3 {
+        return Err(JWTError::Internal(
+            "Invalid JWT: expected 3 parts separated by dots".to_string(),
+        ));
+    }
+
+    // The signature part must be empty for unsecured JWTs
+    if !parts[2].is_empty() {
+        return Err(JWTError::Internal(
+            "Unsecured JWT (alg: none) must have an empty signature".to_string(),
+        ));
+    }
+
+    let header_bytes = URL_SAFE_NO_PAD
+        .decode(parts[0])
+        .map_err(|e| JWTError::Internal(format!("Invalid base64 in header: {e}")))?;
+    // Parse the header as a generic JSON object first, since jsonwebtoken::Header
+    // does not recognize "none" as a valid algorithm variant.
+    let header_json: serde_json::Value = serde_json::from_slice(&header_bytes)
+        .map_err(|e| JWTError::Internal(format!("Invalid JSON in header: {e}")))?;
+    let typ = header_json
+        .get("typ")
+        .and_then(|v| v.as_str())
+        .map(String::from);
+    let kid = header_json
+        .get("kid")
+        .and_then(|v| v.as_str())
+        .map(String::from);
+    let mut header = Header::new(Algorithm::HS256); // placeholder, overridden below
+    header.typ = typ;
+    header.kid = kid;
+
+    let claims_bytes = URL_SAFE_NO_PAD
+        .decode(parts[1])
+        .map_err(|e| JWTError::Internal(format!("Invalid base64 in payload: {e}")))?;
+    let claims: Payload = serde_json::from_slice(&claims_bytes)
+        .map_err(|e| JWTError::Internal(format!("Invalid JSON in payload: {e}")))?;
+
+    Ok(TokenData { header, claims })
+}
+
+/// Check if a JWT header has alg: "none" by peeking at the base64-decoded header.
+fn is_unsecured_jwt(jwt: &str) -> bool {
+    let header_part = jwt.split('.').next().unwrap_or("");
+    if let Ok(bytes) = URL_SAFE_NO_PAD.decode(header_part) {
+        if let Ok(value) = serde_json::from_slice::<serde_json::Value>(&bytes) {
+            return value.get("alg").and_then(|a| a.as_str()) == Some("none");
+        }
+    }
+    false
+}
+
+/// Extract the raw header JSON from an unsecured JWT for display purposes.
+/// The jsonwebtoken::Header struct cannot represent alg: "none", so we
+/// preserve the original header as a serde_json::Value.
+fn unsecured_header_json(jwt: &str) -> Option<serde_json::Value> {
+    let header_part = jwt.split('.').next()?;
+    let bytes = URL_SAFE_NO_PAD.decode(header_part).ok()?;
+    serde_json::from_slice(&bytes).ok()
+}
+
+/// Result of decoding a JWT: (validated, display, format, raw_header_override).
+/// The raw_header_override is `Some` for unsecured JWTs (alg: "none") because
+/// jsonwebtoken::Header cannot represent that algorithm.
+pub type DecodeResult = (
     JWTResult<TokenData<Payload>>,
     JWTResult<TokenData<Payload>>,
     OutputFormat,
-) {
+    Option<serde_json::Value>,
+);
+
+pub fn decode_token(arguments: &DecodeArgs) -> DecodeResult {
     let jwt = match arguments.jwt.as_str() {
         "-" => {
             let mut buffer = String::new();
@@ -110,10 +187,30 @@ pub fn decode_token(
     .trim()
     .to_owned();
 
+    // Handle unsecured JWTs (alg: "none")
+    if is_unsecured_jwt(&jwt) {
+        let raw_header = unsecured_header_json(&jwt);
+        let validated = decode_unsecured_token(&jwt);
+        let display = decode_unsecured_token(&jwt).map(|mut token| {
+            if arguments.time_format.is_some() {
+                token
+                    .claims
+                    .convert_timestamps(arguments.time_format.unwrap_or(super::TimeFormat::UTC));
+            }
+            token
+        });
+        let format = if arguments.json {
+            OutputFormat::Json
+        } else {
+            OutputFormat::Text
+        };
+        return (validated, display, format, raw_header);
+    }
+
     let header = decode_header(&jwt).ok();
 
     let algorithm = if let Some(alg) = &arguments.algorithm {
-        translate_algorithm(alg)
+        translate_algorithm(alg).unwrap_or(Algorithm::HS256)
     } else {
         header.as_ref().map(|h| h.alg).unwrap_or(Algorithm::HS256)
     };
@@ -172,6 +269,7 @@ pub fn decode_token(
         } else {
             OutputFormat::Text
         },
+        None,
     )
 }
 
@@ -180,6 +278,7 @@ pub fn print_decoded_token(
     token_data: JWTResult<TokenData<Payload>>,
     format: OutputFormat,
     output_path: &Option<PathBuf>,
+    raw_header: Option<serde_json::Value>,
 ) -> JWTResult<()> {
     if let Err(err) = &validated_token {
         match err {
@@ -225,16 +324,25 @@ pub fn print_decoded_token(
 
     match (output_path.as_ref(), format, token_data) {
         (Some(path), _, Ok(token)) => {
-            let json = to_string_pretty(&TokenOutput::new(token)).unwrap();
+            let output = match raw_header {
+                Some(h) => TokenOutput::new_unsecured(h, token.claims),
+                None => TokenOutput::new(token),
+            };
+            let json = to_string_pretty(&output).unwrap();
             write_file(path, json.as_bytes());
             println!("Wrote jwt to file {}", path.display());
         }
         (None, OutputFormat::Json, Ok(token)) => {
-            println!("{}", to_string_pretty(&TokenOutput::new(token)).unwrap());
+            let output = match raw_header {
+                Some(h) => TokenOutput::new_unsecured(h, token.claims),
+                None => TokenOutput::new(token),
+            };
+            println!("{}", to_string_pretty(&output).unwrap());
         }
         (None, _, Ok(token)) => {
+            let header_json = raw_header.unwrap_or_else(|| serde_json::to_value(&token.header).unwrap());
             bunt::println!("\n{$bold}Token header\n------------{/$}");
-            println!("{}\n", to_string_pretty(&token.header).unwrap());
+            println!("{}\n", to_string_pretty(&header_json).unwrap());
             bunt::println!("{$bold}Token claims\n------------{/$}");
             println!("{}", to_string_pretty(&token.claims).unwrap());
         }
