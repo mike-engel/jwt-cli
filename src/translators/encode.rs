@@ -117,7 +117,7 @@ pub fn encode_token(arguments: &EncodeArgs) -> JWTResult<String> {
     let claims = match arguments.keep_payload_order {
         true => Claims::OrderKept(payloads),
         false => {
-            let Payload(_claims, _) = Payload::from_payloads(payloads);
+            let Payload(_claims) = Payload::from_payloads(payloads);
             Claims::Reordered(_claims)
         }
     };
