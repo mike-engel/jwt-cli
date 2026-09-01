@@ -6,8 +6,10 @@ use crate::utils::{
 };
 use jsonwebtoken::errors::ErrorKind;
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Header, TokenData, Validation};
-use serde_derive::{Deserialize, Serialize};
-use serde_json::to_string_pretty;
+use serde::ser::SerializeStruct;
+use serde::{Serialize as CustomSerialize, Serializer};
+use serde_derive::Deserialize;
+use serde_json::{to_string_pretty, Map, Value};
 use std::collections::HashSet;
 use std::io;
 use std::path::PathBuf;
@@ -19,10 +21,55 @@ pub enum OutputFormat {
     Json,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct TokenOutput {
     pub header: Header,
     pub payload: Payload,
+}
+
+impl CustomSerialize for TokenOutput {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut output = serializer.serialize_struct("TokenOutput", 2)?;
+        output.serialize_field("header", &display_header(&self.header, &self.payload.1))?;
+        output.serialize_field("payload", &self.payload)?;
+        output.end()
+    }
+}
+
+fn display_header(header: &Header, original: &Option<Map<String, Value>>) -> Value {
+    original
+        .clone()
+        .map(Value::Object)
+        .unwrap_or_else(|| serde_json::to_value(header).unwrap())
+}
+
+fn decode_base64_url(value: &str) -> Option<Vec<u8>> {
+    let mut result = Vec::with_capacity(value.len() * 3 / 4);
+    let mut buffer = 0_u32;
+    let mut bits = 0;
+
+    for byte in value.bytes() {
+        let digit = match byte {
+            b'A'..=b'Z' => byte - b'A',
+            b'a'..=b'z' => byte - b'a' + 26,
+            b'0'..=b'9' => byte - b'0' + 52,
+            b'-' => 62,
+            b'_' => 63,
+            _ => return None,
+        };
+        buffer = (buffer << 6) | u32::from(digit);
+        bits += 6;
+        if bits >= 8 {
+            bits -= 8;
+            result.push((buffer >> bits) as u8);
+            buffer &= (1 << bits) - 1;
+        }
+    }
+
+    Some(result)
 }
 
 impl TokenOutput {
@@ -111,6 +158,11 @@ pub fn decode_token(
     .to_owned();
 
     let header = decode_header(&jwt).ok();
+    let original_header = jwt
+        .split('.')
+        .next()
+        .and_then(decode_base64_url)
+        .and_then(|value| serde_json::from_slice::<Map<String, Value>>(&value).ok());
 
     let algorithm = if let Some(alg) = &arguments.algorithm {
         translate_algorithm(alg)
@@ -149,6 +201,7 @@ pub fn decode_token(
     let token_data = decode::<Payload>(&jwt, &insecure_decoding_key, &insecure_validator)
         .map_err(jsonwebtoken::errors::Error::into)
         .map(|mut token| {
+            token.claims.1 = original_header;
             if arguments.time_format.is_some() {
                 token
                     .claims
@@ -234,7 +287,10 @@ pub fn print_decoded_token(
         }
         (None, _, Ok(token)) => {
             bunt::println!("\n{$bold}Token header\n------------{/$}");
-            println!("{}\n", to_string_pretty(&token.header).unwrap());
+            println!(
+                "{}\n",
+                to_string_pretty(&display_header(&token.header, &token.claims.1)).unwrap()
+            );
             bunt::println!("{$bold}Token claims\n------------{/$}");
             println!("{}", to_string_pretty(&token.claims).unwrap());
         }
@@ -242,4 +298,27 @@ pub fn print_decoded_token(
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    use std::collections::BTreeMap;
+
+    #[test]
+    fn token_output_includes_custom_headers() {
+        let mut original = Map::new();
+        original.insert("alg".to_string(), json!("HS256"));
+        original.insert("tenant".to_string(), json!("acme"));
+        let output = TokenOutput {
+            header: Header::new(Algorithm::HS256),
+            payload: Payload(BTreeMap::new(), Some(original)),
+        };
+
+        let json = serde_json::to_value(output).unwrap();
+
+        assert_eq!(json["header"]["tenant"], "acme");
+        assert_eq!(json["header"]["alg"], "HS256");
+    }
 }

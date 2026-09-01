@@ -4,7 +4,7 @@ use clap::ValueEnum;
 use serde::ser::SerializeMap;
 use serde::{Serialize as CustomSerialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
-use serde_json::{from_str, Value};
+use serde_json::{from_str, Map, Value};
 use std::collections::BTreeMap;
 
 pub mod decode;
@@ -14,7 +14,10 @@ pub mod encode;
 pub struct PayloadItem(pub String, pub Value);
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Eq)]
-pub struct Payload(pub BTreeMap<String, Value>);
+pub struct Payload(
+    pub BTreeMap<String, Value>,
+    #[serde(skip)] pub Option<Map<String, Value>>,
+);
 
 #[derive(Debug, Deserialize, PartialEq, Eq)]
 pub enum Claims {
@@ -98,7 +101,7 @@ impl Payload {
             payload.insert(k, v);
         }
 
-        Payload(payload)
+        Payload(payload, None)
     }
 
     pub fn convert_timestamps(&mut self, offset: TimeFormat) {
