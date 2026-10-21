@@ -4,10 +4,13 @@ use crate::utils::{
     decoding_key_from_jwks_secret, get_secret_from_file_or_input, write_file, JWTError, JWTResult,
     SecretType,
 };
+use base64::{engine::general_purpose::URL_SAFE_NO_PAD, Engine as _};
 use jsonwebtoken::errors::ErrorKind;
 use jsonwebtoken::{decode, decode_header, Algorithm, DecodingKey, Header, TokenData, Validation};
+use serde::ser::SerializeStruct;
+use serde::{Serialize as CustomSerialize, Serializer};
 use serde_derive::{Deserialize, Serialize};
-use serde_json::to_string_pretty;
+use serde_json::{to_string_pretty, Map, Value};
 use std::collections::HashSet;
 use std::io;
 use std::path::PathBuf;
@@ -19,17 +22,52 @@ pub enum OutputFormat {
     Json,
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct TokenOutput {
     pub header: Header,
     pub payload: Payload,
+    #[serde(skip)]
+    pub original_header: Option<Map<String, Value>>,
+}
+
+impl CustomSerialize for TokenOutput {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut output = serializer.serialize_struct("TokenOutput", 2)?;
+        output.serialize_field(
+            "header",
+            &display_header(&self.header, self.original_header.as_ref()),
+        )?;
+        output.serialize_field("payload", &self.payload)?;
+        output.end()
+    }
+}
+
+#[derive(Serialize)]
+#[serde(untagged)]
+enum DisplayHeader<'a> {
+    Original(&'a Map<String, Value>),
+    Standard(&'a Header),
+}
+
+fn display_header<'a>(
+    header: &'a Header,
+    original: Option<&'a Map<String, Value>>,
+) -> DisplayHeader<'a> {
+    match original {
+        Some(original) => DisplayHeader::Original(original),
+        None => DisplayHeader::Standard(header),
+    }
 }
 
 impl TokenOutput {
-    fn new(data: TokenData<Payload>) -> Self {
+    fn new(data: TokenData<Payload>, original_header: Option<Map<String, Value>>) -> Self {
         TokenOutput {
             header: data.header,
             payload: data.claims,
+            original_header,
         }
     }
 }
@@ -92,7 +130,7 @@ pub fn decode_token(
     arguments: &DecodeArgs,
 ) -> (
     JWTResult<TokenData<Payload>>,
-    JWTResult<TokenData<Payload>>,
+    JWTResult<TokenOutput>,
     OutputFormat,
 ) {
     let jwt = match arguments.jwt.as_str() {
@@ -111,6 +149,11 @@ pub fn decode_token(
     .to_owned();
 
     let header = decode_header(&jwt).ok();
+    let original_header = jwt
+        .split('.')
+        .next()
+        .and_then(|value| URL_SAFE_NO_PAD.decode(value).ok())
+        .and_then(|value| serde_json::from_slice::<Map<String, Value>>(&value).ok());
 
     let algorithm = if let Some(alg) = &arguments.algorithm {
         translate_algorithm(alg)
@@ -155,7 +198,7 @@ pub fn decode_token(
                     .convert_timestamps(arguments.time_format.unwrap_or(super::TimeFormat::UTC));
             }
 
-            token
+            TokenOutput::new(token, original_header)
         });
 
     (
@@ -177,7 +220,7 @@ pub fn decode_token(
 
 pub fn print_decoded_token(
     validated_token: JWTResult<TokenData<Payload>>,
-    token_data: JWTResult<TokenData<Payload>>,
+    token_data: JWTResult<TokenOutput>,
     format: OutputFormat,
     output_path: &Option<PathBuf>,
 ) -> JWTResult<()> {
@@ -225,21 +268,52 @@ pub fn print_decoded_token(
 
     match (output_path.as_ref(), format, token_data) {
         (Some(path), _, Ok(token)) => {
-            let json = to_string_pretty(&TokenOutput::new(token)).unwrap();
+            let json = to_string_pretty(&token).unwrap();
             write_file(path, json.as_bytes());
             println!("Wrote jwt to file {}", path.display());
         }
         (None, OutputFormat::Json, Ok(token)) => {
-            println!("{}", to_string_pretty(&TokenOutput::new(token)).unwrap());
+            println!("{}", to_string_pretty(&token).unwrap());
         }
         (None, _, Ok(token)) => {
             bunt::println!("\n{$bold}Token header\n------------{/$}");
-            println!("{}\n", to_string_pretty(&token.header).unwrap());
+            println!(
+                "{}\n",
+                to_string_pretty(&display_header(
+                    &token.header,
+                    token.original_header.as_ref(),
+                ))
+                .unwrap()
+            );
             bunt::println!("{$bold}Token claims\n------------{/$}");
-            println!("{}", to_string_pretty(&token.claims).unwrap());
+            println!("{}", to_string_pretty(&token.payload).unwrap());
         }
         (_, _, Err(err)) => return Err(err),
     }
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+    use std::collections::BTreeMap;
+
+    #[test]
+    fn token_output_includes_custom_headers() {
+        let mut original = Map::new();
+        original.insert("alg".to_string(), json!("HS256"));
+        original.insert("tenant".to_string(), json!("acme"));
+        let output = TokenOutput {
+            header: Header::new(Algorithm::HS256),
+            payload: Payload(BTreeMap::new()),
+            original_header: Some(original),
+        };
+
+        let json = serde_json::to_value(output).unwrap();
+
+        assert_eq!(json["header"]["tenant"], "acme");
+        assert_eq!(json["header"]["alg"], "HS256");
+    }
 }
