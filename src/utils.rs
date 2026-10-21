@@ -1,12 +1,14 @@
 use std::fmt;
 use std::fs;
 use std::path::Path;
+use std::str;
 use std::str::Utf8Error;
 
 use jsonwebtoken::jwk;
 use jsonwebtoken::Algorithm;
 use jsonwebtoken::DecodingKey;
 use jsonwebtoken::Header;
+use serde::de::IgnoredAny;
 
 #[derive(Debug, Clone, Eq, PartialEq)]
 pub enum JWTError {
@@ -85,14 +87,11 @@ pub fn get_secret_from_file_or_input(
     match alg {
         Algorithm::HS256 | Algorithm::HS384 | Algorithm::HS512 => {
             if secret_string.starts_with('@') {
-                (
-                    slurp_file(strip_leading_symbol(secret_string)),
-                    if secret_string.ends_with(".json") {
-                        SecretType::Jwks
-                    } else {
-                        SecretType::Plain
-                    },
-                )
+                let secret: Vec<u8> = slurp_file(strip_leading_symbol(secret_string));
+                match serde_json::from_slice::<IgnoredAny>(&secret) {
+                    Ok(_) => (secret, SecretType::Jwks),
+                    Err(_) => (secret, SecretType::Plain),
+                }
             } else if secret_string.starts_with("b64:") {
                 (
                     secret_string
@@ -109,10 +108,9 @@ pub fn get_secret_from_file_or_input(
         }
         _ => {
             if secret_string.starts_with('@') {
-                (
-                    slurp_file(strip_leading_symbol(secret_string)),
-                    get_secret_file_type(secret_string),
-                )
+                let secret: Vec<u8> = slurp_file(strip_leading_symbol(secret_string));
+                let secret_type: SecretType = get_secret_file_type(&secret);
+                (secret, secret_type)
             } else {
                 // allows to read JWKS from argument (e.g. output of 'curl https://auth.domain.com/jwks.json')
                 (secret_string.as_bytes().to_vec(), SecretType::Jwks)
@@ -125,13 +123,19 @@ fn strip_leading_symbol(secret_string: &str) -> String {
     secret_string.chars().skip(1).collect::<String>()
 }
 
-fn get_secret_file_type(secret_string: &str) -> SecretType {
-    if secret_string.ends_with(".pem") {
-        SecretType::Pem
-    } else if secret_string.ends_with(".json") {
-        SecretType::Jwks
-    } else {
-        SecretType::Der
+fn get_secret_file_type(secret: &[u8]) -> SecretType {
+    let secret_as_str: &str = match str::from_utf8(secret) {
+        Ok(s) => s.trim(),
+        Err(_) => return SecretType::Der,
+    };
+
+    if secret_as_str.starts_with("-----BEGIN ") && secret_as_str.ends_with("-----") {
+        return SecretType::Pem;
+    }
+
+    match serde_json::from_str::<IgnoredAny>(secret_as_str) {
+        Ok(_) => SecretType::Jwks,
+        Err(_) => SecretType::Der,
     }
 }
 
