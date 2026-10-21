@@ -61,7 +61,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_arguments);
+        let (decoded_token, _, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -97,7 +97,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_arguments);
+        let (decoded_token, _, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -121,7 +121,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, token_data, _) = decode_token(&decode_arguments);
+        let (decoded_token, token_data, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_err());
 
@@ -143,7 +143,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_arguments);
+        let (decoded_token, _, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -174,7 +174,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_arguments);
+        let (decoded_token, _, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -203,7 +203,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_arguments);
+        let (decoded_token, _, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -235,7 +235,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_arguments);
+        let (decoded_token, _, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -257,7 +257,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_arguments);
+        let (decoded_token, _, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_err());
     }
@@ -282,7 +282,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_arguments);
+        let (decoded_token, _, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
     }
@@ -306,7 +306,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_arguments);
+        let (decoded_token, _, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -344,7 +344,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, _, _) = decode_token(&decode_arguments);
+        let (decoded_token, _, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -376,7 +376,7 @@ mod tests {
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -393,7 +393,7 @@ mod tests {
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, format) = decode_token(&decode_arguments);
+        let (result, _, format, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
         assert!(format == OutputFormat::Json);
@@ -414,7 +414,7 @@ mod tests {
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_err());
     }
@@ -432,7 +432,7 @@ mod tests {
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -448,7 +448,7 @@ mod tests {
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -464,7 +464,7 @@ mod tests {
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -480,7 +480,7 @@ mod tests {
             .unwrap();
         let decode_matches = matches.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -511,7 +511,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -547,7 +547,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -617,7 +617,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -638,7 +638,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -676,7 +676,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -699,7 +699,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -742,7 +742,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_err());
     }
@@ -778,7 +778,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         dbg!(&result);
 
@@ -818,7 +818,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         dbg!(&result);
 
@@ -861,7 +861,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         dbg!(&result);
 
@@ -899,7 +899,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert!(result.is_ok());
     }
@@ -937,7 +937,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (result, _, _) = decode_token(&decode_arguments);
+        let (result, _, _, _) = decode_token(&decode_arguments);
 
         assert_eq!(result.err(), None);
     }
@@ -972,7 +972,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, token_data, _) = decode_token(&decode_arguments);
+        let (decoded_token, token_data, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -1057,7 +1057,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, decoded_token_data, decoded_output_format) =
+        let (decoded_token, decoded_token_data, decoded_output_format, raw_header) =
             decode_token(&decode_arguments);
         assert!(decoded_token.is_ok());
 
@@ -1070,6 +1070,7 @@ mod tests {
             decoded_token_data,
             decoded_output_format,
             json_path_from_args,
+            raw_header,
         );
         assert!(json_print_result.is_ok());
 
@@ -1083,8 +1084,8 @@ mod tests {
         println!("json: {json:#?}");
 
         let TokenOutput { header, payload } = json;
-        assert_eq!(header.alg, Algorithm::HS256);
-        assert_eq!(header.kid, Some(kid.to_string()));
+        assert_eq!(header["alg"], "HS256");
+        assert_eq!(header["kid"], kid);
         assert_eq!(payload.0["nbf"], nbf);
         assert_eq!(payload.0["exp"], exp);
     }
@@ -1119,7 +1120,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, token_data, _) = decode_token(&decode_arguments);
+        let (decoded_token, token_data, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -1172,7 +1173,7 @@ mod tests {
             .unwrap();
         let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
         let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
-        let (decoded_token, token_data, _) = decode_token(&decode_arguments);
+        let (decoded_token, token_data, _, _) = decode_token(&decode_arguments);
 
         assert!(decoded_token.is_ok());
 
@@ -1247,5 +1248,80 @@ mod tests {
         let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
         let encoded_token = encode_token(&encode_arguments).unwrap();
         assert_eq!(encoded_token.as_str(), "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJ6IjoxMjMsImEiOjEyM30.kvofE3KpCVQWpvrgx87u9LxjV-AK9bsVmS-Oddbz1Qg")
+    }
+
+    #[test]
+    fn encodes_unsecured_jwt() {
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "none",
+                "--no-iat",
+                "-P",
+                "role=my-role",
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+
+        // Unsecured JWTs must end with a trailing dot (empty signature)
+        assert!(encoded_token.ends_with('.'));
+        let parts: Vec<&str> = encoded_token.split('.').collect();
+        assert_eq!(parts.len(), 3);
+        assert!(parts[2].is_empty(), "Signature must be empty for alg: none");
+    }
+
+    #[test]
+    fn decodes_unsecured_jwt() {
+        // This is the unsecured JWT from RFC 7519 Section 6.1
+        let rfc_jwt = "eyJhbGciOiJub25lIn0.eyJpc3MiOiJqb2UiLA0KICJleHAiOjEzMDA4MTkzODAsDQogImh0dHA6Ly9leGFtcGxlLmNvbS9pc19yb290Ijp0cnVlfQ.";
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec!["jwt", "decode", "--ignore-exp", rfc_jwt])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _, _) = decode_token(&decode_arguments);
+
+        assert!(result.is_ok(), "Should decode unsecured JWT from RFC 7519: {:?}", result.err());
+        let token = result.unwrap();
+        assert_eq!(
+            token.claims.0.get("iss").and_then(|v| v.as_str()),
+            Some("joe")
+        );
+    }
+
+    #[test]
+    fn roundtrips_unsecured_jwt() {
+        let encode_matcher = App::command()
+            .try_get_matches_from(vec![
+                "jwt",
+                "encode",
+                "-A",
+                "none",
+                "--no-iat",
+                "-P",
+                "test=roundtrip",
+            ])
+            .unwrap();
+        let encode_matches = encode_matcher.subcommand_matches("encode").unwrap();
+        let encode_arguments = EncodeArgs::from_arg_matches(encode_matches).unwrap();
+        let encoded_token = encode_token(&encode_arguments).unwrap();
+
+        let decode_matcher = App::command()
+            .try_get_matches_from(vec!["jwt", "decode", &encoded_token])
+            .unwrap();
+        let decode_matches = decode_matcher.subcommand_matches("decode").unwrap();
+        let decode_arguments = DecodeArgs::from_arg_matches(decode_matches).unwrap();
+        let (result, _, _, _) = decode_token(&decode_arguments);
+
+        assert!(result.is_ok(), "Should roundtrip unsecured JWT: {:?}", result.err());
+        let token = result.unwrap();
+        assert_eq!(
+            token.claims.0.get("test").and_then(|v| v.as_str()),
+            Some("roundtrip")
+        );
     }
 }

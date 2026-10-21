@@ -53,11 +53,11 @@ fn main() {
             });
         }
         Commands::Decode(arguments) => {
-            let (validated_token, token_data, format) = decode_token(arguments);
+            let (validated_token, token_data, format, raw_header) = decode_token(arguments);
             let output_path = &arguments.output_path;
 
             exit(
-                match print_decoded_token(validated_token, token_data, format, output_path) {
+                match print_decoded_token(validated_token, token_data, format, output_path, raw_header) {
                     Ok(_) => 0,
                     _ => 1,
                 },
