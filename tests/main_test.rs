@@ -125,7 +125,9 @@ mod tests {
 
         assert!(decoded_token.is_err());
 
-        let TokenData { claims, header: _ } = token_data.unwrap();
+        let TokenOutput {
+            payload: claims, ..
+        } = token_data.unwrap();
 
         assert!(claims.0.get("exp").is_none());
     }
@@ -976,7 +978,9 @@ mod tests {
 
         assert!(decoded_token.is_ok());
 
-        let TokenData { claims, header: _ } = token_data.unwrap();
+        let TokenOutput {
+            payload: claims, ..
+        } = token_data.unwrap();
 
         assert!(claims.0.get("iat").is_some());
         assert!(claims.0.get("nbf").is_some());
@@ -1082,7 +1086,9 @@ mod tests {
         let json = json_result.unwrap();
         println!("json: {json:#?}");
 
-        let TokenOutput { header, payload } = json;
+        let TokenOutput {
+            header, payload, ..
+        } = json;
         assert_eq!(header.alg, Algorithm::HS256);
         assert_eq!(header.kid, Some(kid.to_string()));
         assert_eq!(payload.0["nbf"], nbf);
@@ -1123,7 +1129,9 @@ mod tests {
 
         assert!(decoded_token.is_ok());
 
-        let TokenData { claims, header: _ } = token_data.unwrap();
+        let TokenOutput {
+            payload: claims, ..
+        } = token_data.unwrap();
 
         assert!(claims.0.get("iat").is_some());
         assert!(claims.0.get("nbf").is_some());
@@ -1176,7 +1184,9 @@ mod tests {
 
         assert!(decoded_token.is_ok());
 
-        let TokenData { claims, header: _ } = token_data.unwrap();
+        let TokenOutput {
+            payload: claims, ..
+        } = token_data.unwrap();
 
         assert!(claims.0.get("iat").is_some());
         assert!(claims.0.get("nbf").is_some());
